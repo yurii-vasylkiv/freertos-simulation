@@ -75,7 +75,6 @@ int sm_STATE_LAUNCHPAD(FlightStateMachineTickParameters * parameters)
 
 int sm_STATE_PRE_APOGEE(FlightStateMachineTickParameters * parameters)
 {
-
     return 0;
 }
 

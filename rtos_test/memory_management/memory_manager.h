@@ -7,13 +7,13 @@
 typedef union
 {
     struct{
-        uint32_t timestamp;
-        int16_t accelerometer [ 3 ];
-        int16_t gyroscope     [ 3 ];
+        float timestamp;
+        float accelerometer [ 3 ];
+        float gyroscope     [ 3 ];
     };
-    uint8_t bytes[sizeof(uint32_t) * 1   +
-                  sizeof(int16_t ) * 3   +
-                  sizeof(int16_t ) * 3
+    uint8_t bytes[sizeof(float) * 1   +
+                  sizeof(float ) * 3   +
+                  sizeof(float ) * 3
     ];
 } IMUDataU;
 
@@ -35,13 +35,13 @@ typedef struct
 typedef union
 {
     struct {
-        uint32_t timestamp;
+        float timestamp;
         int64_t pressure;
-        int64_t temperature;
+        float temperature;
     };
-    uint8_t bytes[sizeof(uint32_t) * 1 +
+    uint8_t bytes[sizeof(float) * 1 +
                   sizeof(int64_t)    * 1 +
-                  sizeof(int64_t)    * 1
+                  sizeof(float)    * 1
     ];
 } PressureDataU;
 
@@ -54,15 +54,16 @@ typedef struct
 typedef enum { Open      = 0, Short     = 1 } ContinuityStatus;
 typedef enum { Launchpad = 0, PreApogee = 1, Apogee = 2, PostApogee = 3, MainChute = 4, PostMain = 5, Landed = 6, Exited = 7    } FlightEventStatus;
 typedef enum { IMU       = 0, Pressure  = 1,  Cont   = 2, Event      = 3, SectorsCount } Sector;
+typedef enum { MEM_ERR   = 0, MEM_OK    = 1 } MemoryStatus;
 
 typedef union
 {
     uint8_t updated;
     struct {
-        uint32_t timestamp;
+        float timestamp;
         ContinuityStatus status;
     };
-    uint8_t bytes[sizeof(uint32_t) * 1 +
+    uint8_t bytes[sizeof(float) * 1 +
                   sizeof(uint8_t ) * 1
     ];
 } ContinuityU;
@@ -76,10 +77,10 @@ typedef struct
 typedef union
 {
     struct {
-        uint32_t timestamp;
+        float timestamp;
         FlightEventStatus status;
     };
-    uint8_t bytes[sizeof(uint32_t) * 1 +
+    uint8_t bytes[sizeof(float) * 1 +
                   sizeof(uint8_t ) * 1
     ];
 } FlightEventU;
@@ -93,7 +94,7 @@ typedef struct
 
 typedef struct
 {
-    uint32_t timestamp;
+    float timestamp;
     IMUData inertial;
     PressureData pressure;
     Continuity continuity;
@@ -190,18 +191,18 @@ typedef union
 } ConfigurationU;
 
 
-int memory_manager_init();
-int memory_manager_configure();
-int memory_manager_update(Data * _container);
-int memory_manager_add_imu_update(IMUDataU *_container);
-int memory_manager_add_pressure_update(PressureDataU *_container);
-int memory_manager_add_continuity_update(ContinuityU *_container);
-int memory_manager_add_flight_event_update(FlightEventU *_container);
-int memory_manager_start();
-int memory_manager_stop();
-int memory_manager_get_system_configurations(FlightSystemConfiguration  * systemConfiguration);
-int memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
-int memory_manager_set_system_configurations(FlightSystemConfiguration  * systemConfiguration);
-int memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
+MemoryStatus memory_manager_init();
+MemoryStatus memory_manager_configure();
+MemoryStatus memory_manager_update(Data * _container);
+MemoryStatus memory_manager_add_imu_update(IMUDataU *_container);
+MemoryStatus memory_manager_add_pressure_update(PressureDataU *_container);
+MemoryStatus memory_manager_add_continuity_update(ContinuityU *_container);
+MemoryStatus memory_manager_add_flight_event_update(FlightEventU *_container);
+MemoryStatus memory_manager_start();
+MemoryStatus memory_manager_stop();
+MemoryStatus memory_manager_get_system_configurations(FlightSystemConfiguration  * systemConfiguration);
+MemoryStatus memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
+MemoryStatus memory_manager_set_system_configurations(FlightSystemConfiguration  * systemConfiguration);
+MemoryStatus memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
 
 #endif //MEMORY_MANAGER_MEMORY_MANAGER_H

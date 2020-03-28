@@ -18,29 +18,11 @@
 #define BACKUP_TIME_APOGEE_TO_MAIN      144 // [s]
 #define BACKUP_TIME_MAIN_TO_GROUND      22  // [s]
 
-/*
- Pb = static pressure (pressure at sea level) [Pa]
- Tb = standard temperature (temperature at sea level) [K]
- Lb = standard temperature lapse rate [K/m] = -0.0065 [K/m]
- h  = height about sea level [m]
- hb = height at the bottom of atmospheric layer [m]
- R  = universal gas constant = 8.31432
- q0 = gravitational acceleration constant = 9.80665
- M  = molar mass of Earth’s air = 0.0289644 [kg/mol]
- */
-
-static const int    Pb  = 101325;
-static const float  Tb  = 15 + 273.15;
-static const float  Lb  = -0.0065 * 2;
-static const int    hb  = 0;
-static const float  R   = 8.31432;
-static const float  g0  = 9.80665;
-static const float  M   = 0.0289644;
 
 static FlightState flightState;
 
 
-static float GROUND_PRESSURE = 0;
+static uint32_t GROUND_PRESSURE = 0;
 static float GROUND_ALTITUDE = 0;
 static int   INITIALIZED     = 0;
 
@@ -58,10 +40,10 @@ static int_averaging_queue gyro_values  [ 3 ];
 
 static float calculate_altitude ( float pressure );
 
-static bool detectLaunch    ( int32_t vertical_acceleration );
-static bool detectApogee    ( int16_t acceleration_x, int16_t acceleration_y, int16_t acceleration_z );
-static bool detectAltitude  ( float target_altitude, float ground_pressure, float current_pressure );
-static bool detectLanding   ( int16_t gyro_x, int16_t gyro_y, int16_t gyro_z );
+static bool detectLaunch    ( float vertical_acceleration );
+static bool detectApogee    ( float acceleration_x, float acceleration_y, float acceleration_z );
+static bool detectAltitude  ( float target_altitude, uint32_t ground_pressure, uint32_t current_pressure );
+static bool detectLanding   ( float gyro_x, float gyro_y, float gyro_z );
 static bool averageData     ( FlightData * container );
 
 
@@ -206,7 +188,7 @@ FlightState event_detector_feed ( Data * data)
             {
                 if ( detectLaunch( data->inertial.data.accelerometer[ 0 ] ) )
                 {
-                    DISPLAY_LINE( "Detected Launch at %d; vertical acceleration = %d", data->inertial.data.timestamp, data->inertial.data.accelerometer[ 0 ] );
+                    DISPLAY_LINE( "Detected Launch at %f; vertical acceleration = %f", data->inertial.data.timestamp, data->inertial.data.accelerometer[ 0 ] );
                     flightState = FLIGHT_STATE_PRE_APOGEE;
                 }
             }
@@ -221,7 +203,13 @@ FlightState event_detector_feed ( Data * data)
                 if ( detectApogee( data->inertial.data.accelerometer[ 0 ], data->inertial.data.accelerometer[ 1 ],
                                    data->inertial.data.accelerometer[ 2 ] ) )
                 {
+                    DISPLAY_LINE( "Detected APOGEE at %f; vertical acceleration = %f", data->inertial.data.timestamp, data->inertial.data.accelerometer[ 0 ]);
                     flightState = FLIGHT_STATE_APOGEE;
+
+                    // time,acceleration,pres,altMSL,temp,latxacc,latyacc,gyrox,gyroy,gyroz,magx,magy,magz,launch_detect,apogee_detect,Aon,Bon
+//                        time         acc x     pres    altmsl  temp    acc_y        acc_z
+//                    SRAD 3400.32	-0.183594	56235	4698.07	44.29	0.125	    -0.984375   -14.84	-30.17	1335.81	0.000386	-0.002148	0.000415	1	0	0	0 // 1.00912g
+//                    COTS 3411.31	0.183594	53173	5118.01	44.37	0.296875	-0.519531	-9.87	-3.15	469.91	0.000562	-0.001695	0.000153	1	1	1	0 // 0.62590g
                 }
             }
 
@@ -241,7 +229,7 @@ FlightState event_detector_feed ( Data * data)
             {
                 if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->pressure.data.pressure ) )
                 {
-                    DISPLAY_LINE( "Detected Main Chute at %d; vertical acceleration = %I64d", data->inertial.data.timestamp, data->pressure.data.pressure);
+                    DISPLAY_LINE( "Detected Main Chute at %f; vertical acceleration = %I64d", data->inertial.data.timestamp, data->pressure.data.pressure);
                     flightState = FLIGHT_STATE_MAIN_CHUTE;
                 }
             }
@@ -264,17 +252,16 @@ FlightState event_detector_feed ( Data * data)
                 if ( detectLanding( data->inertial.data.gyroscope[ 0 ], data->inertial.data.gyroscope[ 1 ],
                                     data->inertial.data.gyroscope[ 2 ] ) )
                 {
-                    DISPLAY_LINE( "Detected landing at %d.", data->inertial.data.timestamp);
+                    DISPLAY_LINE( "Detected landing at %f.", data->inertial.data.timestamp);
                     flightState = FLIGHT_STATE_LANDED;
                 }
-
-
-                return 0;
             }
+
+            return 0;
         }
         case FLIGHT_STATE_LANDED:
         {
-            DISPLAY("Rocket landed!", NULL);
+            DISPLAY_LINE("Rocket landed!", NULL);
             flightState = FLIGHT_STATE_EXIT;
 
             return 0;
@@ -282,7 +269,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_EXIT:
         {
-            DISPLAY( "Exi!", NULL );
+            DISPLAY_LINE( "Exit!", NULL );
 
             return 0;
         }
@@ -294,45 +281,60 @@ FlightState event_detector_feed ( Data * data)
 }
 
 
-static bool detectLaunch    ( int32_t vertical_acceleration )
+static bool detectLaunch    ( float vertical_acceleration )
 {
-    float vertical_acceleration_in_g = imu_sensor_acc2g(vertical_acceleration);
+    float vertical_acceleration_in_g = vertical_acceleration; // imu_sensor_acc2g(vertical_acceleration);
 
     return vertical_acceleration_in_g > CRITICAL_VERTICAL_ACCELERATION;
 }
 
 
-static bool detectApogee    ( int16_t acceleration_x, int16_t acceleration_y, int16_t acceleration_z )
+static bool detectApogee    ( float acceleration_x, float acceleration_y, float acceleration_z )
 {
-    float acceleration_x_in_g = imu_sensor_acc2g(acceleration_x);
-    float acceleration_y_in_g = imu_sensor_acc2g(acceleration_y);
-    float acceleration_z_in_g = imu_sensor_acc2g(acceleration_z);
+    float acceleration_x_in_g = acceleration_x; // imu_sensor_acc2g(acceleration_x);
+    float acceleration_y_in_g = acceleration_y; // imu_sensor_acc2g(acceleration_y);
+    float acceleration_z_in_g = acceleration_z; // imu_sensor_acc2g(acceleration_z);
     const float ACCELERATION_VECTOR = sqrt(acceleration_x_in_g*acceleration_x_in_g + acceleration_y_in_g*acceleration_y_in_g + acceleration_z_in_g*acceleration_z_in_g);
 
-    if(ACCELERATION_VECTOR < APOGEE_ACCELERATION)
-    {
-        DISPLAY_LINE( "Detected Apogee: acc_x = %d, acc_y = %d, acc_z = %d", acceleration_x, acceleration_y, acceleration_z);
-    }
     return ACCELERATION_VECTOR < APOGEE_ACCELERATION;
 }
 
 
-static bool detectAltitude  ( float target_altitude, float ground_pressure, float current_pressure )
+static bool detectAltitude  ( float target_altitude, uint32_t ground_altitude, uint32_t current_pressure )
 {
-    uint32_t current_altitude = calculate_altitude(current_pressure - ground_pressure);
+    float current_altitude = calculate_altitude( current_pressure ) - ground_altitude;
 //    DISPLAY_LINE("Current Altitude: %d", current_altitude);
 
     return fabsf ( ( current_altitude ) - ( target_altitude ) ) < 5; /* 5 metres difference threshold */
 }
 
-static bool detectLanding   ( int16_t gyro_x, int16_t gyro_y, int16_t gyro_z )
+static bool detectLanding   ( float gyro_x, float gyro_y, float gyro_z )
 {
     float gyroscope_orientation_vector = sqrt( gyro_x * gyro_x + gyro_y * gyro_y + gyro_z * gyro_z);
-    return gyroscope_orientation_vector < imu_sensor_deg_per_sec2rot ( LANDING_ROTATION_SPEED );
+    return gyroscope_orientation_vector < LANDING_ROTATION_SPEED; // imu_sensor_deg_per_sec2rot ( LANDING_ROTATION_SPEED );
 }
 
 
 static float calculate_altitude( float pressure )
 {
+    /*
+     Pb = static pressure (pressure at sea level) [Pa]
+     Tb = standard temperature (temperature at sea level) [K]
+     Lb = standard temperature lapse rate [K/m] = -0.0065 [K/m]
+     h  = height about sea level [m]
+     hb = height at the bottom of atmospheric layer [m]
+     R  = universal gas constant = 8.31432
+     q0 = gravitational acceleration constant = 9.80665
+     M  = molar mass of Earth’s air = 0.0289644 [kg/mol]
+    */
+
+    static const float  Pb  = 101325.00f;
+    static const float  Tb  = 15.00 + 273.15;
+    static const float  Lb  = -0.0065;
+    static const int    hb  = 0;
+    static const float  R   = 8.31432;
+    static const float  g0  = 9.80665;
+    static const float  M   = 0.0289644;
+
     return hb + ( Tb / Lb ) * ( pow ( ( pressure / Pb ), ( -R * Lb ) / ( g0 * M ) ) - 1 );
 }

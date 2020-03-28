@@ -7,7 +7,20 @@
 extern "C" {
 #endif
 
-typedef struct {
+#if defined(COTS_DATA)
+typedef struct
+{
+    float timestamp;
+/*! X-axis sensor data */
+    float x;
+/*! Y-axis sensor data */
+    float y;
+/*! Z-axis sensor data */
+    float z;
+} xyz_data;
+#else
+typedef struct
+{
     uint32_t timestamp;
 /*! X-axis sensor data */
     int16_t x;
@@ -15,8 +28,20 @@ typedef struct {
     int16_t y;
 /*! Z-axis sensor data */
     int16_t z;
-}xyz_data;
+} xyz_data;
+#endif
 
+#if defined(COTS_DATA)
+
+typedef struct{
+    float timestamp;
+    /*! Compensated temperature */
+    float temperature;
+    /*! Compensated pressure */
+    int64_t pressure;
+}press_data;
+
+#else
 
 typedef struct{
     uint32_t timestamp;
@@ -25,6 +50,8 @@ typedef struct{
     /*! Compensated pressure */
     int64_t pressure;
 }press_data;
+
+#endif
 
 int datafeeder_get_gyro(xyz_data * data);
 int datafeeder_get_acc(xyz_data * data);

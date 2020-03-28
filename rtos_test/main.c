@@ -259,7 +259,7 @@ int main( void )
     }
 
     status = memory_manager_init( );
-    if ( status != 0 )
+    if ( status != MEM_OK )
     {
         stm32_error_handler( __FILE__, __LINE__ );
     } else
@@ -268,7 +268,7 @@ int main( void )
     }
 
     status = memory_manager_configure( );
-    if ( status != 0 )
+    if ( status != MEM_OK )
     {
         stm32_error_handler( __FILE__, __LINE__ );
     } else
@@ -308,12 +308,18 @@ int main( void )
 
     pressure_sensor_start ( NULL );
 
-    memory_manager_start ( NULL );
+//    if ( memory_manager_start( NULL ) != MEM_OK )
+//    {
+//        stm32_error_handler( __FILE__, __LINE__ );
+//    } else
+//    {
+//        DISPLAY_LINE( "Memory Manager has been started.", NULL );
+//    }
 
     flight_controller_start ( NULL );
 
 
-    data_feeder_start ( "C:/root/home/development/UMSATS/FreeRTOS.Simulator.C++/flight.data.csv" );
+    data_feeder_start ( "C:/root/home/development/UMSATS/FreeRTOS.Simulator.C++/cots_flight.data.csv" );
 
     vTaskStartScheduler ( );
 

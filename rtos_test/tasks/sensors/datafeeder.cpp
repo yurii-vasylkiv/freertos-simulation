@@ -57,6 +57,55 @@ extern "C" {
 #endif
 
 
+#if defined(COTS_DATA)
+uint32_t timestamp_uint;
+void * worker_function( void * arg )
+{
+    double timestamp { };
+    xyz_data gyro, acc, mag;
+    press_data press;
+    double alt;
+    uint32_t ev;
+    double altMSL;
+    uint8_t flags[4];
+
+
+
+    io::CSVReader<17> reader (csv_file_name);
+
+    // time,acceleration,pres,altMSL,temp,latxacc,latyacc,gyrox,gyroy,gyroz,magx,magy,magz,launch_detect,apogee_detect,Aon,Bon
+
+    while (reader.read_row(timestamp, acc.x, press.pressure, altMSL, press.temperature, acc.y, acc.z, gyro.x, gyro.y, gyro.z, mag.x, mag.y, mag.z, flags[0], flags[1], flags[2], flags[3]))
+    {
+        timestamp_uint += 50;
+        acc.timestamp   = timestamp;
+        gyro.timestamp  = timestamp;
+        press.timestamp = timestamp;
+
+        taskENTER_CRITICAL( );
+
+        if ( acc_queue.size( ) >= MAX_ITEMS )
+            acc_queue.pop_front( );
+        acc_queue.push_back( acc );
+
+        if ( gyro_queue.size( ) >= MAX_ITEMS )
+            gyro_queue.pop_front( );
+        gyro_queue.push_back( gyro );
+
+        if ( press_queue.size( ) >= MAX_ITEMS )
+            press_queue.pop_front( );
+        press_queue.push_back( press );
+
+        taskEXIT_CRITICAL( );
+
+        msleep( 1 );
+    }
+
+
+    return nullptr;
+}
+
+#else
 uint32_t timestamp_uint;
 void * worker_function( void * arg )
 {
@@ -78,8 +127,8 @@ void * worker_function( void * arg )
     {
         timestamp_uint += 50;
         acc.timestamp   = timestamp_uint;
-        gyro.timestamp  = timestamp_uint;;
-        press.timestamp = timestamp_uint;;
+        gyro.timestamp  = timestamp_uint;
+        press.timestamp = timestamp_uint;
 
         taskENTER_CRITICAL( );
 
@@ -103,6 +152,10 @@ void * worker_function( void * arg )
 
     return nullptr;
 }
+#endif
+
+
+
 
 #ifdef __cplusplus
 }

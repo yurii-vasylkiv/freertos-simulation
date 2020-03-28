@@ -15,6 +15,8 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 add_definitions(-DSTM32F401xE)
+add_definitions(-DCOTS_DATA)
+
 add_definitions(-DUSE_HAL_DRIVER)
 add_definitions("-D__weak=__attribute__((weak))")
 add_definitions("-D__packed=__attribute__((__packed__))")

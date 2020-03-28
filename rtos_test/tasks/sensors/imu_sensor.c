@@ -158,7 +158,7 @@ void prv_imu_thread_start( void * param )
             continue;
         }
 
-        memcpy( &dataStruct.acc_x,  &cxx_data.x, sizeof( int16_t ) * 3 );
+        memcpy( &dataStruct.acc_x,  &cxx_data.x, sizeof( float ) * 3 );
 
         result_flag = datafeeder_get_gyro( &cxx_data );
         if ( !result_flag )
@@ -166,7 +166,7 @@ void prv_imu_thread_start( void * param )
             continue;
         }
 
-        memcpy( &dataStruct.gyro_x, &cxx_data.x, sizeof( int16_t ) * 3 );
+        memcpy( &dataStruct.gyro_x, &cxx_data.x, sizeof( float ) * 3 );
 
         dataStruct.time_ticks   = cxx_data.timestamp;
 

@@ -37,17 +37,17 @@ static xTaskHandle handle                               = { 0 };
 
 
 
-static int _add_data( Sector sector, uint8_t * buffer, size_t size );
+static MemoryStatus _add_data( Sector sector, uint8_t * buffer, size_t size );
 
 static void _write_async_to_flash_if_anything_is_available( size_t size );
 
 static void _queue_monitor_task( void * arg );
 
-static int prv_update_configurations( );
+static MemoryStatus prv_update_configurations( );
 
-static int _read_configurations_from_flash( ConfigurationU * conf_container );
+static MemoryStatus _read_configurations_from_flash( ConfigurationU * conf_container );
 
-static int _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest );
+static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest );
 
 static void _access_page_of_imu_measurements( uint32_t pageIndex );
 
@@ -57,7 +57,7 @@ static void _access_single_pressure_measurement( uint32_t measurement_index );
 
 static void _access_single_imu_measurement( uint32_t measurement_index );
 
-static int _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest );
+static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest );
 
 static void _append_page( Sector sector, uint8_t * data );
 
@@ -66,7 +66,7 @@ static void _append_page( Sector sector, uint8_t * data );
 
 
 
-int memory_manager_init( )
+MemoryStatus memory_manager_init( )
 {
     for ( Sector sector = IMU ; sector < SectorsCount ; sector++ )
     {
@@ -85,21 +85,21 @@ int memory_manager_init( )
 
     s_is_initialized = 1;
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_configure( )
+MemoryStatus memory_manager_configure( )
 {
     if ( !s_is_initialized )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     if ( _read_configurations_from_flash( &configurations ) != 0 )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     if ( memcmp( configurations.magic, MAGIC, MAGIC_BUFFER_LENGTH ) == 0 ) // magic sequences match)
@@ -133,51 +133,48 @@ int memory_manager_configure( )
         memcpy( configurations.magic, MAGIC, MAGIC_BUFFER_LENGTH );
     }
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_get_configurations( ConfigurationU * pConfigs )
+MemoryStatus memory_manager_get_configurations( ConfigurationU * pConfigs )
 {
     // validation
     if ( memcmp( configurations.magic, MAGIC, 36 ) == 0 ) // magic sequences match)
     {
         pConfigs = &configurations;
-        return 0;
+        return MEM_OK;
     }
-
-    pConfigs = NULL;
-
+    
     ( void ) pConfigs;
-
-    return 1;
+    return MEM_ERR;
 }
 
 
 
-int memory_manager_update_sensors_ground_data( GroundDataU * _data )
+MemoryStatus memory_manager_update_sensors_ground_data( GroundDataU * _data )
 {
     if ( _data == NULL )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     configurations.system.ground_pressure = _data->pressure;
 
     prv_update_configurations( );
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int _read_configurations_from_flash( ConfigurationU * conf_container )
+MemoryStatus _read_configurations_from_flash( ConfigurationU * conf_container )
 {
     assert( sizeof( ConfigurationU ) < PAGE_SIZE );
 
     if ( conf_container == NULL )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     int bytesLeftToWrite = sizeof( ConfigurationU );
@@ -188,11 +185,11 @@ int _read_configurations_from_flash( ConfigurationU * conf_container )
         MemoryBuffer page = { };
         if ( _access_page( Conf, 0, page.data ) != 0 )
         {
-            return 1;
+            return MEM_ERR;
         }
 
         memmove( conf_container->bytes, page.data, bytesLeftToWrite );
-        return 0;
+        return MEM_OK;
     }
 
     int bytesWritten = 0;
@@ -202,7 +199,7 @@ int _read_configurations_from_flash( ConfigurationU * conf_container )
         memset( &page, 0, sizeof( MemoryBuffer ) );
         if ( _access_page( Conf, 0, page.data ) != 0 )
         {
-            return 1;
+            return MEM_ERR;
         }
 
         memmove( &conf_container->bytes[ bytesWritten ], page.data, PAGE_SIZE );
@@ -211,88 +208,88 @@ int _read_configurations_from_flash( ConfigurationU * conf_container )
     }
 
 
-    memset( &page, 0, sizeof( MemoryBuffer ) );
+    memset( &page, 0, sizeof ( MemoryBuffer ) );
     if ( _access_page( Conf, 0, page.data ) != 0 )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     memmove( conf_container->bytes, page.data, bytesLeftToWrite );
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int prv_update_configurations( )
+MemoryStatus prv_update_configurations( )
 {
-    assert( sizeof( ConfigurationU ) < PAGE_SIZE );
+    assert( sizeof ( ConfigurationU ) < PAGE_SIZE );
 
     buffer_item item = { };
     item.type = Conf;
-    memmove( item.data, configurations.bytes, sizeof( ConfigurationU ) );
+    memmove( item.data, configurations.bytes, sizeof ( ConfigurationU ) );
     buffer_queue_push_back( &s_page_cb, &item );
 //    xTaskGenericNotify(handle, 0, eNoAction, NULL);
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_update( Data * _container )
+MemoryStatus memory_manager_update( Data * _container )
 {
     if ( !s_is_initialized )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     if ( _container == NULL )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     if ( _container->inertial.updated )
     {
-        memory_manager_add_imu_update( &_container->inertial.data );
+        memory_manager_add_imu_update ( &_container->inertial.data );
         _container->inertial.updated = 0;
     }
 
     if ( _container->pressure.updated )
     {
-        memory_manager_add_pressure_update( &_container->pressure.data );
+        memory_manager_add_pressure_update ( &_container->pressure.data );
         _container->pressure.updated = 0;
     }
 
     if ( _container->continuity.updated )
     {
-        memory_manager_add_continuity_update( &_container->continuity.data );
+        memory_manager_add_continuity_update ( &_container->continuity.data );
         _container->continuity.updated = 0;
     }
 
     if ( _container->event.updated )
     {
-        memory_manager_add_flight_event_update( &_container->event.data );
+        memory_manager_add_flight_event_update ( &_container->event.data );
         _container->event.updated = 0;
     }
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_add_imu_update( IMUDataU * _container )
+MemoryStatus memory_manager_add_imu_update( IMUDataU * _container )
 {
     return _add_data( IMU, _container->bytes, sizeof( IMUDataU ) );
 }
 
 
 
-int memory_manager_add_pressure_update( PressureDataU * _container )
+MemoryStatus memory_manager_add_pressure_update( PressureDataU * _container )
 {
     return _add_data( Pressure, _container->bytes, sizeof( PressureDataU ) );
 }
 
 
 
-int memory_manager_add_continuity_update( ContinuityU * _container )
+MemoryStatus memory_manager_add_continuity_update( ContinuityU * _container )
 {
 
     return _add_data( Cont, _container->bytes, sizeof( ContinuityU ) );
@@ -300,7 +297,7 @@ int memory_manager_add_continuity_update( ContinuityU * _container )
 
 
 
-int memory_manager_add_flight_event_update( FlightEventU * _container )
+MemoryStatus memory_manager_add_flight_event_update( FlightEventU * _container )
 {
 
     return _add_data( Event, _container->bytes, sizeof( FlightEventU ) );
@@ -308,74 +305,74 @@ int memory_manager_add_flight_event_update( FlightEventU * _container )
 
 
 
-int memory_manager_start( )
+MemoryStatus memory_manager_start( )
 {
     if ( !s_is_initialized )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     if ( pdFALSE == xTaskCreate( _queue_monitor_task, "memory-manager", configMINIMAL_STACK_SIZE, NULL, 5, &handle ) )
     {
-        return 1;
+        return MEM_ERR;
     }
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_stop( )
+MemoryStatus memory_manager_stop( )
 {
     is_queue_monitor_running = 0;
-    return 0;
+    return MEM_OK;
 }
 
-int memory_manager_get_system_configurations(FlightSystemConfiguration * systemConfiguration)
+MemoryStatus memory_manager_get_system_configurations(FlightSystemConfiguration * systemConfiguration)
 {
     if(systemConfiguration == NULL)
     {
-        return 1;
+        return MEM_ERR;
     }
 
     memcpy(systemConfiguration, &configurations.system, sizeof( FlightSystemConfiguration ));
 
-    return 0;
+    return MEM_OK;
 }
 
-int memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration)
+MemoryStatus memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration)
 {
     if(memoryConfiguration == NULL)
     {
-        return 1;
+        return MEM_ERR;
     }
 
     memcpy(memoryConfiguration, &configurations.system, sizeof( FlightSystemConfiguration ));
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int memory_manager_set_system_configurations(FlightSystemConfiguration * systemConfiguration)
+MemoryStatus memory_manager_set_system_configurations(FlightSystemConfiguration * systemConfiguration)
 {
     if(systemConfiguration == NULL)
     {
-        return 1;
+        return MEM_ERR;
     }
 
     memset(&configurations.system, 0, sizeof( FlightSystemConfiguration ));
     configurations.system = *systemConfiguration;
 
     prv_update_configurations( );
-    return 0;
+    return MEM_OK;
 }
 
-int memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration)
+MemoryStatus memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration)
 {
     if(memoryConfiguration == NULL)
     {
-        return 1;
+        return MEM_ERR;
     }
 
     memset(&configurations.memory, 0, sizeof( MemoryManagerConfiguration ));
@@ -383,16 +380,16 @@ int memory_manager_set_memory_configurations(MemoryManagerConfiguration * memory
 
     prv_update_configurations( );
 
-    return 0;
+    return MEM_OK;
 }
 
 
 
-int _add_data( Sector sector, uint8_t * buffer, size_t size )
+MemoryStatus _add_data( Sector sector, uint8_t * buffer, size_t size )
 {
     if ( !s_is_initialized )
     {
-        return 1;
+        return MEM_ERR;
     }
 
     const size_t ALIGNED_PAGE_SIZE = trunc( (PAGE_SIZE /  ( size  ) ) *  ( size ) );
@@ -427,7 +424,7 @@ int _add_data( Sector sector, uint8_t * buffer, size_t size )
         s_configurations_autosave_interval_tick = 0;
     }
 
-    return 0;
+    return MEM_OK;
 }
 
 
@@ -478,7 +475,7 @@ void _append_page( Sector sector, uint8_t * data )
 
 
 
-static int _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest )
+static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest )
 {
     uint32_t OFFSET;
     if ( sector != Conf )
@@ -497,7 +494,7 @@ static int _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest )
 
     assert( bytesRead == PAGE_SIZE );
 
-    return 0;
+    return MEM_OK;
 }
 
 

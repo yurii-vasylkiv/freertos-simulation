@@ -14,15 +14,15 @@
 //Groups both sensor readings and a time stamp.
 typedef struct imu_sensor_data
 {
-    int16_t    acc_x;
-    int16_t    acc_y;
-    int16_t    acc_z;
+    float    acc_x;
+    float    acc_y;
+    float    acc_z;
+
+    float    gyro_x;
+    float    gyro_y;
+    float    gyro_z;
     
-    int16_t    gyro_x;
-    int16_t    gyro_y;
-    int16_t    gyro_z;
-    
-    uint32_t   time_ticks; // time of sensor reading in ticks.
+    float   time_ticks; // time of sensor reading in ticks.
 }imu_sensor_data;
 
 

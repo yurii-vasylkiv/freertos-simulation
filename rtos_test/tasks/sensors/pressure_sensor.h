@@ -33,9 +33,9 @@ extern "C" {
 //Groups a time stamp with the reading.
 typedef struct pressure_sensor_data
 {
-    uint32_t time_ticks; //time of sensor reading in ticks.
+    float time_ticks; //time of sensor reading in ticks.
     /*! Compensated temperature */
-    int64_t temperature;
+    float temperature;
     /*! Compensated pressure */
     int64_t pressure;
 } pressure_sensor_data;

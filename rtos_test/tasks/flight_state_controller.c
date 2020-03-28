@@ -58,7 +58,7 @@ static void prv_flight_controller_task(void * pvParams)
 
     static FlightSystemConfiguration system_configurations;
     uint32_t status = memory_manager_get_system_configurations( &system_configurations );
-    if ( status != 0 )
+    if ( status != MEM_OK )
     {
         stm32_error_handler( __FILE__, __LINE__ );
     } else
@@ -68,7 +68,7 @@ static void prv_flight_controller_task(void * pvParams)
 
     static MemoryManagerConfiguration memory_configurations;
     status = memory_manager_get_memory_configurations( &memory_configurations );
-    if ( status != 0 )
+    if ( status != MEM_OK)
     {
         stm32_error_handler( __FILE__, __LINE__ );
     } else
@@ -85,7 +85,7 @@ static void prv_flight_controller_task(void * pvParams)
     system_configurations.power_mode = 1;
 
     status = memory_manager_set_system_configurations(&system_configurations);
-    if ( status != 0 )
+    if ( status != MEM_OK)
     {
         stm32_error_handler( __FILE__, __LINE__ );
     } else
@@ -132,7 +132,7 @@ static void prv_flight_controller_task(void * pvParams)
 
         flight_state_machine_tick(flightState, &smParams);
 
-        memory_manager_update(&flightData);
+//        memory_manager_update(&flightData);
 
         memset(&flightData, 0, sizeof(flightData));
 
@@ -157,8 +157,8 @@ static void get_sensor_data_update( Data * data )
     {
 //        data->inertial.data.timestamp   = xTaskGetTickCount();
         data->inertial.data.timestamp               = imu_data.time_ticks;
-        memcpy( &data->inertial.data.accelerometer, &imu_data.acc_x,  sizeof( int16_t ) * 3 );
-        memcpy( &data->inertial.data.gyroscope,     &imu_data.gyro_x, sizeof( int16_t ) * 3 );
+        memcpy( &data->inertial.data.accelerometer, &imu_data.acc_x,  sizeof( float ) * 3 );
+        memcpy( &data->inertial.data.gyroscope,     &imu_data.gyro_x, sizeof( float ) * 3 );
         data->inertial.updated = true;
     }
 
