@@ -135,6 +135,15 @@ ELSE()
                             os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
             )
 
+    set(IMPL_FOLDERS_SRC        # Communication/Transmission protocols
+                                flight-computer/protocols/impl/UART.c
+                                flight-computer/protocols/impl/SPI.c
+
+                                # sensors
+                                flight-computer/board/components/impl/imu_sensor.c
+                                flight-computer/board/components/impl/pressure_sensor.c
+        )
+
 ENDIF()
 
 include_directories         (flight-computer)
@@ -168,7 +177,7 @@ IF(COMPILE_IN_SIMULATION_MODE)
     add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${CXX_SRC} ${SIM_PORT_SRC})
     target_link_libraries(RTOS_LIB pthread winmm ws2_32)
 ELSE()
-    add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${LINKER_SCRIPT})
+    add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
     target_link_libraries(${PROJECT_NAME}.elf CMSIS_LIB -lm)
 ENDIF()
 
