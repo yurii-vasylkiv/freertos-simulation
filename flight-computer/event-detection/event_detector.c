@@ -6,7 +6,7 @@
 #include "UserConfig.h"
 
 #include "protocols/UART.h"
-#include "moving_buffer.h"
+#include "data_window.h"
 
 #define CRITICAL_VERTICAL_ACCELERATION  6.9 // [g]
 #define APOGEE_ACCELERATION             0.1 // [g]
@@ -33,7 +33,7 @@ typedef struct
 
 
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
-static moving_data_buffer altitude_buffer, vertical_acc_buffer;
+static moving_data_buffer altitude_data_window, vertical_acc_data_window;
 static float mean( float * array, size_t length, size_t start, size_t end);
 #endif
 
@@ -59,8 +59,8 @@ int event_detector_init( FlightSystemConfiguration * configurations)
     flightState     = FLIGHT_STATE_LAUNCHPAD;
 
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
-    moving_buffer_init(&altitude_buffer);
-    moving_buffer_init(&vertical_acc_buffer);
+    data_window_init( &altitude_data_window );
+    data_window_init( &vertical_acc_data_window );
 #endif
 
 
@@ -100,7 +100,7 @@ FlightState event_detector_feed ( Data * data)
     {
         CURRENT_ALTITUDE = calculate_altitude( data->pressure.data.pressure) - GROUND_ALTITUDE;
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
-        moving_buffer_insert(&altitude_buffer, &CURRENT_ALTITUDE);
+        data_window_insert( &altitude_data_window, &CURRENT_ALTITUDE );
 #endif
     }
 
@@ -131,8 +131,8 @@ FlightState event_detector_feed ( Data * data)
                 // dramatically then it cannot represent the real world scenario, as in the real world the inertia
                 // makes it stop really slowly as well as falling down, therefore the difference needs to be small.
 
-                float previous_average_altitude = mean( altitude_buffer.linear_repr, sizeof( altitude_buffer.linear_repr ), 0,MOVING_BUFFER_RANGE - 1 );
-                float last_average_altitude     = mean( altitude_buffer.linear_repr, sizeof( altitude_buffer.linear_repr ), 1, MOVING_BUFFER_RANGE );
+                float previous_average_altitude = mean( altitude_data_window.linear_repr, sizeof( altitude_data_window.linear_repr ), 0, MOVING_BUFFER_RANGE - 1 );
+                float last_average_altitude     = mean( altitude_data_window.linear_repr, sizeof( altitude_data_window.linear_repr ), 1, MOVING_BUFFER_RANGE );
 
                 float difference = last_average_altitude - previous_average_altitude;
                 float absolute_difference = fabs(fabs(last_average_altitude) - fabs(previous_average_altitude));
