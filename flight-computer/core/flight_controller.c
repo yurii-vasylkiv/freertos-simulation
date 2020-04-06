@@ -7,15 +7,12 @@
 #include "event-detection/event_detector.h"
 #include "configurations/UserConfig.h"
 
+#include "board/components/imu_sensor.h"
+#include "board/components/pressure_sensor.h"
+
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
-#include "sensor-simulation/imu_sensor.h"
-#include "sensor-simulation/pressure_sensor.h"
-#include "sensor-simulation/datafeeder.h"
-#else
-#include "tasks/sensors/imu_sensor.h"
-    #include "tasks/sensors/pressure_sensor.h"
-    #include "tasks/sensors/datafeeder.h"
+#include "sim-port/sensor-simulation/datafeeder.h"
 #endif
 
 

@@ -20,7 +20,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include <board/board.h>
 #include "memory-management/memory_manager.h"
-#include "imu_sensor.h"
+#include "board/components/imu_sensor.h"
 #include "protocols/SPI.h"
 #include "core/system_configuration.h"
 #include "utilities/common.h"

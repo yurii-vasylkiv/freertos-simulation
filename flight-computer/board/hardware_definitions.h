@@ -16,7 +16,7 @@
 
 #include "FreeRTOS.h"
 
-#include "port/hal_port.h"
+#include "sim-port/hal_port.h"
 
 
 //User LED(red)

@@ -12,10 +12,10 @@
 // - Created.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include "UART.h"
+#include "protocols/UART.h"
 #include <string.h>
 #include <stdlib.h>
-#include "../main.h"
+#include "main.h"
 
 #include "FreeRTOS.h"
 #include "portable.h"

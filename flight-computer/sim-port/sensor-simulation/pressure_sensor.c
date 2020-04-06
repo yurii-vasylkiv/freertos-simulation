@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#include "pressure_sensor.h"
+#include "board/components/pressure_sensor.h"
 #include <math.h>
 #include <stdbool.h>
 #include <board/board.h>
