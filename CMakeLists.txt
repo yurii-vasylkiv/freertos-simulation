@@ -41,13 +41,13 @@ file(GLOB_RECURSE USER_SRC "flight-computer/*.c" "flight-computer/*.c" "flight-c
 file(GLOB_RECURSE CLI_SRC "FreeRTOS-Plus-CLI/*.c")
 
 
-file(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sensor_simulation/srad_flight.data.csv")
-file(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sensor_simulation/cots_flight.data.csv")
+file(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sensor-simulation/srad_flight.data.csv")
+file(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sensor-simulation/cots_flight.data.csv")
 
 add_definitions(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
 add_definitions(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
 
-set(CXX_SRC flight-computer/sensor_simulation/csv.h flight-computer/sensor_simulation/datafeeder.cpp)
+set(CXX_SRC flight-computer/sensor-simulation/csv.h flight-computer/sensor-simulation/datafeeder.cpp)
 
 include_directories(cxx)
 include_directories(Configs)

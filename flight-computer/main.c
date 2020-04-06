@@ -146,9 +146,9 @@ void assert_failed(uint8_t *file, uint32_t line)
 #include "timers.h"
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
-    #include "sensor_simulation/imu_sensor.h"
-    #include "sensor_simulation/pressure_sensor.h"
-    #include "sensor_simulation/datafeeder.h"
+    #include "sensor-simulation/imu_sensor.h"
+    #include "sensor-simulation/pressure_sensor.h"
+    #include "sensor-simulation/datafeeder.h"
 #else
     #include "tasks/sensors/imu_sensor.h"
     #include "tasks/sensors/pressure_sensor.h"
