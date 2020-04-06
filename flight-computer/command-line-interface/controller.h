@@ -2,7 +2,7 @@
 #define COMMAND_CONTROLLER_H
 
 #include "definitions.h"
-#include "stm32/components/flash.h"
+#include "board/components/flash.h"
 #include "protocols/UART.h"
 #include "core/system_configuration.h"
 

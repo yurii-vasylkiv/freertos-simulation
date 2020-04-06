@@ -17,7 +17,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "recovery.h"
 #include "core/system_configuration.h"
-#include "stm32/hardware_definitions.h"
+#include "board/hardware_definitions.h"
 #include <FreeRTOS.h>
 #include <task.h>
 

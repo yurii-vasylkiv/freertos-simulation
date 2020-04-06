@@ -11,13 +11,13 @@
  */
 
 #include <stdint.h>
-#include "stm32/STM32.h"
+#include "board/board.h"
 
 #include "FreeRTOS.h"
 #include "portable.h"
 
 #include "flash.h"
-#include "stm32/hardware_definitions.h"
+#include "board/hardware_definitions.h"
 #include "protocols/SPI.h"
 #include "configurations/UserConfig.h"
 

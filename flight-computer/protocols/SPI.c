@@ -14,7 +14,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #include "SPI.h"
-#include "stm32/hardware_definitions.h"
+#include "board/hardware_definitions.h"
 #include "FreeRTOS.h"
 #include "portable.h"
 

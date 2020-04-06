@@ -2,7 +2,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-#include "stm32/STM32.h"
+#include "board/board.h"
 #include "memory-management/memory_manager.h"
 #include "event-detection/event_detector.h"
 #include "configurations/UserConfig.h"
@@ -72,7 +72,7 @@ static void prv_flight_controller_task(void * pvParams)
     uint32_t status = memory_manager_get_system_configurations( &system_configurations );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "System configurations have been extracted", NULL );
@@ -82,7 +82,7 @@ static void prv_flight_controller_task(void * pvParams)
     status = memory_manager_get_memory_configurations( &memory_configurations );
     if ( status != MEM_OK)
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Memory configurations have been extracted", NULL );
@@ -99,7 +99,7 @@ static void prv_flight_controller_task(void * pvParams)
     status = memory_manager_set_system_configurations(&system_configurations);
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Memory configurations have been updated", NULL );
@@ -108,7 +108,7 @@ static void prv_flight_controller_task(void * pvParams)
     status = event_detector_init( &system_configurations );
     if ( status != 0 )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Event Detector has been set & configured ", NULL );
@@ -117,7 +117,7 @@ static void prv_flight_controller_task(void * pvParams)
     status = flight_state_machine_init( FLIGHT_STATE_LAUNCHPAD );
     if ( status != 0 )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Flight State Machine has been set", NULL );

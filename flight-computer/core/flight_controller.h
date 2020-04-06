@@ -2,7 +2,7 @@
 #define DATA_LOGGING_H
 
 #include <math.h>
-#include "stm32/components/flash.h"
+#include "board/components/flash.h"
 #include "protocols/UART.h"
 #include "core/system_configuration.h"
 #include "event-detection/event_detector.h"

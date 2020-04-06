@@ -19,7 +19,7 @@
 
 #include "FreeRTOS.h"
 #include "portable.h"
-#include "stm32/hardware_definitions.h"
+#include "board/hardware_definitions.h"
 
 static uint8_t bufftx[BUFFER_SIZE] = ""; // uart_transmit buffer
 static uint8_t buffrx[BUFFER_SIZE] = ""; // receive buffer

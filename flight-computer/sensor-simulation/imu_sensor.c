@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#include <stm32/STM32.h>
+#include <board/board.h>
 #include "memory-management/memory_manager.h"
 #include "imu_sensor.h"
 #include "protocols/SPI.h"
@@ -225,7 +225,7 @@ void imu_sensor_start ( void * param )
 
     if ( pdFALSE == xTaskCreate ( prv_imu_thread_start, "imu-task", configMINIMAL_STACK_SIZE, param, 5, &handle ) )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     }
 }
 

@@ -129,13 +129,13 @@ void assert_failed(uint8_t *file, uint32_t line)
 #include "configurations/UserConfig.h"
 #include "memory-management/memory_manager.h"
 
-#include "stm32/STM32.h"
+#include "board/board.h"
 #include "protocols/UART.h"
-#include "stm32/components/buzzer.h"
-#include "stm32/components/flash.h"
+#include "board/components/buzzer.h"
+#include "board/components/flash.h"
 
 #include "core/system_configuration.h"
-#include "stm32/components/recovery.h"
+#include "board/components/recovery.h"
 #include "core/flight_controller.h"
 #include "command-line-interface/controller.h"
 
@@ -159,11 +159,11 @@ void assert_failed(uint8_t *file, uint32_t line)
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 int main( void )
 {
-    STM32Status board_status = stm32_init( );
+    BoardStatus board_status = board_init( );
 
-    if ( board_status != STM32_OK )
+    if ( board_status != BOARD_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     }
 
 
@@ -177,7 +177,7 @@ int main( void )
     int status = UART_Port6_Init( );
     if ( status != UART_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "UMSATS ROCKETRY FLIGHT COMPUTER", NULL );
@@ -187,7 +187,7 @@ int main( void )
     status = flash_initialize( );
     if ( status != 0 )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Flash ID read successful", NULL );
@@ -196,7 +196,7 @@ int main( void )
     status = memory_manager_init( );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Memory Manager has been set", NULL );
@@ -205,7 +205,7 @@ int main( void )
     status = memory_manager_configure( );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Memory Manager has been configured", NULL );
@@ -214,7 +214,7 @@ int main( void )
     status = pressure_sensor_init( NULL );
     if ( status != PRESS_SENSOR_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Pressure sensor has been set up.", NULL );
@@ -223,7 +223,7 @@ int main( void )
     status = imu_sensor_init( NULL );
     if (status  != IMU_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "IMU sensor has been set up.", NULL );
@@ -232,7 +232,7 @@ int main( void )
     status = flight_controller_initialize( NULL );
     if (status  != FLIGHT_CONTROLLER_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Flight controller has been set up.", NULL );
@@ -241,7 +241,7 @@ int main( void )
     status = memory_manager_start( NULL );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "Memory Manager has been started.", NULL );
@@ -252,7 +252,7 @@ int main( void )
     status = memory_manager_get_system_configurations( &system_configurations );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "System configurations have been extracted", NULL );
@@ -264,7 +264,7 @@ int main( void )
     status = memory_manager_set_system_configurations( &system_configurations );
     if ( status != MEM_OK )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     } else
     {
         DISPLAY_LINE( "System configurations have been extracted", NULL );

@@ -9,7 +9,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <protocols/UART.h>
-#include "stm32/components/flash.h"
+#include "board/components/flash.h"
 
 
 static const char * MAGIC = "e10e720-6fb8-4fc0-8807-6e2201ac6e0d";

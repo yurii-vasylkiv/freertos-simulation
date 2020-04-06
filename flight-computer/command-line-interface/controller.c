@@ -11,7 +11,7 @@
 #include <FreeRTOS_CLI.h>
 
 #include "protocols/UART.h"
-#include "stm32/STM32.h"
+#include "board/board.h"
 #include "core/system_configuration.h"
 
 /* Dimensions the buffer into which input characters are placed. */
@@ -95,7 +95,7 @@ void command_line_interface_start(void *pvParameters)
 {
     if(pdFALSE == xTaskCreate(prv_cli_function, "cli-task", configMINIMAL_STACK_SIZE, NULL, 5, NULL))
     {
-        stm32_error_handler(__FILE__, __LINE__);
+        board_error_handler( __FILE__, __LINE__ );
     }
 }
 

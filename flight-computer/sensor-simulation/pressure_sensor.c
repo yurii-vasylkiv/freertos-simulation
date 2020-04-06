@@ -23,7 +23,7 @@ extern "C" {
 #include "pressure_sensor.h"
 #include <math.h>
 #include <stdbool.h>
-#include <stm32/STM32.h>
+#include <board/board.h>
 
 #include "protocols/SPI.h"
 #include "core/system_configuration.h"
@@ -141,7 +141,7 @@ void pressure_sensor_start( void * pvParameters )
 {
     if ( pdFALSE == xTaskCreate( prv_pressure_sensor_start, "pressure_sensor-task", configMINIMAL_STACK_SIZE, pvParameters, 5, &handle ) )
     {
-        stm32_error_handler( __FILE__, __LINE__ );
+        board_error_handler( __FILE__, __LINE__ );
     }
 }
 

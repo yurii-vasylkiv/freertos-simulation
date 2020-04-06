@@ -1,44 +1,44 @@
-#include "STM32.h"
+#include "board.h"
 #include "hardware_definitions.h"
 
 
-static STM32Status system_clock_config(void);
+static BoardStatus system_clock_config( void);
 static void GPIO_init(void);
 
-STM32Status stm32_init(void)
+BoardStatus board_init( void)
 {
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_StatusTypeDef result = HAL_Init();
     if(result != HAL_OK)
     {
-        return (STM32Status)result;
+        return (BoardStatus)result;
     }
     
     /* Configure the system clock */
-    if(system_clock_config() != STM32_OK)
+    if( system_clock_config() != BOARD_OK)
     {
-        return STM32_SYS_CLOCK_CONFIG_ERROR;
+        return BOARD_SYS_CLOCK_CONFIG_ERROR;
     }
     
     /* Initialize all configured peripherals */
     GPIO_init();
     
-    return STM32_OK;
+    return BOARD_OK;
 }
 
-void stm32_delay(uint32_t ms)
+void board_delay( uint32_t ms)
 {
     HAL_Delay(ms);
 }
 
-void stm32_led_blink(uint32_t ms)
+void board_led_blink( uint32_t ms)
 {
     HAL_GPIO_TogglePin(USR_LED_PORT,USR_LED_PIN);
-    stm32_delay(ms);
+    board_delay( ms );
 }
 
 
-STM32Status system_clock_config(void)
+BoardStatus system_clock_config( void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -60,7 +60,7 @@ STM32Status system_clock_config(void)
     RCC_OscInitStruct.PLL.PLLQ              = 4;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
-        return STM32_SYS_CLOCK_CONFIG_ERROR;
+        return BOARD_SYS_CLOCK_CONFIG_ERROR;
     }
     /**Initializes the CPU, AHB and APB busses clocks
     */
@@ -72,10 +72,10 @@ STM32Status system_clock_config(void)
     
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
     {
-        return STM32_SYS_CLOCK_CONFIG_ERROR;
+        return BOARD_SYS_CLOCK_CONFIG_ERROR;
     }
     
-    return STM32_OK;
+    return BOARD_OK;
 }
 
 
@@ -101,13 +101,13 @@ void GPIO_init(void)
     HAL_GPIO_Init(USR_PB_PORT,&GPIO_InitStruct2);
 }
 
-void stm32_error_handler(const char* file, uint32_t line)
+void board_error_handler( const char* file, uint32_t line)
 {
     /* User can add his own implementation to report the HAL error return state */
     while (1)
     {
         printf("%s:%i:ERROR!\n", file, line);
-        // stm32_led_blink(50);
+        // board_led_blink(50);
     }
 }
 
