@@ -1,7 +1,7 @@
 #ifndef __HAL_PORT_WIN_H
 #define __HAL_PORT_WIN_H
 
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
 

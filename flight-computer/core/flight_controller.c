@@ -5,7 +5,7 @@
 #include "stm32/STM32.h"
 #include "memory-management/memory_manager.h"
 #include "event-detection/event_detector.h"
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)

@@ -19,7 +19,7 @@
 #include "flash.h"
 #include "stm32/hardware_definitions.h"
 #include "protocols/SPI.h"
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 #if (userconf_FLASH_DISK_SIMULATION_ON == 1)
 #include <stdio.h>

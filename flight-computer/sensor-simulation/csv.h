@@ -32,7 +32,7 @@
 #ifndef CSV_H
 #define CSV_H
 
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
 

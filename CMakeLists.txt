@@ -27,15 +27,17 @@ set(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -
 set(CMAKE_CXX_FLAGS "-g -std=c++17 -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
 
 add_library(RTOS_LIB
-        FreeRTOS/Source/portable/MSVC-MingW/port.c
-        FreeRTOS/Source/portable/MemMang/heap_1.c
-        FreeRTOS/Source/croutine.c
-        FreeRTOS/Source/event_groups.c
-        FreeRTOS/Source/list.c
-        FreeRTOS/Source/queue.c
-        FreeRTOS/Source/tasks.c
-        FreeRTOS/Source/timers.c
-        FreeRTOS/Source/event_groups.c)
+        os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
+        os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
+        os-kernel/FreeRTOS/Source/croutine.c
+        os-kernel/FreeRTOS/Source/event_groups.c
+        os-kernel/FreeRTOS/Source/list.c
+        os-kernel/FreeRTOS/Source/queue.c
+        os-kernel/FreeRTOS/Source/tasks.c
+        os-kernel/FreeRTOS/Source/timers.c
+        os-kernel/FreeRTOS/Source/event_groups.c
+        os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+        os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c)
 
 file(GLOB_RECURSE USER_SRC "flight-computer/*.c" "flight-computer/*.c" "flight-computer/*.cpp" "flight-computer/memory-management/*.c" "flight-computer/event-detection/*.c")
 file(GLOB_RECURSE CLI_SRC "FreeRTOS-Plus-CLI/*.c")
@@ -50,10 +52,10 @@ add_definitions(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
 set(CXX_SRC flight-computer/sensor-simulation/csv.h flight-computer/sensor-simulation/datafeeder.cpp)
 
 include_directories(cxx)
-include_directories(Configs)
-include_directories(FreeRTOS/Source/include)
-include_directories(FreeRTOS/Source/portable/MSVC-MingW)
-include_directories(FreeRTOS-Plus-CLI)
+include_directories(configurations)
+include_directories(os-kernel/FreeRTOS/Source/include)
+include_directories(os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
+include_directories(os-kernel/FreeRTOS-Plus-CLI)
 include_directories(flight-computer)
 include_directories(.)
 

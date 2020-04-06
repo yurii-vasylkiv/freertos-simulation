@@ -2,7 +2,7 @@
 #define __DATA_FEEDER_H
 
 #include <inttypes.h>
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 #ifdef __cplusplus
 extern "C" {

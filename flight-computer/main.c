@@ -126,7 +126,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 #include <stddef.h>
 #include <stdio.h>
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 #include "memory-management/memory_manager.h"
 
 #include "stm32/STM32.h"
@@ -137,7 +137,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 #include "core/system_configuration.h"
 #include "stm32/components/recovery.h"
 #include "core/flight_controller.h"
-#include "FreeRTOS.h"
+#include "command-line-interface/controller.h"
 
 /* Kernel includes. */
 #include "FreeRTOS.h"

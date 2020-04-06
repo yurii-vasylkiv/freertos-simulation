@@ -3,7 +3,7 @@
 #include <math.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include "UserConfig.h"
+#include "configurations/UserConfig.h"
 
 #include "protocols/UART.h"
 #include "data_window.h"
