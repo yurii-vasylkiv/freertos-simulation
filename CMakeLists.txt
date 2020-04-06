@@ -15,12 +15,10 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 add_definitions(-DSTM32F401xE)
-add_definitions(-DCOTS_DATA)
 
 add_definitions(-DUSE_HAL_DRIVER)
 add_definitions("-D__weak=__attribute__((weak))")
 add_definitions("-D__packed=__attribute__((__packed__))")
-
 
 #CMAKE_FORCE_C_COMPILER  (gcc)   # absolute path needs to be set accordingly
 #CMAKE_FORCE_CXX_COMPILER(g++)   # absolute path needs to be set accordingly
@@ -39,18 +37,24 @@ add_library(RTOS_LIB
         FreeRTOS/Source/timers.c
         FreeRTOS/Source/event_groups.c)
 
-file(GLOB_RECURSE USER_SRC "rtos_test/*.c" "rtos_test/*.cpp" "rtos_test/memory_management/*.c" "rtos_test/events/*.c")
+file(GLOB_RECURSE USER_SRC "flight-computer/*.c" "flight-computer/*.c" "flight-computer/*.cpp" "flight-computer/memory-management/*.c" "flight-computer/event-detection/*.c")
 file(GLOB_RECURSE CLI_SRC "FreeRTOS-Plus-CLI/*.c")
 
-file(GLOB_RECURSE CXX_SRC "cxx/*.cpp")
-#add_library(CXX SHARED ${CXX_SRC})
+
+file(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sensor_simulation/srad_flight.data.csv")
+file(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sensor_simulation/cots_flight.data.csv")
+
+add_definitions(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
+add_definitions(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
+
+set(CXX_SRC flight-computer/sensor_simulation/csv.h flight-computer/sensor_simulation/datafeeder.cpp)
 
 include_directories(cxx)
 include_directories(Configs)
 include_directories(FreeRTOS/Source/include)
 include_directories(FreeRTOS/Source/portable/MSVC-MingW)
 include_directories(FreeRTOS-Plus-CLI)
-include_directories(rtos_test)
+include_directories(flight-computer)
 include_directories(.)
 
 add_executable(${PROJECT_NAME}.elf ${USER_SRC} ${CLI_SRC} ${CXX_SRC})
