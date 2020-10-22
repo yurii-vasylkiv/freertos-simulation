@@ -148,6 +148,7 @@ static void prv_flight_controller_task(void * pvParams)
             seconds++;
             DISPLAY( "Flight Time: %d sec \n", seconds);
             last_time = (xTaskGetTickCount() - start_time);
+            // DISPLAY("CURRENT_ALTITUDE = %f\n", event_detector_current_altitude())
         }
     }
 

@@ -5,8 +5,6 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-
-
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage")
 
 # Add -O0 to remove optimizations when using gcc
@@ -15,7 +13,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-option(COMPILE_IN_SIMULATION_MODE "Indicates whether to include Google Cloud Speech Service into the project" ON)
+option(COMPILE_IN_SIMULATION_MODE "Indicates whether the build needs to be built against WinOS or RTOS" ON)
 
 add_definitions(-DSTM32F401xE)
 add_definitions(-DUSE_HAL_DRIVER)
@@ -23,6 +21,8 @@ add_definitions("-D__weak=__attribute__((weak))")
 add_definitions("-D__packed=__attribute__((__packed__))")
 
 IF(COMPILE_IN_SIMULATION_MODE)
+    message(STATUS "Selected WinOS BUILD with MINGW build tools")
+
     set(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
     set(CMAKE_CXX_FLAGS "-g -std=c++17 -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
 
@@ -60,7 +60,7 @@ IF(COMPILE_IN_SIMULATION_MODE)
             )
 
 ELSE()
-
+    message(STATUS "Selected ARM BUILD with ARM-Build tools")
     find_package (Python 3.0 REQUIRED)
     execute_process(COMMAND python generator.py WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 

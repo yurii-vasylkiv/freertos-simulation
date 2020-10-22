@@ -8,7 +8,7 @@
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
     #define userconf_FLASH_DISK_SIMULATION_ON               1
-    #define userconf_USE_COTS_DATA                          0
+    #define userconf_USE_COTS_DATA                          1
 #endif
 
 
