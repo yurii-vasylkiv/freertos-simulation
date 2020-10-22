@@ -13,14 +13,14 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-option(COMPILE_IN_SIMULATION_MODE "Indicates whether the build needs to be built against WinOS or RTOS" ON)
+option(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
 
 add_definitions(-DSTM32F401xE)
 add_definitions(-DUSE_HAL_DRIVER)
 add_definitions("-D__weak=__attribute__((weak))")
 add_definitions("-D__packed=__attribute__((__packed__))")
 
-IF(COMPILE_IN_SIMULATION_MODE)
+IF(BUILD_FOR_SIM_ON_WIN_OS)
     message(STATUS "Selected WinOS BUILD with MINGW build tools")
 
     set(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
@@ -173,7 +173,7 @@ set(USER_SRC                # Board
 
 
 
-IF(COMPILE_IN_SIMULATION_MODE)
+IF(BUILD_FOR_SIM_ON_WIN_OS)
     add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${CXX_SRC} ${SIM_PORT_SRC})
     target_link_libraries(RTOS_LIB pthread winmm ws2_32)
 ELSE()
@@ -194,7 +194,7 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMENT "Building ${HEX_FILE} \nBuilding ${BIN_FILE}")
 
 
-IF(COMPILE_IN_SIMULATION_MODE)
+IF(BUILD_FOR_SIM_ON_WIN_OS)
 ELSE()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.map")
 
