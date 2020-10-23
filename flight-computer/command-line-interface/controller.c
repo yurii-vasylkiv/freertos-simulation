@@ -130,6 +130,12 @@ static const CLI_Command_Definition_t xMemoryCommand =
         "\r\nmem:\r\n "
         "Checks on and erases the on-board flash memory.\r\n"
         "Usage:\r\n "
+        "[read_imu_index]           - Read IMU entry with a specified index.\r\n "
+        "[read_press_index]         - Read Pressure entry with a specified index.\r\n "
+        "[read_cont_index]          - Read Continuity Status entry with a specified index.\r\n "
+        "[read_flight_event_index]  - Read Flight Event entry with a specified index.\r\n "
+        "[read_configuration]       - Read Configuration entry.\r\n "
+
         "[read]                     - Read 256 bytes (hex address 0-7FFFFF).\r\n "
         "[scan]                     - Scan Memory\r\n "
         "[erase_data_section]       - Erase data section\r\n "
@@ -190,6 +196,9 @@ void prv_cli_function(void * pvParams)
 
 //    int comm_index = 0;
 //    char commands[10][256] = {
+//            "mem read_cont_index=456",
+//            "mem read_press_index=1",
+//            "mem read_press_index=2",
 //            "help",
 //             "configure set_data_rate=100 set_accel_range=6 set_gyro_bw=1 set_temp_os=32" ,
 //             "configure set_data_rate=100" ,
@@ -208,7 +217,6 @@ void prv_cli_function(void * pvParams)
         INPUT(cInputString);
 //        memcpy(cInputString, commands[comm_index], strlen(commands[comm_index]));
 //        comm_index++;
-
 //        if(comm_index ==8)
 //            comm_index = 0;
 

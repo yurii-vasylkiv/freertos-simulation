@@ -10,9 +10,9 @@ else()
 endif()
 
 
-OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
 
-#ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
+ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 
 IF(BUILD_FOR_SIM_ON_WIN_OS)
     MESSAGE(STATUS "Selected WinOS BUILD with MINGW build tools")

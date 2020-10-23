@@ -241,7 +241,7 @@ int main( void )
         DEBUG_LINE( "Memory Manager has been started.", NULL );
     }
 
-    flight_controller_start ( NULL );
+//    flight_controller_start ( NULL );
 
     command_line_interface_start( NULL );
 

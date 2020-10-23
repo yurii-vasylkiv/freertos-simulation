@@ -7,7 +7,7 @@
 typedef union
 {
     struct{
-        float timestamp;
+        uint32_t timestamp;
         float accelerometer [ 3 ];
         float gyroscope     [ 3 ];
     };
@@ -204,5 +204,13 @@ MemoryStatus memory_manager_get_system_configurations(FlightSystemConfiguration 
 MemoryStatus memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
 MemoryStatus memory_manager_set_system_configurations(FlightSystemConfiguration  * systemConfiguration);
 MemoryStatus memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
+
+MemoryStatus memory_manager_get_single_pressure_entry(PressureDataU * dst, uint32_t entry_index );
+MemoryStatus memory_manager_get_single_imu_entry(IMUDataU * dst, uint32_t entry_index );
+MemoryStatus memory_manager_get_single_cont_entry(ContinuityU * dst, uint32_t entry_index );
+MemoryStatus memory_manager_get_single_flight_event_entry(FlightEventU * dst, uint32_t entry_index );
+MemoryStatus memory_manager_get_single_configuration_entry(ConfigurationU * dst, uint32_t entry_index );
+
+
 
 #endif //MEMORY_MANAGER_MEMORY_MANAGER_H

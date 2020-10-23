@@ -22,8 +22,11 @@ static const char * MAGIC = "e10e720-6fb8-4fc0-8807-6e2201ac6e0d";
 #define IMU_ALIGNED_PAGE_SIZE                           trunc( (PAGE_SIZE / sizeof ( IMUDataU  ) ) *  sizeof ( IMUDataU ) )
 #define PRESS_ALIGNED_PAGE_SIZE                         trunc( (PAGE_SIZE / sizeof ( PressureU ) ) *  sizeof ( IMUDataU ) )
 
-#define IMU_MEASUREMENTS_PER_PAGE                       ( (int) (PAGE_SIZE / sizeof (IMUDataU) ) )
-#define PRESS_MEASUREMENTS_PER_PAGE                     ( (int) (PAGE_SIZE / sizeof (PressureDataU) ) )
+#define IMU_ENTRIES_PER_PAGE                       ( (int) (PAGE_SIZE / sizeof (IMUDataU) ) )
+#define PRESS_ENTRIES_PER_PAGE                     ( (int) (PAGE_SIZE / sizeof (PressureDataU) ) )
+#define CONT_ENTRIES_PER_PAGE                      ( (int) (PAGE_SIZE / sizeof (ContinuityU) ) )
+#define FLIGHT_EVENT_ENTRIES_PER_PAGE              ( (int) (PAGE_SIZE / sizeof (FlightEventU) ) )
+#define CONFIGURATION_ENTRIES_PER_PAGE             ( (int) (PAGE_SIZE / sizeof (ConfigurationU) ) )
 
 
 static ConfigurationU configurations                    = { };
@@ -53,14 +56,11 @@ static void _access_page_of_imu_measurements( uint32_t pageIndex );
 
 static void _access_page_of_pressure_measurements( uint32_t pageIndex );
 
-static void _access_single_pressure_measurement( uint32_t measurement_index );
-
-static void _access_single_imu_measurement( uint32_t measurement_index );
-
 static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest );
 
 static void _append_page( Sector sector, uint8_t * data );
 
+static MemoryStatus _access_single_entry(void * dst, uint8_t sector, uint32_t index );
 
 
 
@@ -97,7 +97,7 @@ MemoryStatus memory_manager_configure( )
         return MEM_ERR;
     }
 
-    if ( _read_configurations_from_flash( &configurations ) != 0 )
+    if ( MEM_OK != _read_configurations_from_flash( &configurations ) )
     {
         return MEM_ERR;
     }
@@ -183,7 +183,7 @@ MemoryStatus _read_configurations_from_flash( ConfigurationU * conf_container )
     if ( configuration_pages == 0 )
     {
         MemoryBuffer page = { };
-        if ( _access_page( Conf, 0, page.data ) != 0 )
+        if ( MEM_OK != _access_page( Conf, 0, page.data ) )
         {
             return MEM_ERR;
         }
@@ -480,63 +480,113 @@ static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * d
     uint32_t OFFSET;
     if ( sector != Conf )
     {
-        assert( PAGE_SIZE * pageIndex <= dataSectors[ sector ].info.bytesWritten );
+        if ( PAGE_SIZE * pageIndex > dataSectors[ sector ].info.bytesWritten )
+        {
+            return MEM_ERR;
+        }
 
         OFFSET = dataSectors[ sector ].info.startAddress + pageIndex * PAGE_SIZE;
     } else
     {
-        assert( PAGE_SIZE * pageIndex <= confSector.info.bytesWritten );
+        if ( PAGE_SIZE * pageIndex > confSector.info.bytesWritten )
+        {
+            return MEM_ERR;
+        }
 
         OFFSET = confSector.info.startAddress + pageIndex * PAGE_SIZE;
     }
 
     int32_t bytesRead = flash_read( OFFSET, dest, PAGE_SIZE );
 
-    assert( bytesRead == PAGE_SIZE );
+    if ( bytesRead != PAGE_SIZE )
+    {
+        return MEM_ERR;
+    }
 
     return MEM_OK;
 }
 
 
-
-void _access_single_imu_measurement( uint32_t measurement_index )
+MemoryStatus _access_single_entry(void * dst, uint8_t sector, uint32_t index )
 {
-    assert( PAGE_SIZE * trunc( ( double ) measurement_index / IMU_MEASUREMENTS_PER_PAGE ) <=
-            dataSectors[ IMU ].info.bytesWritten );
+    uint8_t entries_per_page = 0;
+    uint8_t struct_size      = 0;
 
-    MemoryBuffer buffer;
+    switch (sector)
+    {
+        case IMU:
+            entries_per_page = IMU_ENTRIES_PER_PAGE;
+            struct_size = sizeof( IMUDataU );
+            break;
+        case Pressure:
+            entries_per_page = PRESS_ENTRIES_PER_PAGE;
+            struct_size = sizeof( PressureDataU );
+            break;
+        case Cont:
+            entries_per_page = CONT_ENTRIES_PER_PAGE;
+            struct_size = sizeof( ContinuityU );
+            break;
+        case Event:
+            entries_per_page = FLIGHT_EVENT_ENTRIES_PER_PAGE;
+            struct_size = sizeof( FlightEventU );
+            break;
+        case Conf:
+            entries_per_page = CONFIGURATION_ENTRIES_PER_PAGE;
+            struct_size = sizeof( ConfigurationU );
+            break;
+    }
 
-    uint32_t pageIndex = ceil( ( double ) measurement_index / IMU_MEASUREMENTS_PER_PAGE );
+    if( PAGE_SIZE * trunc(( double ) index / IMU_ENTRIES_PER_PAGE ) > dataSectors[ sector ].info.bytesWritten )
+    {
+        return MEM_ERR;
+    }
 
-    _access_page( IMU, pageIndex, buffer.data );
+    if(dst == NULL)
+    {
+        return MEM_ERR;
+    }
 
-    measurement_index -= pageIndex * IMU_MEASUREMENTS_PER_PAGE;
+    MemoryBuffer buffer = {};
 
-    IMUDataU data;
+    uint32_t pageIndex = ceil (( double ) index / entries_per_page );
 
-    memcpy( &data, &buffer.data[ measurement_index ], sizeof( IMUDataU ) );
+    if (MEM_OK != _access_page( sector, pageIndex, buffer.data ))
+    {
+        return MEM_ERR;
+    }
+
+    index = (pageIndex * entries_per_page ) - index ;
+
+    memcpy( dst, &buffer.data [ index ], struct_size );
+
+    return MEM_OK;
 }
 
 
-
-void _access_single_pressure_measurement( uint32_t measurement_index )
+MemoryStatus memory_manager_get_single_pressure_entry(PressureDataU * dst, uint32_t entry_index )
 {
-    assert( PAGE_SIZE * trunc( ( double ) measurement_index / PRESS_MEASUREMENTS_PER_PAGE ) <=
-            dataSectors[ Pressure ].info.bytesWritten );
-
-    MemoryBuffer buffer;
-
-    uint32_t pageIndex = ceil( ( double ) measurement_index / PRESS_MEASUREMENTS_PER_PAGE );
-
-    _access_page( Pressure, pageIndex, buffer.data );
-
-    measurement_index -= pageIndex * PRESS_MEASUREMENTS_PER_PAGE;
-
-    PressureDataU data;
-
-    memcpy( &data, &buffer.data[ measurement_index ], sizeof( PressureDataU ) );
+    return _access_single_entry(dst, Pressure, entry_index);
 }
 
+MemoryStatus memory_manager_get_single_imu_entry(IMUDataU * dst, uint32_t entry_index )
+{
+    return _access_single_entry(dst, IMU, entry_index);
+}
+
+MemoryStatus memory_manager_get_single_cont_entry(ContinuityU * dst, uint32_t measurement_index )
+{
+    return _access_single_entry(dst, Cont, measurement_index);
+}
+
+MemoryStatus memory_manager_get_single_flight_event_entry(FlightEventU * dst, uint32_t measurement_index )
+{
+    return _access_single_entry(dst, Event, measurement_index);
+}
+
+MemoryStatus memory_manager_get_single_configuration_entry(ConfigurationU * dst, uint32_t measurement_index )
+{
+    return _access_single_entry(dst, Conf, measurement_index);
+}
 
 
 void _access_page_of_pressure_measurements( uint32_t pageIndex )
@@ -545,13 +595,13 @@ void _access_page_of_pressure_measurements( uint32_t pageIndex )
 
     MemoryBuffer buffer = { };
 
-    PressureDataU pressureMeasurements[PRESS_MEASUREMENTS_PER_PAGE];
+    PressureDataU pressureMeasurements[PRESS_ENTRIES_PER_PAGE];
 
     _access_page( Pressure, pageIndex, buffer.data );
 
     memcpy( &pressureMeasurements[ 0 ], &buffer.data[ 0 ], sizeof( PressureDataU ) );
 
-    for ( uint32_t i = 1 ; i < PRESS_MEASUREMENTS_PER_PAGE ; i++ )
+    for (uint32_t i = 1 ; i < PRESS_ENTRIES_PER_PAGE ; i++ )
     {
         memcpy( &pressureMeasurements[ i ], &buffer.data[ i * sizeof( PressureDataU ) ], sizeof( PressureDataU ) );
     }
@@ -565,13 +615,13 @@ void _access_page_of_imu_measurements( uint32_t pageIndex )
 
     MemoryBuffer buffer;
 
-    IMUDataU imuMeasurements[IMU_MEASUREMENTS_PER_PAGE] = { };
+    IMUDataU imuMeasurements[IMU_ENTRIES_PER_PAGE] = { };
 
     _access_page( IMU, pageIndex, buffer.data );
 
     memcpy( &imuMeasurements[ 0 ], &buffer.data[ 0 ], sizeof( IMUDataU ) );
 
-    for ( uint32_t i = 1 ; i < IMU_MEASUREMENTS_PER_PAGE ; i++ )
+    for (uint32_t i = 1 ; i < IMU_ENTRIES_PER_PAGE ; i++ )
     {
         memcpy( &imuMeasurements[ i ], &buffer.data[ i * sizeof( IMUDataU ) ], sizeof( IMUDataU ) );
     }
@@ -602,22 +652,22 @@ void _queue_monitor_task( void * arg )
             switch ( item.type )
             {
                 case IMU:
-//                    printf( "Monitor: IMU was flushed!\n" );
+                    printf( "Monitor: IMU was flushed!\n" );
                     break;
                 case Pressure:
-//                    printf( "Monitor: Pressure was flushed!\n" );
+                    printf( "Monitor: Pressure was flushed!\n" );
                     break;
                 case Cont:
-//                    printf( "Monitor: Cont was flushed!\n" );
+                    printf( "Monitor: Cont was flushed!\n" );
                     break;
                 case Event:
-//                    printf( "Monitor: Event was flushed!\n" );
+                    printf( "Monitor: Event was flushed!\n" );
                     break;
                 case Conf:
-//                    printf( "Monitor: Configuration was flushed!\n" );
+                    printf( "Monitor: Configuration was flushed!\n" );
                     break;
                 default:
-//                    printf( "Monitor: Wrong type! Wtf?\n" );
+                    printf( "Monitor: Wrong type! Wtf?\n" );
                     break;
             }
         }
