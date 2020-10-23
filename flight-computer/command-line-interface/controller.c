@@ -135,7 +135,7 @@ static const CLI_Command_Definition_t xMemoryCommand =
         "[read_cont_index]          - Read Continuity Status entry with a specified index.\r\n "
         "[read_flight_event_index]  - Read Flight Event entry with a specified index.\r\n "
         "[read_configuration]       - Read Configuration entry.\r\n "
-
+        "[stats]                    - List Data Sections and show their info.\r\n "
         "[read]                     - Read 256 bytes (hex address 0-7FFFFF).\r\n "
         "[scan]                     - Scan Memory\r\n "
         "[erase_data_section]       - Erase data section\r\n "
@@ -196,7 +196,7 @@ void prv_cli_function(void * pvParams)
 
 //    int comm_index = 0;
 //    char commands[10][256] = {
-//            "mem read_cont_index=456",
+//            "mem stats",
 //            "mem read_press_index=1",
 //            "mem read_press_index=2",
 //            "help",

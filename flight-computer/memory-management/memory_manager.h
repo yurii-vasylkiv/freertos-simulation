@@ -39,7 +39,7 @@ typedef union
         float pressure;
         float temperature;
     };
-    uint8_t bytes[sizeof(float)    * 1 +
+    uint8_t bytes[sizeof(uint32_t) * 1 +
                   sizeof(float)    * 1 +
                   sizeof(float)    * 1
     ];
@@ -63,7 +63,7 @@ typedef union
         uint32_t timestamp;
         ContinuityStatus status;
     };
-    uint8_t bytes[sizeof(float) * 1 +
+    uint8_t bytes[sizeof(uint32_t) * 1 +
                   sizeof(uint8_t ) * 1
     ];
 } ContinuityU;
@@ -191,6 +191,12 @@ typedef union
 } ConfigurationU;
 
 
+typedef struct
+{
+    ConfigurationU configuration;
+} MemoryManagerStatistics;
+
+
 MemoryStatus memory_manager_init();
 MemoryStatus memory_manager_configure();
 MemoryStatus memory_manager_update(Data * _container);
@@ -210,6 +216,8 @@ MemoryStatus memory_manager_get_single_imu_entry(IMUDataU * dst, uint32_t entry_
 MemoryStatus memory_manager_get_single_cont_entry(ContinuityU * dst, uint32_t entry_index );
 MemoryStatus memory_manager_get_single_flight_event_entry(FlightEventU * dst, uint32_t entry_index );
 MemoryStatus memory_manager_get_single_configuration_entry(ConfigurationU * dst, uint32_t entry_index );
+
+MemoryStatus memory_manager_get_stats( void );
 
 
 

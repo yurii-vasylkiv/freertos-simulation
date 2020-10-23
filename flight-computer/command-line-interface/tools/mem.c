@@ -24,6 +24,7 @@ static bool cli_tools_mem_read_press_index               (char* pcWriteBuffer, s
 static bool cli_tools_mem_read_cont_index                (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg);
 static bool cli_tools_mem_read_flight_event_index        (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg);
 static bool cli_tools_mem_read_configuration_index       (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg);
+static bool cli_tools_mem_stats                          (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg);
 
 
 bool cli_tools_mem (char *pcWriteBuffer, size_t xWriteBufferLen, const char * cmd_option, const char * str_option_arg)
@@ -48,6 +49,9 @@ bool cli_tools_mem (char *pcWriteBuffer, size_t xWriteBufferLen, const char * cm
 
     if (strcmp(cmd_option, "read_configuration") == 0)
         return cli_tools_mem_read_configuration_index(pcWriteBuffer, xWriteBufferLen, "0");
+
+    if (strcmp(cmd_option, "stats") == 0)
+        return cli_tools_mem_stats(pcWriteBuffer, xWriteBufferLen, NULL);
 
     if (strcmp(cmd_option, "read") == 0)
         return cli_tools_mem_read(pcWriteBuffer, xWriteBufferLen, NULL);
@@ -394,5 +398,19 @@ static bool cli_tools_mem_read_configuration_index (char* pcWriteBuffer, size_t 
     return false;
 }
 
+
+static bool cli_tools_mem_stats (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+{
+    const char * cmd_option = "stats";
+    uint32_t value = atoi(str_option_arg);
+    if ( MEM_OK != memory_manager_get_stats() )
+    {
+        sprintf(pcWriteBuffer, "Success!\n");
+        return true;
+    }
+
+    sprintf(pcWriteBuffer, "Failure!\n");
+    return false;
+}
 
 

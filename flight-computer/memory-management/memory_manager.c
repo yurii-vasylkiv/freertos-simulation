@@ -8,7 +8,8 @@
 #include <math.h>
 #include <FreeRTOS.h>
 #include <task.h>
-#include <protocols/UART.h>
+#include "protocols/UART.h"
+#include "utilities/common.h"
 #include "board/components/flash.h"
 
 
@@ -23,8 +24,8 @@ static const char * MAGIC = "e10e720-6fb8-4fc0-8807-6e2201ac6e0d";
 #define PRESS_ALIGNED_PAGE_SIZE                         trunc( (PAGE_SIZE / sizeof ( PressureU ) ) *  sizeof ( IMUDataU ) )
 
 #define IMU_ENTRIES_PER_PAGE                       ( (int) (PAGE_SIZE / sizeof (IMUDataU) ) )
-#define PRESS_ENTRIES_PER_PAGE                     ( (int) (PAGE_SIZE / sizeof (PressureDataU) ) )
-#define CONT_ENTRIES_PER_PAGE                      ( (int) (PAGE_SIZE / sizeof (ContinuityU) ) )
+#define PRESSURE_ENTRIES_PER_PAGE                  ( (int) (PAGE_SIZE / sizeof (PressureDataU) ) )
+#define CONTINUITY_ENTRIES_PER_PAGE                ( (int) (PAGE_SIZE / sizeof (ContinuityU) ) )
 #define FLIGHT_EVENT_ENTRIES_PER_PAGE              ( (int) (PAGE_SIZE / sizeof (FlightEventU) ) )
 #define CONFIGURATION_ENTRIES_PER_PAGE             ( (int) (PAGE_SIZE / sizeof (ConfigurationU) ) )
 
@@ -39,6 +40,9 @@ static size_t s_configurations_autosave_interval_tick   = { 0 };
 static xTaskHandle handle                               = { 0 };
 
 
+static uint32_t _get_entries_page_for_sector(uint8_t sector);
+
+static uint32_t _get_size_for_sector_data_struct(uint8_t sector);
 
 static MemoryStatus _add_data( Sector sector, uint8_t * buffer, size_t size );
 
@@ -519,11 +523,11 @@ MemoryStatus _access_single_entry(void * dst, uint8_t sector, uint32_t index )
             struct_size = sizeof( IMUDataU );
             break;
         case Pressure:
-            entries_per_page = PRESS_ENTRIES_PER_PAGE;
+            entries_per_page = PRESSURE_ENTRIES_PER_PAGE;
             struct_size = sizeof( PressureDataU );
             break;
         case Cont:
-            entries_per_page = CONT_ENTRIES_PER_PAGE;
+            entries_per_page = CONTINUITY_ENTRIES_PER_PAGE;
             struct_size = sizeof( ContinuityU );
             break;
         case Event:
@@ -588,6 +592,53 @@ MemoryStatus memory_manager_get_single_configuration_entry(ConfigurationU * dst,
     return _access_single_entry(dst, Conf, measurement_index);
 }
 
+MemoryStatus memory_manager_get_stats ( void )
+{
+    printf ("\n----- Memory Statistics -----\n");
+    printf ("magic: %s\n", configurations.magic);
+    printf ("Data Sectors: ");
+
+    for ( Sector sector = IMU ; sector < SectorsCount ; sector++ )
+    {
+        printf("%i,", sector);
+    }
+
+    printf ("\n");
+
+    for ( Sector sector = IMU ; sector < SectorsCount ; sector++ )
+    {
+        printf("Sector #%i:\n", sector);
+        printf ("--------------------\n");
+        printf( " size:            %i\n", dataSectors[ sector ].info.size );
+        printf( " begin:           %i\n", dataSectors[ sector ].info.startAddress );
+        printf( " end:             %i\n", dataSectors[ sector ].info.endAddress );
+        printf( " size on disk:    %i\n", dataSectors[ sector ].info.bytesWritten );
+        printf( " pages on disk:   %i\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE );
+        printf( " entries on disk: %i\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE * _get_entries_page_for_sector(sector));
+
+//        uint8_t dst [_get_size_for_sector_data_struct(sector)];
+//        memset(dst, 0, _get_size_for_sector_data_struct(sector));
+//
+//        if( MEM_OK != _access_single_entry(&dst, sector, 1) )
+//        {
+//            return MEM_ERR;
+//        }
+//        printf( " first timestamp: %i\n", common_read_32(&dst[0]));
+//
+//        memset(dst, 0, _get_size_for_sector_data_struct(sector));
+//        uint32_t last_index = ( dataSectors[ sector ].info.bytesWritten / PAGE_SIZE * _get_entries_page_for_sector(sector) ) - 1;
+//        if( MEM_OK != _access_single_entry(&dst, sector, last_index) )
+//        {
+//            return MEM_ERR;
+//        }
+//
+//        printf( " last timestamp:  %i\n", common_read_32(&dst[0]));
+        printf ("--------------------\n");
+    }
+
+    return MEM_OK;
+}
+
 
 void _access_page_of_pressure_measurements( uint32_t pageIndex )
 {
@@ -595,13 +646,13 @@ void _access_page_of_pressure_measurements( uint32_t pageIndex )
 
     MemoryBuffer buffer = { };
 
-    PressureDataU pressureMeasurements[PRESS_ENTRIES_PER_PAGE];
+    PressureDataU pressureMeasurements[PRESSURE_ENTRIES_PER_PAGE];
 
     _access_page( Pressure, pageIndex, buffer.data );
 
     memcpy( &pressureMeasurements[ 0 ], &buffer.data[ 0 ], sizeof( PressureDataU ) );
 
-    for (uint32_t i = 1 ; i < PRESS_ENTRIES_PER_PAGE ; i++ )
+    for (uint32_t i = 1 ; i < PRESSURE_ENTRIES_PER_PAGE ; i++ )
     {
         memcpy( &pressureMeasurements[ i ], &buffer.data[ i * sizeof( PressureDataU ) ], sizeof( PressureDataU ) );
     }
@@ -675,5 +726,48 @@ void _queue_monitor_task( void * arg )
 
     DISPLAY_LINE("monitor EXITED!", NULL);
 
+}
+
+
+static uint32_t _get_entries_page_for_sector(uint8_t sector)
+{
+    switch (sector)
+    {
+        case IMU:
+            return IMU_ENTRIES_PER_PAGE;
+            break;
+        case Pressure:
+            return PRESSURE_ENTRIES_PER_PAGE;
+        case Cont:
+            return CONTINUITY_ENTRIES_PER_PAGE;
+            break;
+        case Event:
+            return FLIGHT_EVENT_ENTRIES_PER_PAGE;
+            break;
+        case Conf:
+            return CONFIGURATION_ENTRIES_PER_PAGE;
+            break;
+    }
+}
+
+static uint32_t _get_size_for_sector_data_struct(uint8_t sector)
+{
+    switch (sector)
+    {
+        case IMU:
+            return sizeof(IMUDataU);
+            break;
+        case Pressure:
+            return sizeof(PressureDataU);
+        case Cont:
+            return sizeof(ContinuityU);
+            break;
+        case Event:
+            return sizeof(FlightEventU);
+            break;
+        case Conf:
+            return sizeof(ConfigurationU);
+            break;
+    }
 }
 
