@@ -16,26 +16,18 @@
 
 #include <inttypes.h>
 
-//Defaults for the configuration options.
-#define ID                              0x5A
-
-#define DATA_RATE                       50
-#define INITIAL_WAIT_TIME               10000       // in milliseconds
-#define FLAGS                           0x00        // default not in flight, not recording.
-#define DATA_START_ADDRESS              0x00001000  // Start writing to second page of memory.
-#define DATA_END_ADDRESS                0x00001000  // Assume no saved data.
+#include "board/components/imu_sensor.h"
+#include "board/components/pressure_sensor.h"
 
 
+// Defaults for the configuration options.
+#define ID                                          0x5A
 
-#define GND_ALT                         0
-#define GND_PRES                        101325
+#define DATA_RATE                                   50
+#define INITIAL_WAIT_TIME                           10000       // in milliseconds
 
-//Macros to get flags.
-#define CONFIGURATION_IS_IN_FLIGHT(x)   ((x>>0)&0x01)
-#define CONFIGURATION_IS_RECORDING(x)   ((x>>1)&0x01)
-#define CONFIGURATION_IS_PRE_DROGUE(x)  ((x>>2)&0x01)
-#define CONFIGURATION_IS_POST_DROGUE(x) ((x>>3)&0x01)
-#define CONFIGURATION_IS_POST_MAIN(x)   ((x>>4)&0x01)
+#define GND_ALT                                     0
+#define GND_PRES                                    101325
 
 
 typedef struct
@@ -47,6 +39,8 @@ typedef struct
     uint32_t backup_time_main_to_ground_sec;          // -
 
     uint32_t ground_pressure;                         // -
+    uint32_t ground_temperature;                      // -
+
     uint32_t current_system_time;                     // -
     uint16_t altitude_main_recovery_m;                // -
 
@@ -55,13 +49,40 @@ typedef struct
     uint8_t launch_acceleration_critical_value_m_s2;  // -
     uint8_t e_match_line_keep_active_for;             // -
 
-    uint8_t imu_data_needs_to_converted;
-    uint8_t pressure_data_needs_to_converted;
+    uint8_t imu_data_needs_to_be_converted;
+    uint8_t pressure_data_needs_to_be_converted;
 
+    IMUSensorConfiguration      imu_sensor_configuration;
+    PressureSensorConfiguration pressure_sensor_configuration;
 
 } FlightSystemConfiguration;
 
+typedef union
+{
+    struct{
+        FlightSystemConfiguration values;
+    };
+    uint8_t bytes[sizeof(FlightSystemConfiguration)];
+} FlightSystemConfigurationU;
 
+// to be removed
+typedef struct
+{
+    uint8_t     id;
+    uint32_t    initial_time_to_wait;
+    uint8_t     data_rate;
+    uint8_t     flags;
+    uint32_t    start_data_address;
+    uint32_t    end_data_address;
+
+
+
+
+    float       ref_alt;
+    float       ref_pres;
+
+    uint8_t     state;
+}configuration_data_values;
 
 
 #endif // CONFIGURATION_H

@@ -2044,7 +2044,7 @@ static inline HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_
 
 static inline HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)
 {
-	printf("%s", pData);
+    printf("%s", pData);
 	fflush(stdout);
 	return HAL_OK;
 }

@@ -8,44 +8,68 @@ extern "C" {
 
 #include <inttypes.h>
 #include <stdbool.h>
-#include "core/system_configuration.h"
 #include "protocols/UART.h"
 
 
-#define PRES_LENGTH         3   //Length of a pressure measurement in bytes.
-#define TEMP_LENGTH         3   //Length of a temperature measurement in bytes.
+#define PRES_LENGTH         3   // Length of a pressure measurement in bytes.
+#define TEMP_LENGTH         3   // Length of a temperature measurement in bytes.
 #define ALT_LENGTH          4
 #define TIMEOUT             100 // milliseconds
+
+
+
+typedef struct pressure_sensor_configuration
+{
+
+    uint8_t     output_data_rate;
+    uint8_t     temperature_oversampling;
+    uint8_t     pressure_oversampling;
+    uint8_t     infinite_impulse_response_filter_coefficient;
+
+} PressureSensorConfiguration;
+
+
+typedef union
+{
+    struct{
+        PressureSensorConfiguration values;
+    };
+    uint8_t bytes[sizeof(PressureSensorConfiguration)];
+} PressureSensorConfigurationU;
+
 
 //Groups a time stamp with the reading.
 typedef struct pressure_sensor_data
 {
-    float timestamp; //time of sensor reading in ticks.
+    uint32_t timestamp; // time of sensor reading in ticks.
     /*! Compensated temperature */
     float temperature;
     /*! Compensated pressure */
     float pressure;
-} pressure_sensor_data;
+} PressureSensorData;
+
+typedef union
+{
+    struct{
+        PressureSensorData values;
+    };
+    uint8_t bytes[sizeof(PressureSensorData)];
+} PressureSensorDataU;
 
 typedef enum { PRESS_SENSOR_ERR   = 0, PRESS_SENSOR_OK    = 1 } PressureSensorStatus;
 
 
-int    pressure_sensor_init               (FlightSystemConfiguration * parameters);
-
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Task for testing the BMP3 sensor.
-//    - initializes sensor
-//    - read data & print to UART screen cycle
-//
-// Returns:
-//  VOID
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-void    pressure_sensor_start               ( void *pvParameters );
+int     pressure_sensor_init                ();
+int     pressure_sensor_configure           ( PressureSensorConfiguration * parameters );
+void    pressure_sensor_start               ( void * const pvParameters );
 bool    pressure_sensor_test                ( void );
-bool    pressure_sensor_read                ( pressure_sensor_data * buffer );
-bool    pressure_sensor_add_measurement     ( pressure_sensor_data * _data );
+bool    pressure_sensor_read                ( PressureSensorData * buffer );
+bool    pressure_sensor_add_measurement     ( PressureSensorData * _data );
+PressureSensorConfiguration pressure_sensor_get_default_configuration();
+PressureSensorConfiguration pressure_sensor_get_current_configuration();
+bool    pressure_sensor_recalibrate();
+void    pressure_sensor_set_desired_processing_data_rate(uint32_t rate);
+
 
 #ifdef __cplusplus
 }

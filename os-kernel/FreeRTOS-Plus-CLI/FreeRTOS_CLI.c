@@ -72,7 +72,7 @@ typedef struct xCOMMAND_INPUT_LIST
  * The callback function that is executed when "help" is entered.  This is the
  * only default command that is always present.
  */
-static BaseType_t prvHelpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
+static BaseType_t prvHelpCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) ;
 
 /*
  * Return the number of parameters that follow the command name.
@@ -84,7 +84,7 @@ of the list of registered commands. */
 static const CLI_Command_Definition_t xHelpCommand =
 {
 	"help",
-	"\r\nhelp:\r\n Lists all the registered commands\r\n\r\n",
+	"\r\nhelp:\r\n Lists all the registered commands:\r\n",
 	prvHelpCommand,
 	0
 };
@@ -216,7 +216,7 @@ size_t xCommandStringLength;
 	{
 		/* Call the callback function that is registered to this command. */
 		xReturn = pxCommand->pxCommandLineDefinition->pxCommandInterpreter( pcWriteBuffer, xWriteBufferLen, pcCommandInput );
-		printf("Calling command %s", pxCommand);
+//		printf("Calling command: \"%s\"\n", pxCommand->pxCommandLineDefinition->pcCommand);
 		/* If xReturn is pdFALSE, then no further strings will be returned
 		after this one, and	pxCommand can be reset to NULL ready to search
 		for the next entered command. */

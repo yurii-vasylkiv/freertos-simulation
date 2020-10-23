@@ -13,8 +13,8 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include "SPI.h"
-#include "hardware_definitions.h"
+#include "protocols/SPI.h"
+#include "board/hardware_definitions.h"
 #include "FreeRTOS.h"
 #include "portable.h"
 

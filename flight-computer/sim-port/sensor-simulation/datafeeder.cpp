@@ -14,6 +14,7 @@
 #include <task.h>
 
 #include "csv.h"
+#include "flight-computer/protocols/UART.h"
 
 namespace
 {
@@ -21,10 +22,10 @@ namespace
 
     pthread_t                       worker;
 
-    std::deque < xyz_data >         gyro_queue;
-    std::deque < xyz_data >         acc_queue;
-    std::deque < press_data >       press_queue;
-    std::string                     csv_file_name;
+    static std::deque < xyz_data >   gyro_queue;
+    static std::deque < xyz_data >   acc_queue;
+    static std::deque < press_data > press_queue;
+    static std::string               csv_file_name;
 
     xTaskHandle                     handle;
 
@@ -61,7 +62,7 @@ extern "C" {
 
 #if (userconf_USE_COTS_DATA == 1)
 uint32_t timestamp_uint;
-void * worker_function( void * arg )
+void worker_function( void * arg )
 {
     double timestamp { };
     xyz_data gyro, acc, mag;
@@ -77,7 +78,8 @@ void * worker_function( void * arg )
 
     // time,acceleration,pres,altMSL,temp,latxacc,latyacc,gyrox,gyroy,gyroz,magx,magy,magz,launch_detect,apogee_detect,Aon,Bon
 
-    std::cout << "C++ DataFeeder has successfully started." << std::endl;
+    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
+
     while (reader.read_row(timestamp, acc.x, press.pressure, altMSL, press.temperature, acc.y, acc.z, gyro.x, gyro.y, gyro.z, mag.x, mag.y, mag.z, flags[0], flags[1], flags[2], flags[3]))
     {
         timestamp_uint += 50;
@@ -104,16 +106,16 @@ void * worker_function( void * arg )
         msleep( 10 );
     }
 
-    std::cout << "C++ DataFeeder has successfully exited." << std::endl;
+    DEBUG_LINE("C++ DataFeeder has successfully exited.", NULL);
 
-    return nullptr;
+    //return nullptr;
 }
 
 #else
 uint32_t timestamp_uint;
 void * worker_function( void * arg )
 {
-    std::cout << "C++ DataFeeder has successfully started." << std::endl;
+    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
 
     isRunning = 1;
     double timestamp { };
@@ -152,7 +154,7 @@ void * worker_function( void * arg )
         msleep( 50 );
     }
 
-    std::cout << "C++ DataFeeder has successfully exited." << std::endl;
+    DEBUG_LINE("C++ DataFeeder has successfully exited.", NULL);
 
     isRunning = 0;
     return nullptr;
@@ -189,11 +191,11 @@ void prv_task_fnc( void * pvParams )
 {
     try
     {
-        if ( pthread_create( &worker, nullptr, worker_function, nullptr ) )
-        {
-            fprintf( stderr, "Error creating thread\n" );
-            return;
-        }
+//        if ( pthread_create( &worker, nullptr, worker_function, nullptr ) )
+//        {
+//            fprintf( stderr, "Error creating thread\n" );
+//            return;
+//        }
     }
     catch ( const char * s )
     {
@@ -208,7 +210,7 @@ int data_feeder_start( const char * file )
 {
     isStarted = 1;
     csv_file_name = std::string( file, strlen( file ) );
-    if ( pdFALSE == xTaskCreate( prv_task_fnc, "fake-sensor-data", configMINIMAL_STACK_SIZE, nullptr, 5, &handle ) )
+    if ( pdFALSE == xTaskCreate( worker_function, "fake-sensor-data", configMINIMAL_STACK_SIZE, nullptr, 5, &handle ) )
     {
         return 1;
     }

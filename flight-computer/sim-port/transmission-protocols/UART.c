@@ -32,7 +32,7 @@ static void Error_Handler_UART(void);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-int UART_Port2_Init(void)
+int UART_Port2_init(void)
 {
     HAL_StatusTypeDef status;
     HAL_Init();
@@ -70,7 +70,7 @@ int UART_Port2_Init(void)
 
     return status == HAL_OK ? UART_OK : UART_ERR;
 }
-int UART_Port6_Init(void)
+int UART_Port6_init(void)
 {
     HAL_StatusTypeDef status;
     __HAL_RCC_USART6_CLK_ENABLE();
@@ -194,10 +194,29 @@ int uart2_transmit_line(const char * message)
     return uart_transmit_line(&uart2, message);
 }
 
-int uart6_transmit_line(const char * message)
+int uart6_transmit_line(char const* message)
 {
     return uart_transmit_line(&uart6, message);
 }
+
+int uart6_transmit_debug(char const *message)
+{
+#if defined(PRINT_DEBUG_LOG)
+    return uart_transmit(&uart6, message);
+#else
+    return UART_OK;
+#endif
+}
+
+int uart6_transmit_line_debug(char const *message)
+{
+#if defined(PRINT_DEBUG_LOG)
+    return uart_transmit_line(&uart6, message);
+#else
+    return UART_OK;
+#endif
+}
+
 
 int uart2_transmit_bytes(uint8_t * bytes, uint16_t numBytes)
 {

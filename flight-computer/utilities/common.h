@@ -6,25 +6,25 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define DESERIALIZE(type, size)                             \
-    static inline type to_##type(uint8_t* src){             \
-        union {                                             \
-            type value;                                     \
-            char bytes[size];                               \
-        } u;                                                \
-        memcpy(u.bytes, src, size);                         \
-        return u.value;                                     \
-    }                                                       \
+#define DESERIALIZE(type, size)                                         \
+    static inline type common_to_##type(uint8_t* src) {                 \
+        union {                                                         \
+            type value;                                                 \
+            char bytes[size];                                           \
+        } u;                                                            \
+        memcpy(u.bytes, src, size);                                     \
+        return u.value;                                                 \
+    }                                                                   \
 
-#define SERIALIZE(type, size)                                   \
-    static inline void from_##type(type value, uint8_t* buf){   \
-        union {                                                 \
-            type value;                                         \
-            char bytes[size];                                   \
-        } u;                                                    \
-        u.value = value;                                        \
-        memcpy(buf, u.bytes, size);                             \
-    }                                                           \
+#define SERIALIZE(type, size)                                           \
+    static inline void common_from_##type(type value, uint8_t* buf) {   \
+        union {                                                         \
+            type value;                                                 \
+            char bytes[size];                                           \
+        } u;                                                            \
+        u.value = value;                                                \
+        memcpy(buf, u.bytes, size);                                     \
+    }                                                                   \
 
 
 SERIALIZE(double, sizeof(double))
@@ -40,7 +40,7 @@ DESERIALIZE(int32_t,sizeof(int32_t))
 DESERIALIZE(int16_t, sizeof(int16_t))
 
 
-static inline void write_32(uint32_t src, uint8_t * dest)
+static inline void common_write_32(uint32_t src, uint8_t * dest)
 {
     dest[0] = (uint8_t) ((src >> 24) & 0xFF);
     dest[1] = (uint8_t) ((src >> 16) & 0xFF);
@@ -48,20 +48,20 @@ static inline void write_32(uint32_t src, uint8_t * dest)
     dest[3] = (uint8_t) ((src >> 0) & 0xFF);
 }
 
-static inline void write_24(uint32_t src, uint8_t * dest)
+static inline void common_write_24(uint32_t src, uint8_t * dest)
 {
     dest[1] = (uint8_t) ((src >> 16) & 0xFF);
     dest[2] = (uint8_t) ((src >> 8) & 0xFF);
     dest[3] = (uint8_t) ((src >> 0) & 0xFF);
 }
 
-static inline void write_16(uint16_t src, uint8_t * dest)
+static inline void common_write_16(uint16_t src, uint8_t * dest)
 {
     dest[0] = (uint8_t) ((src >> 8) & 0xFF);
     dest[1] = (uint8_t) ((src >> 0) & 0xFF);
 }
 
-static inline uint32_t read_32(const uint8_t * src)
+static inline uint32_t common_read_32(const uint8_t * src)
 {
     return ((((uint8_t) src[0]) << 24) & 0xFF) |
            ((((uint8_t) src[1]) << 16) & 0xFF) |
@@ -69,20 +69,20 @@ static inline uint32_t read_32(const uint8_t * src)
            ((((uint8_t) src[3]) << 0) & 0xFF);
 }
 
-static inline uint32_t read_24(const uint8_t * src)
+static inline uint32_t common_read_24(const uint8_t * src)
 {
     return ((((uint8_t) src[1]) << 16) & 0xFF) |
            ((((uint8_t) src[2]) << 8) & 0xFF)  |
            ((((uint8_t) src[3]) << 0) & 0xFF);
 }
 
-static inline uint16_t read_16(const uint8_t * src)
+static inline uint16_t common_read_16(const uint8_t * src)
 {
     return ((((uint8_t) src[0]) << 8) & 0xFF) |
            ((((uint8_t) src[1]) << 0) & 0xFF);
 }
 
-static inline bool is_buffer_empty(uint8_t * buffer, size_t size)
+static inline bool common_is_mem_not_set(uint8_t * buffer, size_t size)
 {
     for(size_t i = 0; i < size; i++)
             if(buffer[i] != 0)
@@ -90,13 +90,12 @@ static inline bool is_buffer_empty(uint8_t * buffer, size_t size)
     return true;
 }
 
-static inline void clear_buffer(uint8_t * buffer, size_t size)
+static inline void common_clear_mem(uint8_t * buffer, size_t size)
 {
-    for(size_t i = 0; i < size; i++)
-            buffer[i] = 0;
+    memset(buffer, 0, size);
 }
 
-static inline void float2bytes(float float_variable, uint8_t bytes_temp[4])
+static inline void common_float2bytes(float float_variable, uint8_t *bytes_temp)
 {
     union {
         float a;

@@ -37,18 +37,42 @@ extern "C" {
 #include "event-detection/event_detector.h"
 
 
-
 #define PRES_TYPE           0x200000
 #define TEMP_TYPE           0x100000
 
-static float s_reference_pressure = 0.0f;
-static float s_reference_altitude = 0.0f;
+#define GND_ALT             0
+#define GND_PRES            101325
+
+#define CONFIG_PRESSURE_SENSOR_DEFAULT_ODR	                     UINT8_C(0x02)
+#define CONFIG_PRESSURE_SENSOR_DEFAULT_PRESSURE_OVERSAMPLING     UINT8_C(0x02)
+#define CONFIG_PRESSURE_SENSOR_DEFAULT_TEMPERATURE_OVERSAMPLING  UINT8_C(0x02)
+#define CONFIG_PRESSURE_SENSOR_DEFAULT_IIR_FILTER_COEFF          UINT8_C(0x04)
 
 static char buf[128];
 
 static QueueHandle_t s_queue;
 static xTaskHandle handle;
 static uint8_t dataNeedsToBeConverted = 0;
+static uint8_t s_desired_processing_data_rate = 50;
+
+static const struct pressure_sensor_configuration s_default_configuration = {
+
+        .output_data_rate                               = CONFIG_PRESSURE_SENSOR_DEFAULT_ODR,
+        .temperature_oversampling                       = CONFIG_PRESSURE_SENSOR_DEFAULT_TEMPERATURE_OVERSAMPLING,
+        .pressure_oversampling                          = CONFIG_PRESSURE_SENSOR_DEFAULT_PRESSURE_OVERSAMPLING,
+        .infinite_impulse_response_filter_coefficient   = CONFIG_PRESSURE_SENSOR_DEFAULT_IIR_FILTER_COEFF,
+};
+
+static struct pressure_sensor_configuration s_current_configuration = {
+
+        .output_data_rate                               = CONFIG_PRESSURE_SENSOR_DEFAULT_ODR,
+        .temperature_oversampling                       = CONFIG_PRESSURE_SENSOR_DEFAULT_TEMPERATURE_OVERSAMPLING,
+        .pressure_oversampling                          = CONFIG_PRESSURE_SENSOR_DEFAULT_PRESSURE_OVERSAMPLING,
+        .infinite_impulse_response_filter_coefficient   = CONFIG_PRESSURE_SENSOR_DEFAULT_IIR_FILTER_COEFF,
+};
+
+
+
 
 static void delay_ms( uint32_t period_ms );
 
@@ -62,7 +86,7 @@ int pressure_sensor_init( FlightSystemConfiguration * parameters )
         return PRESS_SENSOR_ERR;
     }
 
-    s_queue = xQueueCreate( 10, sizeof( pressure_sensor_data ) );
+    s_queue = xQueueCreate( 10, sizeof( PressureSensorData ) );
     if ( s_queue == NULL )
     {
         return PRESS_SENSOR_ERR;
@@ -96,7 +120,7 @@ void prv_pressure_sensor_start( void * pvParameters )
     if(pvParameters != NULL)
     {
         FlightSystemConfiguration * systemConfiguration = ( FlightSystemConfiguration * ) pvParameters;
-        dataNeedsToBeConverted = systemConfiguration->pressure_data_needs_to_converted;
+        dataNeedsToBeConverted = systemConfiguration->pressure_data_needs_to_be_converted;
     }
 
     (void) pvParameters;
@@ -104,8 +128,8 @@ void prv_pressure_sensor_start( void * pvParameters )
     bool result_flag;
     press_data cxx_press_data;
     /* Variable used to store the compensated data */
-    pressure_sensor_data dataStruct;
-    memset(&dataStruct, 0, sizeof(pressure_sensor_data));
+    PressureSensorData dataStruct;
+    memset(&dataStruct, 0, sizeof(PressureSensorData));
 
     uint32_t time_start = 1;
 
@@ -131,7 +155,7 @@ void prv_pressure_sensor_start( void * pvParameters )
         }
 
         pressure_sensor_add_measurement( &dataStruct );
-        memset(&dataStruct, 0, sizeof(pressure_sensor_data));
+        memset(&dataStruct, 0, sizeof(PressureSensorData));
     }
 }
 
@@ -161,15 +185,38 @@ bool pressure_sensor_test ( void )
 
 
 
-bool pressure_sensor_read ( pressure_sensor_data * buffer )
+bool pressure_sensor_read ( PressureSensorData * buffer )
 {
     return pdPASS == xQueueReceive ( s_queue, buffer, 0 );
 }
 
 
-bool pressure_sensor_add_measurement ( pressure_sensor_data * _data )
+bool pressure_sensor_add_measurement ( PressureSensorData * _data )
 {
     return pdTRUE == xQueueSend ( s_queue, _data, 0 );
+}
+
+int pressure_sensor_configure (PressureSensorConfiguration * parameters )
+{
+    s_current_configuration = *parameters;
+
+    return 0;
+}
+
+
+PressureSensorConfiguration pressure_sensor_get_default_configuration()
+{
+    return s_default_configuration;
+}
+
+PressureSensorConfiguration pressure_sensor_get_current_configuration()
+{
+    return s_current_configuration;
+}
+
+void pressure_sensor_set_desired_processing_data_rate(uint32_t rate)
+{
+    s_desired_processing_data_rate = rate;
 }
 
 

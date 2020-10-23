@@ -1,3 +1,5 @@
 cmake-build-debug/
 .idea/
 bin/
+generated/
+BUILD.BAT

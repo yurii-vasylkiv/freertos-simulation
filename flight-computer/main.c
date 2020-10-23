@@ -162,29 +162,29 @@ int main( void )
 
 
     buzzer_init( );
-    DISPLAY_LINE( "Buzzer has been set up.", NULL );
+    DEBUG_LINE( "Buzzer has been set up.", NULL );
 
     recovery_init( );
-    DISPLAY_LINE( "Recovery GPIO pins have been set up.", NULL );
+    DEBUG_LINE( "Recovery GPIO pins have been set up.", NULL );
 
 
-    int status = UART_Port6_Init( );
+    int status = UART_Port6_init();
     if ( status != UART_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "UMSATS ROCKETRY FLIGHT COMPUTER", NULL );
+        DEBUG_LINE( "UMSATS ROCKETRY FLIGHT COMPUTER", NULL );
     }
 
 
-    status = flash_initialize( );
+    status = flash_init();
     if ( status != 0 )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Flash ID read successful", NULL );
+        DEBUG_LINE( "Flash ID read successful", NULL );
     }
 
     status = memory_manager_init( );
@@ -193,7 +193,7 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Memory Manager has been set", NULL );
+        DEBUG_LINE( "Memory Manager has been set", NULL );
     }
 
     status = memory_manager_configure( );
@@ -202,7 +202,7 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Memory Manager has been configured", NULL );
+        DEBUG_LINE( "Memory Manager has been configured", NULL );
     }
 
     status = pressure_sensor_init( NULL );
@@ -211,7 +211,7 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Pressure sensor has been set up.", NULL );
+        DEBUG_LINE( "Pressure sensor has been set up.", NULL );
     }
 
     status = imu_sensor_init( NULL );
@@ -220,16 +220,16 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "IMU sensor has been set up.", NULL );
+        DEBUG_LINE( "IMU sensor has been set up.", NULL );
     }
 
-    status = flight_controller_initialize( NULL );
+    status = flight_controller_init(NULL);
     if (status  != FLIGHT_CONTROLLER_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Flight controller has been set up.", NULL );
+        DEBUG_LINE( "Flight controller has been set up.", NULL );
     }
 
     status = memory_manager_start( NULL );
@@ -238,43 +238,13 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Memory Manager has been started.", NULL );
+        DEBUG_LINE( "Memory Manager has been started.", NULL );
     }
-
-#if (userconf_USE_COTS_DATA == 0)
-    static FlightSystemConfiguration system_configurations;
-    status = memory_manager_get_system_configurations( &system_configurations );
-    if ( status != MEM_OK )
-    {
-        board_error_handler( __FILE__, __LINE__ );
-    } else
-    {
-        DISPLAY_LINE( "System configurations have been extracted", NULL );
-    }
-
-    system_configurations.imu_data_needs_to_converted       = 1;
-    system_configurations.pressure_data_needs_to_converted  = 1;
-
-    status = memory_manager_set_system_configurations( &system_configurations );
-    if ( status != MEM_OK )
-    {
-        board_error_handler( __FILE__, __LINE__ );
-    } else
-    {
-        DISPLAY_LINE( "System configurations have been extracted", NULL );
-    }
-
-    imu_sensor_start      ( &system_configurations );
-    pressure_sensor_start ( &system_configurations );
-
-#else
-    imu_sensor_start      ( NULL );
-    pressure_sensor_start ( NULL );
-#endif
-
-//    command_line_interface_start( NULL );
 
     flight_controller_start ( NULL );
+
+    command_line_interface_start( NULL );
+
 
     vTaskStartScheduler ( );
 
@@ -308,10 +278,6 @@ int main( void )
 #if (userconf_FLASH_DISK_SIMULATION_ON == 1)
 
 /* Standard includes. */
-#include <stdio.h>
-#include <conio.h>
-
-
 
 /* Priorities at which the tasks are created. */
 #define mainQUEUE_RECEIVE_TASK_PRIORITY		( tskIDLE_PRIORITY + 2 )
@@ -357,6 +323,8 @@ use a callback function to optionally provide the memory required by the idle
 and timer tasks.  This is the stack that will be used by the timer task.  It is
 declared here, as a global, so it can be checked by a test that is implemented
 in a different file. */
+#define configTIMER_TASK_STACK_DEPTH			( configMINIMAL_STACK_SIZE * 2 )
+
 StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
 
 /* Notes if the trace is running or not. */

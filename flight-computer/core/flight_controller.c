@@ -1,6 +1,7 @@
 #include "flight_controller.h"
 #include <FreeRTOS.h>
 #include <task.h>
+#include <string.h>
 
 #include "board/board.h"
 #include "memory-management/memory_manager.h"
@@ -9,6 +10,7 @@
 
 #include "board/components/imu_sensor.h"
 #include "board/components/pressure_sensor.h"
+#include "utilities/common.h"
 
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
@@ -30,7 +32,7 @@ static FlightControllerState controller     = {};
 
 static void prv_flight_controller_task(void * pvParams);
 static void get_sensor_data_update(Data * data);
-int flight_controller_initialize(void * pvParams)
+int flight_controller_init(void * pvParams)
 {
     controller.taskParameters = pvParams;
     controller.isInitialized = 1;
@@ -66,13 +68,15 @@ static void prv_flight_controller_task(void * pvParams)
     (void) pvParams;
 
     static FlightSystemConfiguration system_configurations;
+    static FlightSystemConfigurationU systemConfigurationsU;
+
     uint32_t status = memory_manager_get_system_configurations( &system_configurations );
     if ( status != MEM_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "System configurations have been extracted", NULL );
+        DEBUG_LINE( "System configurations have been extracted", NULL );
     }
 
     static MemoryManagerConfiguration memory_configurations;
@@ -82,25 +86,62 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Memory configurations have been extracted", NULL );
+        DEBUG_LINE( "Memory configurations have been extracted", NULL );
     }
 
-    pressure_sensor_data initialGroundPressureData;
-    while ( ! pressure_sensor_read ( &initialGroundPressureData ) );
+    systemConfigurationsU.values = system_configurations;
+    if(common_is_mem_not_set(systemConfigurationsU.bytes, sizeof(FlightSystemConfiguration)))
+    {
+        system_configurations.imu_sensor_configuration      = imu_sensor_get_default_configuration();
+        system_configurations.pressure_sensor_configuration = pressure_sensor_get_default_configuration();
+    }
 
-    system_configurations.ground_pressure = initialGroundPressureData.pressure;
-    system_configurations.flight_state = FLIGHT_STATE_LAUNCHPAD;
-    system_configurations.current_system_time = xTaskGetTickCount();
-    system_configurations.power_mode = 1;
-
-    status = memory_manager_set_system_configurations(&system_configurations);
+#if (userconf_USE_COTS_DATA == 0)
+    static FlightSystemConfiguration system_configurations;
+    status = memory_manager_get_system_configurations( &system_configurations );
     if ( status != MEM_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Memory configurations have been updated", NULL );
+        DISPLAY_LINE( "System configurations have been extracted", NULL );
     }
+
+    system_configurations.imu_data_needs_to_be_converted       = 1;
+    system_configurations.pressure_data_needs_to_be_converted  = 1;
+
+    status = memory_manager_set_system_configurations( &system_configurations );
+    if ( status != MEM_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DISPLAY_LINE( "System configurations have been extracted", NULL );
+    }
+
+    imu_sensor_start      ( &system_configurations );
+    pressure_sensor_start ( &system_configurations );
+
+#else
+    if ( 0 != imu_sensor_configure(&system_configurations.imu_sensor_configuration) )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "IMU sensor has been configured .", NULL );
+    }
+
+    if ( 0 != pressure_sensor_configure(&system_configurations.pressure_sensor_configuration) )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Pressure sensor has been configured .", NULL );
+    }
+
+    imu_sensor_start      ( NULL );
+    pressure_sensor_start ( NULL );
+#endif
 
     status = event_detector_init( &system_configurations );
     if ( status != 0 )
@@ -108,7 +149,29 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Event Detector has been set & configured ", NULL );
+        DEBUG_LINE( "Event Detector has been set & configured ", NULL );
+    }
+
+    if( ! event_detector_is_flight_started() )
+    {
+        PressureSensorData initialGroundPressureData;
+        while (!pressure_sensor_read(&initialGroundPressureData));
+
+        system_configurations.ground_pressure = initialGroundPressureData.pressure;
+        system_configurations.ground_temperature = initialGroundPressureData.temperature;
+
+        system_configurations.flight_state = FLIGHT_STATE_LAUNCHPAD;
+        system_configurations.current_system_time = xTaskGetTickCount();
+        system_configurations.power_mode = 1;
+
+        status = memory_manager_set_system_configurations(&system_configurations);
+        if (status != MEM_OK) {
+            board_error_handler(__FILE__, __LINE__);
+        } else {
+            DEBUG_LINE("Memory configurations have been updated", NULL);
+        }
+
+        event_detector_update_configurations(&system_configurations);
     }
 
     status = flight_state_machine_init( FLIGHT_STATE_LAUNCHPAD );
@@ -117,7 +180,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "Flight State Machine has been set", NULL );
+        DEBUG_LINE( "Flight State Machine has been set", NULL );
     }
 
     static Data flightData;
@@ -146,9 +209,9 @@ static void prv_flight_controller_task(void * pvParams)
         if ( ( xTaskGetTickCount() - last_time ) / configTICK_RATE_HZ == 1 )
         {
             seconds++;
-            DISPLAY( "Flight Time: %d sec \n", seconds);
+            DEBUG_LINE( "Flight Time: %d sec", seconds);
             last_time = (xTaskGetTickCount() - start_time);
-            // DISPLAY("CURRENT_ALTITUDE = %f\n", event_detector_current_altitude())
+            DEBUG_LINE("CURRENT_ALTITUDE = %f", event_detector_current_altitude())
         }
     }
 
@@ -158,13 +221,13 @@ static void prv_flight_controller_task(void * pvParams)
 
 static void get_sensor_data_update( Data * data )
 {
-    imu_sensor_data imu_data;
-    pressure_sensor_data pressure_data;
+    IMUSensorData imu_data;
+    PressureSensorData pressure_data;
 
     if ( imu_read ( &imu_data ) )
     {
 //        data->inertial.data.timestamp   = xTaskGetTickCount();
-        data->inertial.data.timestamp               = imu_data.timestamp;
+        data->inertial.data.timestamp = imu_data.timestamp;
         memcpy( &data->inertial.data.accelerometer, &imu_data.acc_x,  sizeof( float ) * 3 );
         memcpy( &data->inertial.data.gyroscope,     &imu_data.gyro_x, sizeof( float ) * 3 );
         data->inertial.updated = true;

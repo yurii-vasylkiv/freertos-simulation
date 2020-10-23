@@ -87,7 +87,7 @@ typedef enum flash_status_t
  * @return @c FLASH_OK if the setup is successful, @c FLASH_ERROR otherwise.
  * @see https://github.com/UMSATS/Avionics-2019/
  */
-int flash_initialize();
+int flash_init();
 /**
  * @brief
  * This function reads the manufacturer and device IDs of the flash memory.

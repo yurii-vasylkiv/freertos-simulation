@@ -35,7 +35,7 @@ typedef struct
 typedef union
 {
     struct {
-        float timestamp;
+        uint32_t timestamp;
         float pressure;
         float temperature;
     };
@@ -60,7 +60,7 @@ typedef union
 {
     uint8_t updated;
     struct {
-        float timestamp;
+        uint32_t timestamp;
         ContinuityStatus status;
     };
     uint8_t bytes[sizeof(float) * 1 +
@@ -77,7 +77,7 @@ typedef struct
 typedef union
 {
     struct {
-        float timestamp;
+        uint32_t timestamp;
         FlightEventStatus status;
     };
     uint8_t bytes[sizeof(float) * 1 +
@@ -94,7 +94,7 @@ typedef struct
 
 typedef struct
 {
-    float timestamp;
+    uint32_t timestamp;
     IMUData inertial;
     PressureData pressure;
     Continuity continuity;

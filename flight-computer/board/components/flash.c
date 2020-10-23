@@ -22,6 +22,7 @@
 #include "configurations/UserConfig.h"
 
 #if (userconf_FLASH_DISK_SIMULATION_ON == 1)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -110,7 +111,10 @@ static inline uint32_t read_page( uint32_t address, uint8_t * data_buffer, uint1
     // Return operation flag
     return bytesRead;
 }
-#endif
+
+
+
+#endif  // userconf_FLASH_DISK_SIMULATION_ON
 
 
 /**
@@ -254,7 +258,7 @@ FlashStatus flash_check_id( )
 
 
 
-int flash_initialize( )
+int flash_init( )
 {
     __HAL_RCC_GPIOB_CLK_ENABLE( );
     __HAL_RCC_GPIOC_CLK_ENABLE( );

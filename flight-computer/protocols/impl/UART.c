@@ -12,14 +12,14 @@
 // - Created.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include "UART.h"
+#include "protocols/UART.h"
 #include <string.h>
 #include <stdlib.h>
-#include "../main.h"
+#include "main.h"
 
 #include "FreeRTOS.h"
 #include "portable.h"
-#include "../hardware_definitions.h"
+#include "board/hardware_definitions.h"
 
 static uint8_t bufftx[BUFFER_SIZE] = ""; // uart_transmit buffer
 static uint8_t buffrx[BUFFER_SIZE] = ""; // receive buffer
@@ -71,7 +71,7 @@ int UART_Port2_Init(void)
 
     return status;
 }
-int UART_Port6_Init(void)
+int UART_Port6_init(void)
 {
     HAL_StatusTypeDef status;
     __HAL_RCC_USART6_CLK_ENABLE();
@@ -127,6 +127,24 @@ static int uart_transmit_line(UART_HandleTypeDef *huart, const char * message)
     HAL_StatusTypeDef status;
     status = HAL_UART_Transmit(huart, (uint8_t*)bufftx, sizeof(uint8_t) * (i), TIMEOUT_MAX);
     return status;
+}
+
+int uart6_transmit_debug(char const *message)
+{
+#if defined(PRINT_DEBUG_LOG)
+    return uart_transmit(&uart6, message);
+#else
+    return UART_OK;
+#endif
+}
+
+int uart6_transmit_line_debug(char const *message)
+{
+#if defined(PRINT_DEBUG_LOG)
+    return uart_transmit_line(&uart6, message);
+#else
+    return UART_OK;
+#endif
 }
 
 static int uart_transmit_bytes(UART_HandleTypeDef *huart, uint8_t * bytes, uint16_t numBytes)

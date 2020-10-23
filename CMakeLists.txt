@@ -1,204 +1,239 @@
-cmake_minimum_required(VERSION 3.5.1)
-project(avionics ASM C CXX RC)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
 
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_VERSION 1)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+FIND_PACKAGE(Python 3.0 REQUIRED)
+EXECUTE_PROCESS(COMMAND python generator.py WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage")
+if(EXISTS "${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake")
+    INCLUDE(${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake)
+else()
+    MESSAGE(FATAL_ERROR "Cannot generate project: please, first run \"python generator.py\"")
+endif()
 
-# Add -O0 to remove optimizations when using gcc
-IF(CMAKE_COMPILER_IS_GNUCC)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
-ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-option(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
 
-add_definitions(-DSTM32F401xE)
-add_definitions(-DUSE_HAL_DRIVER)
-add_definitions("-D__weak=__attribute__((weak))")
-add_definitions("-D__packed=__attribute__((__packed__))")
+#ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 
 IF(BUILD_FOR_SIM_ON_WIN_OS)
-    message(STATUS "Selected WinOS BUILD with MINGW build tools")
+    MESSAGE(STATUS "Selected WinOS BUILD with MINGW build tools")
 
-    set(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
-    set(CMAKE_CXX_FLAGS "-g -std=c++17 -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
+    # Add -O0 to remove optimizations when using gcc
+    IF(CMAKE_COMPILER_IS_GNUCC)
+        SET(CMAKE_CXX_FLAGS_DEBUG       "${CMAKE_CXX_FLAGS_DEBUG} -O0" )
+        SET(CMAKE_C_FLAGS_DEBUG         "${CMAKE_C_FLAGS_DEBUG} -O0"   )
+    ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-    file(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
-    file(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
+    SET(EXECUTABLE_EXTENSION            .exe                            )
+    SET(CMAKE_C_COMPILER                ${ARM_TOOLS_DIR}/gcc${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
+    SET(CMAKE_CXX_COMPILER              ${ARM_TOOLS_DIR}/g++${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
 
-    add_definitions(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
-    add_definitions(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
+    INCLUDE(CMakeForceCompiler)
+    SET(CMAKE_C_COMPILER_WORKS          1)
+    CMAKE_FORCE_C_COMPILER  (${CMAKE_C_COMPILER}   GNU )   # absolute path needs to be set accordingly
+    CMAKE_FORCE_CXX_COMPILER(${CMAKE_CXX_COMPILER} GNU )   # absolute path needs to be set accordingly
 
-    include_directories         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/include)
-    include_directories         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
-    include_directories         (os-kernel/FreeRTOS-Plus-CLI)
+    SET(CMAKE_ASM_COMPILER              ${ARM_TOOLS_DIR}/as${EXECUTABLE_EXTENSION}       )   # absolute path needs to be set accordingly
+    SET(AR                              ${ARM_TOOLS_DIR}/ar${EXECUTABLE_EXTENSION}       )   # absolute path needs to be set accordingly
+    SET(OBJCOPY                         ${ARM_TOOLS_DIR}/objcopy${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
+    SET(OBJDUMP                         ${ARM_TOOLS_DIR}/objdump${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
+    SET(SIZE                            ${ARM_TOOLS_DIR}/size${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
+    SET(GDB                             ${ARM_TOOLS_DIR}/gdb${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
 
-    set(SIM_PORT_SRC        # sensor simulation
-                            flight-computer/sim-port/sensor-simulation/imu_sensor.c
-                            flight-computer/sim-port/sensor-simulation/pressure_sensor.c
-                            flight-computer/sim-port/sensor-simulation/datafeeder.cpp
+    SET(CMAKE_SYSTEM_NAME               Generic)
+    SET(CMAKE_SYSTEM_VERSION            1)
 
-                            # Communication/Transmission protocols
-                            flight-computer/sim-port/transmission-protocols/SPI.c
-                            flight-computer/sim-port/transmission-protocols/UART.c
+    PROJECT(avionics ASM C CXX RC)
+    SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+
+
+    SET(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
+    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
+
+    FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
+    FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
+
+    ADD_DEFINITIONS(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
+    ADD_DEFINITIONS(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
+
+    INCLUDE_DIRECTORIES         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/include)
+    INCLUDE_DIRECTORIES         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
+    INCLUDE_DIRECTORIES         (os-kernel/FreeRTOS-Plus-CLI)
+
+    SET(SIM_PORT_SRC        # sensor simulation
+        flight-computer/sim-port/sensor-simulation/imu_sensor.c
+        flight-computer/sim-port/sensor-simulation/pressure_sensor.c
+        flight-computer/sim-port/sensor-simulation/datafeeder.cpp
+
+        # Communication/Transmission protocols
+        flight-computer/sim-port/transmission-protocols/SPI.c
+        flight-computer/sim-port/transmission-protocols/UART.c
         )
 
-    add_library(RTOS_LIB    flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/croutine.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/list.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/queue.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/tasks.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/timers.c
-                            flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
-                            os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-                            os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
-            )
+    ADD_LIBRARY(RTOS_LIB
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/croutine.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/list.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/queue.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/tasks.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/timers.c
+                flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
+                os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+                # os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
+                )
 
 ELSE()
-    message(STATUS "Selected ARM BUILD with ARM-Build tools")
-    find_package (Python 3.0 REQUIRED)
-    execute_process(COMMAND python generator.py WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+    MESSAGE(STATUS "Selected ARM BUILD with ARM-Build tools")
 
-    if(EXISTS "${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake")
-        include(${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake)
-    else()
-        message(FATAL_ERROR "Cannot generate project: please, first run \"python process-user-configurations.py\"")
-    endif()
+    # Add -O0 to remove optimizations when using gcc
+    IF(CMAKE_COMPILER_IS_GNUCC)
+        SET(CMAKE_CXX_FLAGS_DEBUG       "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+        SET(CMAKE_C_FLAGS_DEBUG         "${CMAKE_C_FLAGS_DEBUG} -O0")
+    ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+    SET(EXECUTABLE_EXTENSION            .exe)
+    SET(CMAKE_C_COMPILER                ${EABI_PREFIX}-gcc${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
+    SET(CMAKE_CXX_COMPILER              ${EABI_PREFIX}-g++${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
+
+    INCLUDE(CMakeForceCompiler)
+    SET(CMAKE_C_COMPILER_WORKS          1)
+    CMAKE_FORCE_C_COMPILER  (${ARM_TOOLS_DIR}/${CMAKE_C_COMPILER}   GNU                )   # absolute path needs to be set accordingly
+    CMAKE_FORCE_CXX_COMPILER(${ARM_TOOLS_DIR}/${CMAKE_CXX_COMPILER} GNU                )   # absolute path needs to be set accordingly
+
+    SET(AS                              ${EABI_PREFIX}-gcc-as${EXECUTABLE_EXTENSION}   )   # absolute path needs to be set accordingly
+    SET(AR                              ${EABI_PREFIX}-gcc-ar${EXECUTABLE_EXTENSION}   )   # absolute path needs to be set accordingly
+    SET(OBJCOPY                         ${EABI_PREFIX}-objcopy${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
+    SET(OBJDUMP                         ${EABI_PREFIX}-objdump${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
+    SET(SIZE                            ${EABI_PREFIX}-size${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
+    SET(GDB                             ${EABI_PREFIX}-gdb${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
+
+    SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
+    SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
+    set(SYS_CALLS_SRC                   sys/syscalls.c)
+    SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/linker-script/STM32F401RE_FLASH.ld)
+    SET(CMAKE_EXE_LINKER_FLAGS          "-Wl,-gc-sections -T ${LINKER_SCRIPT}")
+    SET(CMAKE_EXE_LINKER_FLAGS_INIT     "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage")
+    SET(CMAKE_SYSTEM_NAME               Generic)
+    SET(CMAKE_SYSTEM_VERSION            1)
+
+    PROJECT(avionics ASM C CXX RC)
+    SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+    ADD_DEFINITIONS(-DSTM32F401xE)
+    ADD_DEFINITIONS(-DUSE_HAL_DRIVER)
+    ADD_DEFINITIONS("-D__weak=__attribute__((weak))")
+    ADD_DEFINITIONS("-D__packed=__attribute__((__packed__))")
 
 
-    set(CMAKE_C_COMPILER     ${EABI_PREFIX}-gcc                     )   # absolute path needs to be set accordingly
-    set(CMAKE_CXX_COMPILER   ${EABI_PREFIX}-g++                     )   # absolute path needs to be set accordingly
+    INCLUDE_DIRECTORIES (board-hardware-drivers/BMI08x-Sensor-API)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/BMI08x-Sensor-API/Inc)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/CMSIS/Include)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc/Custom)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Include)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/CMSIS_RTOS)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/include)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS-Plus-CLI)
 
-    include(CMakeForceCompiler)
-    set(CMAKE_C_COMPILER_WORKS                                     1)
-    CMAKE_FORCE_C_COMPILER  (${ARM_TOOLS_DIR}/${CMAKE_C_COMPILER}   GNU)   # absolute path needs to be set accordingly
-    CMAKE_FORCE_CXX_COMPILER(${ARM_TOOLS_DIR}/${CMAKE_CXX_COMPILER} GNU)   # absolute path needs to be set accordingly
+    ADD_LIBRARY(CMSIS_LIB
+                board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c
+                board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_msp.c
+                board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_timebase_tim.c
+                board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_it.c
+                Startup/startup_stm32f401xe.s
+                )
 
-    set(AS                   ${EABI_PREFIX}-gcc-as                  )   # absolute path needs to be set accordingly
-    set(AR                   ${EABI_PREFIX}-gcc-ar                  )   # absolute path needs to be set accordingly
-    set(OBJCOPY              ${EABI_PREFIX}-objcopy                 )   # absolute path needs to be set accordingly
-    set(OBJDUMP              ${EABI_PREFIX}-objdump                 )   # absolute path needs to be set accordingly
-    set(SIZE                 ${EABI_PREFIX}-size                    )   # absolute path needs to be set accordingly
-    set(GDB                  ${EABI_PREFIX}-gdb                     )   # absolute path needs to be set accordingly
+    FILE(GLOB_RECURSE HAL_SRC "board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
+    FILE(GLOB_RECURSE BOSCH_API_SRC "board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
 
+    ADD_LIBRARY(RTOS_LIB
+                os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
+                os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
+                os-kernel/FreeRTOS/Source/croutine.c
+                os-kernel/FreeRTOS/Source/event_groups.c
+                os-kernel/FreeRTOS/Source/list.c
+                os-kernel/FreeRTOS/Source/queue.c
+                os-kernel/FreeRTOS/Source/tasks.c
+                os-kernel/FreeRTOS/Source/timers.c
+                os-kernel/FreeRTOS/Source/event_groups.c
+                os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+                os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
+                )
 
-    SET(CMAKE_C_FLAGS "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 \
-                   -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
+    SET(IMPL_FOLDERS_SRC  # Communication/Transmission protocols
+        flight-computer/protocols/impl/UART.c
+        flight-computer/protocols/impl/SPI.c
 
-    SET(CMAKE_CXX_FLAGS "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 \
-                    -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
-
-    set(SYS_CALLS_SRC sys/syscalls.c)
-
-
-    SET(LINKER_SCRIPT       linker-script/STM32F401RE_FLASH.ld)
-    SET(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections -T ${LINKER_SCRIPT}")
-    SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
-
-    include_directories     (board-hardware-drivers/BMI08x-Sensor-API)
-    include_directories     (board-hardware-drivers/BMI08x-Sensor-API/Inc)
-    include_directories     (board-hardware-drivers/CMSIS/Include)
-    include_directories     (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc)
-    include_directories     (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc/Custom)
-    include_directories     (board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Include)
-    include_directories     (os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F)
-    include_directories     (os-kernel/FreeRTOS/Source/CMSIS_RTOS)
-    include_directories     (os-kernel/FreeRTOS/Source/include)
-
-    add_library(CMSIS_LIB
-                            board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c
-                            board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_msp.c
-                            board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_timebase_tim.c
-                            board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_it.c
-                            Startup/startup_stm32f401xe.s
-            )
-
-    file(GLOB_RECURSE HAL_SRC "board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
-    file(GLOB_RECURSE BOSCH_API_SRC "board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
-
-    add_library(RTOS_LIB
-                            os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
-                            os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
-                            os-kernel/FreeRTOS/Source/croutine.c
-                            os-kernel/FreeRTOS/Source/event_groups.c
-                            os-kernel/FreeRTOS/Source/list.c
-                            os-kernel/FreeRTOS/Source/queue.c
-                            os-kernel/FreeRTOS/Source/tasks.c
-                            os-kernel/FreeRTOS/Source/timers.c
-                            os-kernel/FreeRTOS/Source/event_groups.c
-                            os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-                            os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
-            )
-
-    set(IMPL_FOLDERS_SRC        # Communication/Transmission protocols
-                                flight-computer/protocols/impl/UART.c
-                                flight-computer/protocols/impl/SPI.c
-
-                                # sensors
-                                flight-computer/board/components/impl/imu_sensor.c
-                                flight-computer/board/components/impl/pressure_sensor.c
+        # sensors
+        flight-computer/board/components/impl/imu_sensor.c
+        flight-computer/board/components/impl/pressure_sensor.c
         )
-
 ENDIF()
 
-include_directories         (flight-computer)
-include_directories         (configurations)
-include_directories         (${CMAKE_SOURCE_DIR})
 
-set(USER_SRC                # Board
-                            flight-computer/board/board.c
-                            flight-computer/board/components/buzzer.c
-                            flight-computer/board/components/flash.c
-                            flight-computer/board/components/recovery.c
+IF(BUILD_FOR_SIM_ON_WIN_OS)
+ELSE() # BUILD_FOR_SIM_ON_WIN_OS
+ENDIF() # BUILD_FOR_SIM_ON_WIN_OS
 
-                            # Core
-                            flight-computer/core/flight_controller.c
+INCLUDE_DIRECTORIES (flight-computer)
+INCLUDE_DIRECTORIES (configurations)
+INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR})
 
-                            # Memory Management
-                            flight-computer/memory-management/memory_manager.c
-                            flight-computer/memory-management/queue.c
+SET(USER_SRC                # Board
+        flight-computer/board/board.c
+        flight-computer/board/components/buzzer.c
+        flight-computer/board/components/flash.c
+        flight-computer/board/components/recovery.c
 
-                            # Event Detection
-                            flight-computer/event-detection/event_detector.c
+        # Core
+        flight-computer/core/flight_controller.c
 
-                            # CLI
-                            flight-computer/command-line-interface/controller.c
-                            )
+        # Memory Management
+        flight-computer/memory-management/memory_manager.c
+        flight-computer/memory-management/queue.c
+
+        # Event Detection
+        flight-computer/event-detection/event_detector.c
+
+        # CLI
+        flight-computer/command-line-interface/controller.c
+        flight-computer/command-line-interface/tools/read.c
+        flight-computer/command-line-interface/tools/configure.c
+        flight-computer/command-line-interface/tools/mem.c
+
+        )
 
 
 
 
 IF(BUILD_FOR_SIM_ON_WIN_OS)
-    add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${CXX_SRC} ${SIM_PORT_SRC})
-    target_link_libraries(RTOS_LIB pthread winmm ws2_32)
+    ADD_EXECUTABLE(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${SIM_PORT_SRC})
+    TARGET_LINK_LIBRARIES(RTOS_LIB pthread winmm ws2_32)
 ELSE()
-    add_executable(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
-    target_link_libraries(${PROJECT_NAME}.elf CMSIS_LIB -lm)
+    ADD_EXECUTABLE(${PROJECT_NAME}.elf flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME}.elf CMSIS_LIB -lm)
 ENDIF()
 
-target_link_libraries(${PROJECT_NAME}.elf RTOS_LIB)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}.elf RTOS_LIB)
 
-set(HEX_FILE ${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.hex)
-set(BIN_FILE ${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.bin)
+SET(HEX_FILE ${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.hex)
+SET(BIN_FILE ${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.bin)
 
-set_target_properties(${CMAKE_PROJECT_NAME}.elf PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+SET_TARGET_PROPERTIES(${CMAKE_PROJECT_NAME}.elf PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${HEX_FILE}
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMENT "Building ${HEX_FILE} \nBuilding ${BIN_FILE}")
 
 
-IF(BUILD_FOR_SIM_ON_WIN_OS)
-ELSE()
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.map")
+IF(NOT BUILD_FOR_SIM_ON_WIN_OS)
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=${PROJECT_SOURCE_DIR}/cmake-build-debug/${PROJECT_NAME}.map")
 
-    add_custom_target(upload
+    ADD_CUSTOM_TARGET(upload
             ${GDB} -iex "target remote tcp:localhost:3333"
             -iex "monitor program $<TARGET_FILE:${PROJECT_NAME}.elf>"
             -iex "monitor reset init"

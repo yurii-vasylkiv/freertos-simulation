@@ -49,6 +49,12 @@ float event_detector_current_altitude()
     return CURRENT_ALTITUDE;
 }
 
+bool event_detector_is_flight_started()
+{
+    return flightState != FLIGHT_STATE_LAUNCHPAD;
+}
+
+
 int event_detector_init( FlightSystemConfiguration * configurations)
 {
     if(configurations == NULL)
@@ -114,7 +120,7 @@ FlightState event_detector_feed ( Data * data)
             {
                 if ( detectLaunch( data->inertial.data.accelerometer[ 0 ] ) )
                 {
-                    DISPLAY_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE);
+                    DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_PRE_APOGEE;
                 }
             }
@@ -141,7 +147,7 @@ FlightState event_detector_feed ( Data * data)
 
                 if((difference < 0) && absolute_difference < 5 && absolute_difference > 0.2)
                 {
-                    DISPLAY_LINE( "FLIGHT_STATE_PRE_APOGEE: Detected APOGEE at %fm", CURRENT_ALTITUDE);
+                    DEBUG_LINE( "FLIGHT_STATE_PRE_APOGEE: Detected APOGEE at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_APOGEE;
                 }
 #else
@@ -158,7 +164,7 @@ FlightState event_detector_feed ( Data * data)
         }
         case FLIGHT_STATE_APOGEE:
         {
-            DISPLAY_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue", NULL );
+            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue", NULL );
             flightState = FLIGHT_STATE_POST_APOGEE;
 
             return 0;
@@ -170,7 +176,7 @@ FlightState event_detector_feed ( Data * data)
             {
                 if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->pressure.data.pressure ) )
                 {
-                    DISPLAY_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE);
+                    DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_MAIN_CHUTE;
                 }
             }
@@ -180,7 +186,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_MAIN_CHUTE:
         {
-            DISPLAY_LINE("FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute", NULL);
+            DEBUG_LINE("FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute", NULL);
             flightState = FLIGHT_STATE_POST_MAIN;
 
             return 0;
@@ -193,7 +199,7 @@ FlightState event_detector_feed ( Data * data)
                 if ( detectLanding( data->inertial.data.gyroscope[ 0 ], data->inertial.data.gyroscope[ 1 ],
                                     data->inertial.data.gyroscope[ 2 ] ) )
                 {
-                    DISPLAY_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
+                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_LANDED;
                     return 0;
                 }
@@ -205,7 +211,7 @@ FlightState event_detector_feed ( Data * data)
             {
                 if ( detectAltitude(0, GROUND_ALTITUDE, data->pressure.data.pressure ) )
                 {
-                    DISPLAY_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
+                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_LANDED;
                     return 0;
                 }
@@ -215,7 +221,7 @@ FlightState event_detector_feed ( Data * data)
         }
         case FLIGHT_STATE_LANDED:
         {
-            DISPLAY_LINE("FLIGHT_STATE_LANDED: Rocket landed!", NULL);
+            DEBUG_LINE("FLIGHT_STATE_LANDED: Rocket landed!", NULL);
             flightState = FLIGHT_STATE_EXIT;
 
             return 0;
@@ -223,7 +229,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_EXIT:
         {
-            DISPLAY_LINE( "FLIGHT_STATE_EXIT: Exit!", NULL );
+            DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!", NULL );
             flightState = FLIGHT_STATE_COUNT;
             return 0;
         }

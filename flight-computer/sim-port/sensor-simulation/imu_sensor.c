@@ -1,4 +1,4 @@
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
 // UMSATS 2018-2020
 //
 // Repository:
@@ -13,11 +13,8 @@
 // History
 // 2019-03-29 by Benjamin Zacharias
 // - Created.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// INCLUDES
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include <board/board.h>
 #include "memory-management/memory_manager.h"
 #include "board/components/imu_sensor.h"
@@ -29,34 +26,56 @@
 #include "datafeeder.h"
 #include "math.h"
 
-#define BMI088_ACCEL_RANGE_3G                       UINT8_C(0x00)
-#define BMI088_ACCEL_RANGE_6G                       UINT8_C(0x01)
-#define BMI088_ACCEL_RANGE_12G                      UINT8_C(0x02)
-#define BMI088_ACCEL_RANGE_24G                      UINT8_C(0x03)
+#define INTERNAL_ERROR -127
+#define ACC_TYPE                                        0x800000
+#define GYRO_TYPE                                       0x400000
 
-#define BMI08X_GYRO_RANGE_2000_DPS                  UINT8_C(0x00)
-#define BMI08X_GYRO_RANGE_1000_DPS                  UINT8_C(0x01)
-#define BMI08X_GYRO_RANGE_500_DPS                   UINT8_C(0x02)
-#define BMI08X_GYRO_RANGE_250_DPS                   UINT8_C(0x03)
-#define BMI08X_GYRO_RANGE_125_DPS                   UINT8_C(0x04)
+#define ACC_LENGTH                                      6 // Length of a accelerometer measurement in bytes.
+#define GYRO_LENGTH                                     6 // Length of a gyroscope measurement in bytes.
 
+#define CONFIG_IMU_SENSOR_DEFAULT_ACC_BANDWIDTH	        UINT8_C(0x02)
+#define CONFIG_IMU_SENSOR_DEFAULT_ACC_ODR			    UINT8_C(0x08)
+#define CONFIG_IMU_SENSOR_DEFAULT_ACC_RANGE		        UINT8_C(0x02)
+#define CONFIG_IMU_SENSOR_DEFAULT_ACC_POWER			    UINT8_C(0x00)
 
-#define ACC_BANDWIDTH			BMI08X_ACCEL_BW_NORMAL
-#define ACC_ODR					BMI08X_ACCEL_ODR_100_HZ
-#define ACC_RANGE				BMI088_ACCEL_RANGE_12G
-#define ACC_PWR					BMI08X_ACCEL_PM_ACTIVE
-
-#define GYRO_BANDWIDTH			BMI08X_GYRO_BW_23_ODR_200_HZ
-#define GYRO_ODR				BMI08X_GYRO_BW_23_ODR_200_HZ
-#define GYRO_RANGE				BMI08X_GYRO_RANGE_1000_DPS
-#define GYRO_PWR				BMI08X_GYRO_PM_NORMAL
-
-#define ACC_TYPE                         0x800000
-#define GYRO_TYPE                        0x400000
+#define CONFIG_IMU_SENSOR_DEFAULT_GYRO_BANDWIDTH	    UINT8_C(0x04)
+#define CONFIG_IMU_SENSOR_DEFAULT_GYRO_ODR		        UINT8_C(0x04)
+#define CONFIG_IMU_SENSOR_DEFAULT_GYRO_RANGE		    UINT8_C(0x01)
+#define CONFIG_IMU_SENSOR_DEFAULT_GYRO_POWER		    UINT8_C(0x00)
 
 static QueueHandle_t s_queue;
 static xTaskHandle handle;
 static uint8_t dataNeedsToBeConverted = 0;
+static uint8_t s_desired_processing_data_rate = 50;
+
+static const struct imu_sensor_configuration s_default_configuration = {
+
+        .accel_bandwidth                = CONFIG_IMU_SENSOR_DEFAULT_ACC_BANDWIDTH,
+        .accel_output_data_rate         = CONFIG_IMU_SENSOR_DEFAULT_ACC_ODR,
+        .accel_range                    = CONFIG_IMU_SENSOR_DEFAULT_ACC_RANGE,
+        .accel_power                    = CONFIG_IMU_SENSOR_DEFAULT_ACC_POWER,
+
+        .gyro_bandwidth                 = CONFIG_IMU_SENSOR_DEFAULT_GYRO_BANDWIDTH,
+        .gyro_output_data_rate          = CONFIG_IMU_SENSOR_DEFAULT_GYRO_ODR,
+        .gyro_range                     = CONFIG_IMU_SENSOR_DEFAULT_GYRO_RANGE,
+        .gyro_power                     = CONFIG_IMU_SENSOR_DEFAULT_GYRO_POWER,
+};
+
+static struct imu_sensor_configuration s_current_configuration = {
+
+        .accel_bandwidth                = CONFIG_IMU_SENSOR_DEFAULT_ACC_BANDWIDTH,
+        .accel_output_data_rate         = CONFIG_IMU_SENSOR_DEFAULT_ACC_ODR,
+        .accel_range                    = CONFIG_IMU_SENSOR_DEFAULT_ACC_RANGE,
+        .accel_power                    = CONFIG_IMU_SENSOR_DEFAULT_ACC_POWER,
+
+        .gyro_bandwidth                 = CONFIG_IMU_SENSOR_DEFAULT_GYRO_BANDWIDTH,
+        .gyro_output_data_rate          = CONFIG_IMU_SENSOR_DEFAULT_GYRO_ODR,
+        .gyro_range                     = CONFIG_IMU_SENSOR_DEFAULT_GYRO_RANGE,
+        .gyro_power                     = CONFIG_IMU_SENSOR_DEFAULT_GYRO_POWER,
+};
+
+
+
 
 //Wrapper functions for read and write
 int8_t user_spi_read( uint8_t dev_addr, uint8_t reg_addr, uint8_t * data, uint16_t len );
@@ -73,14 +92,14 @@ static float imu_sensor_deg_per_sec2rot      ( float deg_per_sec );
 
 static float imu_sensor_acc2g ( int16_t acc_value )
 {
-    const int16_t range = pow (2, ( ACC_RANGE + 1 ) ) * 1.5;
+    const int16_t range = pow (2, ( s_current_configuration.accel_range + 1 ) ) * 1.5;
     const float result = (float) acc_value / 32768  * range;
     return result;
 }
 
 static float imu_sensor_g2acc ( float g )
 {
-    const uint16_t  result = (int16_t ) ( g * 32768 / ( pow ( 2, ( ACC_RANGE + 1 ) ) * 1.5 ) );
+    const uint16_t  result = (int16_t ) ( g * 32768 / ( pow ( 2, ( s_current_configuration.accel_range + 1 ) ) * 1.5 ) );
     return result;
 }
 
@@ -104,14 +123,14 @@ static float imu_sensor_rot2deg_per_sec ( int16_t gyro_value )
 //    container.value = gyro_value;
 //    int16_t actual_value = to_int16_t( container.bytes );
 
-    const int16_t range = pow (2, ( GYRO_RANGE + 1 ) ) * 1.5;
+    const int16_t range = pow (2, ( s_current_configuration.gyro_range + 1 ) ) * 1.5;
     const float result = (float) gyro_value / 32768  * range;
     return result;
 }
 
 static float imu_sensor_deg_per_sec2rot     ( float deg_per_sec )
 {
-    return (int16_t ) ( deg_per_sec * 32768 ) / ( pow (2, (GYRO_RANGE + 1) ) * 1.5 );
+    return (int16_t ) ( deg_per_sec * 32768 ) / ( pow (2, (s_current_configuration.gyro_range + 1) ) * 1.5 );
 }
 
 
@@ -125,7 +144,7 @@ int imu_sensor_init( FlightSystemConfiguration * parameters )
         return IMU_ERR;
     }
 
-    s_queue = xQueueCreate( 10, sizeof( imu_sensor_data ) );
+    s_queue = xQueueCreate( 10, sizeof( IMUSensorData ) );
     if ( s_queue == NULL )
     {
         return IMU_ERR;
@@ -137,18 +156,26 @@ int imu_sensor_init( FlightSystemConfiguration * parameters )
 }
 
 
+int imu_sensor_configure (IMUSensorConfiguration * parameters )
+{
+    s_current_configuration = *parameters;
+    return 0;
+}
+
+
+
 
 void prv_imu_thread_start( void * param )
 {
     if(param != NULL)
     {
         FlightSystemConfiguration * systemConfiguration = ( FlightSystemConfiguration * ) param;
-        dataNeedsToBeConverted = systemConfiguration->imu_data_needs_to_converted;
+        dataNeedsToBeConverted = systemConfiguration->imu_data_needs_to_be_converted;
     }
 
     //Get the parameters.
     TickType_t prevTime;
-    imu_sensor_data dataStruct;
+    IMUSensorData dataStruct;
 
     // main loop: continuously read sensor data
     // vTaskDelay(pdMS_TO_TICKS(100)); //Wait so to make sure the other tasks have started.
@@ -205,7 +232,7 @@ void prv_imu_thread_start( void * param )
 
 
 
-void imu_sensor_start ( void * param )
+void imu_sensor_start ( void * const param )
 {
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
     #define MAKE_STR(x) _MAKE_STR(x)
@@ -231,7 +258,7 @@ void imu_sensor_start ( void * param )
 
 
 
-bool imu_read ( imu_sensor_data * buffer )
+bool imu_read ( IMUSensorData * buffer )
 {
     return pdPASS == xQueueReceive( s_queue, buffer, 0 );
 }
@@ -251,8 +278,26 @@ int imu_sensor_test( )
 
 
 
-bool imu_add_measurement( imu_sensor_data * _data )
+bool imu_add_measurement( IMUSensorData * _data )
 {
     return pdTRUE == xQueueSend ( s_queue, _data, 0 );
 }
 
+
+IMUSensorConfiguration
+imu_sensor_get_default_configuration()
+{
+    return s_default_configuration;
+}
+
+IMUSensorConfiguration
+imu_sensor_get_current_configuration()
+{
+    return s_current_configuration;
+}
+
+
+void imu_sensor_set_desired_processing_data_rate(uint32_t rate)
+{
+    s_desired_processing_data_rate = rate;
+}

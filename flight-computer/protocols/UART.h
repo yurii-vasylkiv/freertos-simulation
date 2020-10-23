@@ -13,6 +13,10 @@
 // 2019-02-13 Eric Kapilik
 // - Created.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -21,35 +25,61 @@
 #define TIMEOUT_MAX 0xFFFF
 #define BUFFER_SIZE 2048
 
-typedef enum { UART_ERR   = 0, UART_OK    = 1 } UARTStatus;
+typedef enum {
+    UART_ERR = 0, UART_OK = 1
+} UARTStatus;
 
-char PRINT_BUFFER[256];
+char PRINT_BUFFER[BUFFER_SIZE];
 #define DISPLAY(format, args...)                                                              \
             sprintf(PRINT_BUFFER, format, args);                                              \
             uart6_transmit(PRINT_BUFFER);                                                     \
+
+#define DEBUG(format, args...)                                                                \
+            sprintf(PRINT_BUFFER, format, args);                                              \
+            uart6_transmit_debug(PRINT_BUFFER);                                               \
+
+#define DEBUG_LINE(format, args...)                                                           \
+            sprintf(PRINT_BUFFER, format, args);                                              \
+            uart6_transmit_line_debug(PRINT_BUFFER);                                          \
 
 #define DISPLAY_LINE(format, args...)                                                         \
             sprintf(PRINT_BUFFER, format, args);                                              \
             uart6_transmit_line(PRINT_BUFFER)                                                 \
 
+
 #define INPUT(x) const char * t = uart6_receive_command(); memcpy(x, t, strlen(t))
 
-int UART_Port2_Init(void);
-int UART_Port6_Init(void);
+int UART_Port2_init(void);
 
-int uart2_transmit(const char * message);
-int uart6_transmit(const char * message);
+int UART_Port6_init(void);
 
-int uart2_transmit_line(const char * message);
-int uart6_transmit_line(const char * message);
+int uart2_transmit(char const *message);
 
-int uart2_transmit_bytes(uint8_t * bytes, uint16_t numBytes);
-int uart6_transmit_bytes(uint8_t * bytes, uint16_t numBytes);
+int uart6_transmit(char const *message);
 
-char* uart2_receive_command();
-char* uart6_receive_command();
+int uart6_transmit_debug(char const *message);
 
-int uart2_receive(uint8_t * buf, size_t size);
-int uart6_receive(uint8_t * buf, size_t size);
+int uart6_transmit_line_debug(char const *message);
+
+int uart2_transmit_line(char const *message);
+
+int uart6_transmit_line(char const *message);
+
+int uart2_transmit_bytes(uint8_t *bytes, uint16_t numBytes);
+
+int uart6_transmit_bytes(uint8_t *bytes, uint16_t numBytes);
+
+char *uart2_receive_command();
+
+char *uart6_receive_command();
+
+int uart2_receive(uint8_t *buf, size_t size);
+
+int uart6_receive(uint8_t *buf, size_t size);
 
 #endif //STM32F4XX_HAL_UART_CLI_H
+
+
+#ifdef __cplusplus
+}
+#endif
