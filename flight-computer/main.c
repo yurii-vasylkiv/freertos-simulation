@@ -242,7 +242,7 @@ int main( void )
     }
 
 
-    flight_controller_start ( NULL );
+//    flight_controller_start ( NULL );
 
     command_line_interface_start( NULL );
 

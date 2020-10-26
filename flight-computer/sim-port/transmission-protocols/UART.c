@@ -144,12 +144,15 @@ static char* uart_receive_command(UART_HandleTypeDef *huart)
     c = '\0'; //clear out character received
     buffrx[0] = '\0'; //clear out receive buffer
     i = 0; //start at beginning of index
-    
+
     while ((c = getchar ()) != '\n')
     {
+        if (c == 255)
+            continue;
+
     	buffrx[i++] = c;
     }
-    
+
     buffrx[i]   = '\0';
     return (char*)buffrx;
 }
