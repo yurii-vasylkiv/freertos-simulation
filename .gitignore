@@ -3,3 +3,5 @@ cmake-build-debug/
 bin/
 generated/
 BUILD.BAT
+build-on-linux/BUILD
+build-on-linux/CLEAN

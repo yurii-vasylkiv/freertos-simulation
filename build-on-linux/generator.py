@@ -98,6 +98,9 @@ def gen_aux_config_files():
             clean.write("rm -rf bin")
             clean.write("\n")
             clean.write("rm -rf BUILD")
+        
+        os.system("chmod +x BUILD")
+        os.system("chmod +x CLEAN")
 
 
 
