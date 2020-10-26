@@ -403,7 +403,7 @@ static bool cli_tools_mem_stats (char* pcWriteBuffer, size_t xWriteBufferLen, co
 {
     const char * cmd_option = "stats";
     uint32_t value = atoi(str_option_arg);
-    if ( MEM_OK != memory_manager_get_stats() )
+    if ( MEM_OK == memory_manager_get_stats() )
     {
         sprintf(pcWriteBuffer, "Success!\n");
         return true;

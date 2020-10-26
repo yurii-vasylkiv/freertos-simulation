@@ -513,32 +513,8 @@ static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * d
 
 MemoryStatus _access_single_entry(void * dst, uint8_t sector, uint32_t index )
 {
-    uint8_t entries_per_page = 0;
-    uint8_t struct_size      = 0;
-
-    switch (sector)
-    {
-        case IMU:
-            entries_per_page = IMU_ENTRIES_PER_PAGE;
-            struct_size = sizeof( IMUDataU );
-            break;
-        case Pressure:
-            entries_per_page = PRESSURE_ENTRIES_PER_PAGE;
-            struct_size = sizeof( PressureDataU );
-            break;
-        case Cont:
-            entries_per_page = CONTINUITY_ENTRIES_PER_PAGE;
-            struct_size = sizeof( ContinuityU );
-            break;
-        case Event:
-            entries_per_page = FLIGHT_EVENT_ENTRIES_PER_PAGE;
-            struct_size = sizeof( FlightEventU );
-            break;
-        case Conf:
-            entries_per_page = CONFIGURATION_ENTRIES_PER_PAGE;
-            struct_size = sizeof( ConfigurationU );
-            break;
-    }
+    uint8_t entries_per_page = _get_entries_page_for_sector(sector);
+    uint8_t struct_size      = _get_size_for_sector_data_struct(sector);
 
     if( PAGE_SIZE * trunc(( double ) index / IMU_ENTRIES_PER_PAGE ) > dataSectors[ sector ].info.bytesWritten )
     {
