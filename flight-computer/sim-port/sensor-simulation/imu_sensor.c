@@ -180,7 +180,6 @@ void prv_imu_thread_start( void * param )
     }
 
     //Get the parameters.
-    TickType_t prevTime;
     IMUSensorData dataStruct;
 
     // main loop: continuously read sensor data
@@ -190,10 +189,8 @@ void prv_imu_thread_start( void * param )
     bool result_flag;
     xyz_data cxx_data;
 
-    uint32_t time_start = 0;
-
     s_is_running = true;
-    DEBUG_LINE("IMU sensor task has been successfully started.", NULL);
+    DEBUG_LINE("IMU sensor task has been successfully started.");
 
     while ( s_is_running )
     {
@@ -238,7 +235,7 @@ void prv_imu_thread_start( void * param )
         imu_add_measurement( &dataStruct );
     }
 
-    DEBUG_LINE("IMU sensor task has successfully exited.", NULL);
+    DEBUG_LINE("IMU sensor task has successfully exited.");
 }
 
 
@@ -264,7 +261,7 @@ void imu_sensor_start ( void * const param )
     }
     else
     {
-        DISPLAY_LINE("IMU Sensor task is already running", NULL);
+        DISPLAY_LINE("IMU Sensor task is already running");
     }
 }
 

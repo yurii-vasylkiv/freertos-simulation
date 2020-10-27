@@ -106,7 +106,7 @@ void board_error_handler( const char* file, uint32_t line)
     /* User can add his own implementation to report the HAL error return state */
     while (1)
     {
-        DISPLAY_LINE("%s:%i:ERROR!", file, line);
+        DISPLAY_LINE("%s:%lu:ERROR!", file, line);
         // board_led_blink(50);
     }
 }

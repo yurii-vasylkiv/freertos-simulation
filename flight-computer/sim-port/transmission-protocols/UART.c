@@ -21,7 +21,6 @@
 #include "portable.h"
 #include "board/hardware_definitions.h"
 
-static uint8_t bufftx[BUFFER_SIZE] = ""; // uart_transmit buffer
 static uint8_t buffrx[BUFFER_SIZE] = ""; // receive buffer
 
 static UART_HandleTypeDef uart2 = {.Instance = NULL, .pRxBuffPtr = NULL, .pTxBuffPtr = NULL,  .hdmarx = NULL,  .hdmatx = NULL, .ErrorCode = 0};
@@ -168,7 +167,6 @@ static int uart_receive(UART_HandleTypeDef *huart, uint8_t * buf, size_t size)
         return UART_ERR;
     }
 
-    uint8_t c; //key pressed character
     size_t i = 0; //start at beginning of index
 
     while(i < size){

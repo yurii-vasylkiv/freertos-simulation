@@ -47,8 +47,8 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
 
 
 
-    SET(CMAKE_C_FLAGS "-g -std=gnu11 -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
-    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
+    SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror  -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
+    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror  -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
 
     FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
     FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )

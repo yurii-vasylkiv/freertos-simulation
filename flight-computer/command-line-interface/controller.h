@@ -6,7 +6,7 @@
 #include "core/system_configuration.h"
 
 
-void command_line_interface_start         (void * const pvParameters);
-
+void command_line_interface_start         (void * pvParameters);
+bool command_line_interface_is_running();
 
 #endif // COMMAND_CONTROLLER_H

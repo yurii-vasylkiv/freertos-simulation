@@ -18,8 +18,6 @@
 
 namespace
 {
-    static bool s_is_running        = false;
-
     const int MAX_ITEMS             = 100;
 
     pthread_t                       worker;
@@ -68,8 +66,6 @@ void * worker_function( void * arg )
     double timestamp { };
     xyz_data gyro, acc, mag;
     press_data press;
-    double alt;
-    uint32_t ev;
     double altMSL;
     uint8_t flags[4];
 
@@ -79,7 +75,7 @@ void * worker_function( void * arg )
 
     // time,acceleration,pres,altMSL,temp,latxacc,latyacc,gyrox,gyroy,gyroz,magx,magy,magz,launch_detect,apogee_detect,Aon,Bon
 
-    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
+    DEBUG_LINE("C++ DataFeeder has successfully started.");
     isRunning = 1;
     while (isRunning && reader.read_row(timestamp, acc.x, press.pressure, altMSL, press.temperature, acc.y, acc.z, gyro.x, gyro.y, gyro.z, mag.x, mag.y, mag.z, flags[0], flags[1], flags[2], flags[3]))
     {
@@ -107,7 +103,7 @@ void * worker_function( void * arg )
         msleep( 10 );
     }
 
-    DEBUG_LINE("C++ DataFeeder has successfully exited.", NULL);
+    DEBUG_LINE("C++ DataFeeder has successfully exited.");
     isRunning = 0;
 
     return nullptr;
@@ -117,7 +113,7 @@ void * worker_function( void * arg )
 uint32_t timestamp_uint;
 void * worker_function( void * arg )
 {
-    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
+    DEBUG_LINE("C++ DataFeeder has successfully started.");
 
     isRunning = 1;
     double timestamp { };
@@ -129,7 +125,7 @@ void * worker_function( void * arg )
     io::CSVReader<9> reader (csv_file_name);
 
     // time,accx,accy,accz,rotx,roty,rotz,temp,pres,alt,Flags
-    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
+    DEBUG_LINE("C++ DataFeeder has successfully started.");
     isRunning = 1;
 
     while (isRunning && reader.read_row(timestamp, acc.x, acc.y, acc.z, gyro.x, gyro.y, gyro.z, press.pressure, press.temperature))
@@ -158,7 +154,7 @@ void * worker_function( void * arg )
         msleep( 50 );
     }
 
-    DEBUG_LINE("C++ DataFeeder has successfully exited.", NULL);
+    DEBUG_LINE("C++ DataFeeder has successfully exited.");
 
     isRunning = 0;
     return nullptr;

@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <memory.h>
 
 #include "protocols/UART.h"
 #include "board/components/flash.h"

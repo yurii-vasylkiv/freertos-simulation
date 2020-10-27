@@ -48,8 +48,6 @@ extern "C" {
 #define CONFIG_PRESSURE_SENSOR_DEFAULT_TEMPERATURE_OVERSAMPLING  UINT8_C(0x02)
 #define CONFIG_PRESSURE_SENSOR_DEFAULT_IIR_FILTER_COEFF          UINT8_C(0x04)
 
-static char buf[128];
-
 static QueueHandle_t s_queue;
 static xTaskHandle handle;
 static uint8_t dataNeedsToBeConverted = 0;
@@ -113,10 +111,8 @@ void prv_pressure_sensor_start( void * pvParameters )
     PressureSensorData dataStruct;
     memset(&dataStruct, 0, sizeof(PressureSensorData));
 
-    uint32_t time_start = 1;
-
     s_is_running = true;
-    DEBUG_LINE("Pressure sensor task has been successfully started.", NULL);
+    DEBUG_LINE("Pressure sensor task has been successfully started.");
 
     while ( s_is_running )
     {
@@ -143,7 +139,7 @@ void prv_pressure_sensor_start( void * pvParameters )
         memset(&dataStruct, 0, sizeof(PressureSensorData));
     }
 
-    DEBUG_LINE("Pressure sensor task has successfully exited.", NULL);
+    DEBUG_LINE("Pressure sensor task has successfully exited.");
 }
 
 bool pressure_sensor_is_running     ()
@@ -183,7 +179,7 @@ void pressure_sensor_start( void * pvParameters )
     }
     else
     {
-        DISPLAY_LINE("Pressure Sensor task is already running", NULL);
+        DISPLAY_LINE("Pressure Sensor task is already running");
     }
 }
 

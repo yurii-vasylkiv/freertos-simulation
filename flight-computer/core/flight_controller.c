@@ -82,7 +82,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "System configurations have been extracted.", NULL );
+        DEBUG_LINE( "System configurations have been extracted.");
     }
 
     systemConfigurationsU.values = system_configurations;
@@ -99,7 +99,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "Memory configurations have been extracted.", NULL );
+        DEBUG_LINE( "Memory configurations have been extracted.");
     }
 
     memoryConfigurationsU.values = memoryConfigurations;
@@ -117,7 +117,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "System configurations have been extracted", NULL );
+        DISPLAY_LINE( "System configurations have been extracted");
     }
 
     systemConfigurationsU.values = system_configurations;
@@ -137,7 +137,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DISPLAY_LINE( "System configurations have been extracted", NULL );
+        DISPLAY_LINE( "System configurations have been extracted");
     }
 
     memoryConfigurationsU.values = memoryConfigurations;
@@ -156,7 +156,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "IMU sensor has been configured.", NULL );
+        DEBUG_LINE( "IMU sensor has been configured.");
     }
 
     if ( 0 != pressure_sensor_configure(&system_configurations.pressure_sensor_configuration) )
@@ -164,7 +164,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "Pressure sensor has been configured.", NULL );
+        DEBUG_LINE( "Pressure sensor has been configured.");
     }
 
 //     imu_sensor_start      ( NULL );
@@ -180,7 +180,7 @@ static void prv_flight_controller_task(void * pvParams)
     }
     else
     {
-        DEBUG_LINE( "IMU sensor has been configured.", NULL );
+        DEBUG_LINE( "IMU sensor has been configured.");
     }
 
     if(0 != pressure_sensor_configure(&system_configurations.pressure_sensor_configuration))
@@ -189,7 +189,7 @@ static void prv_flight_controller_task(void * pvParams)
     }
     else
     {
-        DEBUG_LINE( "Pressure sensor has been configured.", NULL );
+        DEBUG_LINE( "Pressure sensor has been configured.");
     }
 
     imu_sensor_start      ( &system_configurations );
@@ -203,7 +203,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "Event Detector has been set & configured.", NULL );
+        DEBUG_LINE( "Event Detector has been set & configured.");
     }
 
     // in case of reboot during the flight if memory is not corrupted event_detector_init should change this flag to the
@@ -213,10 +213,10 @@ static void prv_flight_controller_task(void * pvParams)
         // this will only be triggered in case if we are on the ground before the flight
 
         // # 1 set the ground pressure and temperature as references for the future calculations
-        DEBUG_LINE( "Flight Controller: waiting for the ground pressure & temperature...", NULL );
+        DEBUG_LINE( "Flight Controller: waiting for the ground pressure & temperature...");
         PressureSensorData initialGroundPressureData;
         while (!pressure_sensor_read(&initialGroundPressureData));
-        DEBUG_LINE( "Flight Controller: ground pressure & temperature have been set!", NULL );
+        DEBUG_LINE( "Flight Controller: ground pressure & temperature have been set!");
 
         system_configurations.ground_pressure = initialGroundPressureData.pressure;
         system_configurations.ground_temperature = initialGroundPressureData.temperature;
@@ -234,7 +234,7 @@ static void prv_flight_controller_task(void * pvParams)
         }
         else
         {
-            DEBUG_LINE("Memory configurations have been updated.", NULL);
+            DEBUG_LINE("Memory configurations have been updated.");
         }
 
         // write these configurations to the memory
@@ -248,7 +248,7 @@ static void prv_flight_controller_task(void * pvParams)
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "Flight State Machine has been set.", NULL );
+        DEBUG_LINE( "Flight State Machine has been set.");
     }
 
     static Data flightData;
@@ -363,13 +363,13 @@ int flight_state_machine_tick( FlightState state, FlightStateMachineTickParamete
 {
     if ( parameters == NULL )
     {
-        DISPLAY_LINE("CANNOT return flight state. Flight Controller has not been initialized.", NULL);
+        DISPLAY_LINE("CANNOT return flight state. Flight Controller has not been initialized.");
         return 1;
     }
 
     if ( !isInitialized )
     {
-        DISPLAY_LINE("Flight Controller has been already initialized.", NULL);
+        DISPLAY_LINE("Flight Controller has been already initialized.");
         return 1;
     }
 

@@ -485,7 +485,7 @@ void _write_async_to_flash_if_anything_is_available( size_t size )
 
 void _append_page( Sector sector, uint8_t * data )
 {
-    if ( sector == Conf )
+    if ( (uint8_t) sector == Conf )
     {
         const uint32_t OFFSET = confSector.info.startAddress + confSector.info.bytesWritten;
 
@@ -511,7 +511,7 @@ void _append_page( Sector sector, uint8_t * data )
 static MemoryStatus _access_page( Sector sector, uint16_t pageIndex, uint8_t * dest )
 {
     uint32_t OFFSET;
-    if ( sector != Conf )
+    if ( (uint8_t) sector != Conf )
     {
         if ( PAGE_SIZE * pageIndex > dataSectors[ sector ].info.bytesWritten )
         {
@@ -614,12 +614,12 @@ MemoryStatus memory_manager_get_stats ( void )
     {
         printf("Sector #%i:\n", sector);
         printf ("--------------------\n");
-        printf( " size:            %i\n", dataSectors[ sector ].info.size );
-        printf( " begin:           %i\n", dataSectors[ sector ].info.startAddress );
-        printf( " end:             %i\n", dataSectors[ sector ].info.endAddress );
-        printf( " size on disk:    %i\n", dataSectors[ sector ].info.bytesWritten );
-        printf( " pages on disk:   %i\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE );
-        printf( " entries on disk: %i\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE * _get_entries_page_for_sector(sector));
+        printf( " size:            %lu\n", dataSectors[ sector ].info.size );
+        printf( " begin:           %lu\n", dataSectors[ sector ].info.startAddress );
+        printf( " end:             %lu\n", dataSectors[ sector ].info.endAddress );
+        printf( " size on disk:    %lu\n", dataSectors[ sector ].info.bytesWritten );
+        printf( " pages on disk:   %lu\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE );
+        printf( " entries on disk: %lu\n", dataSectors[ sector ].info.bytesWritten / PAGE_SIZE * _get_entries_page_for_sector(sector));
 
 //        uint8_t dst [_get_size_for_sector_data_struct(sector)];
 //        memset(dst, 0, _get_size_for_sector_data_struct(sector));
@@ -699,7 +699,7 @@ void _queue_monitor_task( void * arg )
 //                        NULL,      /* Notified value pass out in ulNotifiedValue. */
 //                         250);
 
-//        DISPLAY_LINE("monitor woke up!", NULL);
+//        DISPLAY_LINE("monitor woke up!");
 
         while ( buffer_queue_pop_front( &s_page_cb, &item ) )
         {
@@ -729,7 +729,7 @@ void _queue_monitor_task( void * arg )
         }
     }
 
-    DISPLAY_LINE("monitor EXITED!", NULL);
+    DISPLAY_LINE("monitor EXITED!");
 
 }
 
@@ -752,6 +752,8 @@ static uint32_t _get_entries_page_for_sector(uint8_t sector)
         case Conf:
             return CONFIGURATION_ENTRIES_PER_PAGE;
             break;
+        default:
+            return 101;
     }
 }
 
@@ -773,6 +775,8 @@ static uint32_t _get_size_for_sector_data_struct(uint8_t sector)
         case Conf:
             return sizeof(ConfigurationU);
             break;
+        default:
+            return 101;
     }
 }
 

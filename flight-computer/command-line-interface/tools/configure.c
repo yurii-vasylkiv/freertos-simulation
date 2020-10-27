@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <memory.h>
+#include <stdlib.h>
 
 
 #include "protocols/UART.h"
@@ -114,7 +116,7 @@ bool cli_tools_configure_set_initial_time (char *pcWriteBuffer, size_t xWriteBuf
 
     if( value >0 && value <=10000000){
 
-        sprintf(pcWriteBuffer,"Setting initial time to wait to %d ms\n",value);
+        sprintf(pcWriteBuffer,"Setting initial time to wait to %lu ms\n", value);
         FlightSystemConfiguration configuration;
         if( MEM_OK ==  memory_manager_get_system_configurations(&configuration) )
         {

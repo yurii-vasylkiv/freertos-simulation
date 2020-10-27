@@ -59,7 +59,7 @@ int event_detector_init( FlightSystemConfiguration * configurations)
 {
     if ( INITIALIZED == 1)
     {
-        DISPLAY_LINE("Event Detector has been already initialized.", NULL);
+        DISPLAY_LINE("Event Detector has been already initialized.");
         return 0;
     }
 
@@ -89,13 +89,13 @@ int event_detector_update_configurations ( FlightSystemConfiguration * configura
 {
     if (INITIALIZED == 0)
     {
-        DISPLAY_LINE("CANNOT update configurations. Event Detector has not been initialized.", NULL);
+        DISPLAY_LINE("CANNOT update configurations. Event Detector has not been initialized.");
         return 1;
     }
 
     if(configurations == NULL)
     {
-        DISPLAY_LINE("CANNOT update configurations. NullPointer.", NULL);
+        DISPLAY_LINE("CANNOT update configurations. NullPointer.");
         return 1;
     }
 
@@ -110,7 +110,7 @@ FlightState event_detector_feed ( Data * data)
 {
     if (INITIALIZED == 0)
     {
-        DISPLAY_LINE("CANNOT feed. Event Detector has not been initialized.", NULL);
+        DISPLAY_LINE("CANNOT feed. Event Detector has not been initialized.");
         return 1;
     }
 
@@ -174,7 +174,7 @@ FlightState event_detector_feed ( Data * data)
         }
         case FLIGHT_STATE_APOGEE:
         {
-            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue", NULL );
+            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue");
             flightState = FLIGHT_STATE_POST_APOGEE;
 
             return 0;
@@ -196,7 +196,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_MAIN_CHUTE:
         {
-            DEBUG_LINE("FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute", NULL);
+            DEBUG_LINE("FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute");
             flightState = FLIGHT_STATE_POST_MAIN;
 
             return 0;
@@ -231,7 +231,7 @@ FlightState event_detector_feed ( Data * data)
         }
         case FLIGHT_STATE_LANDED:
         {
-            DEBUG_LINE("FLIGHT_STATE_LANDED: Rocket landed!", NULL);
+            DEBUG_LINE("FLIGHT_STATE_LANDED: Rocket landed!");
             flightState = FLIGHT_STATE_EXIT;
 
             return 0;
@@ -239,7 +239,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_EXIT:
         {
-            DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!", NULL );
+            DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!");
             flightState = FLIGHT_STATE_COUNT;
             return 0;
         }

@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <memory.h>
 #include "core/flight_controller.h"
 #include "board/components/imu_sensor.h"
 #include "board/components/pressure_sensor.h"

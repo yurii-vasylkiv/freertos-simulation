@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <memory.h>
+#include <stdlib.h>
 
 
 #include "protocols/UART.h"
@@ -79,7 +81,7 @@ bool cli_tools_mem_read (char *pcWriteBuffer, size_t xWriteBufferLen, const char
 
     if(value > 0 && value <= FLASH_END_ADDRESS)
     {
-        sprintf(pcWriteBuffer, "Reading 256 bytes starting at address %i ...\n", value);
+        sprintf(pcWriteBuffer, "Reading 256 bytes starting at address %lu ...\n", value);
 
         uint8_t data_rx[FLASH_PAGE_SIZE];
         FlashStatus stat;
@@ -128,7 +130,7 @@ bool cli_tools_mem_scan (char *pcWriteBuffer, size_t xWriteBufferLen, const char
     uint32_t value = atoi(str_option_arg);
 
     uint32_t end_Address = flash_scan();
-    sprintf(pcWriteBuffer, "End address :%i \n", end_Address);
+    sprintf(pcWriteBuffer, "End address :%lu \n", end_Address);
 
     return true;
 }
@@ -165,7 +167,7 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
         }
 
 //        HAL_GPIO_TogglePin(USR_LED_PORT,USR_LED_PIN);
-        sprintf(pcWriteBuffer, "Erasing sector %i ...\n", address);
+        sprintf(pcWriteBuffer, "Erasing sector %lu ...\n", address);
     }
 
     flash_read(FLASH_START_ADDRESS, dataRX, 256);
@@ -221,7 +223,7 @@ static bool cli_tools_mem_read_imu_index (char* pcWriteBuffer, size_t xWriteBuff
     IMUDataU dst = {};
     if (MEM_OK == memory_manager_get_single_imu_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%i, accel=[%f, %f, %f], gyro=[%f, %f, %f]\n",
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, accel=[%f, %f, %f], gyro=[%f, %f, %f]\n",
                 cmd_option, dst.timestamp, dst.accelerometer[0], dst.accelerometer[1], dst.accelerometer[2],
                 dst.gyroscope[0], dst.gyroscope[1], dst.gyroscope[2]);
 
@@ -241,7 +243,7 @@ static bool cli_tools_mem_read_press_index (char* pcWriteBuffer, size_t xWriteBu
     PressureDataU dst = {};
     if (MEM_OK == memory_manager_get_single_pressure_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%i, pressure=%f, temperature=%f\n", cmd_option, dst.timestamp, dst.pressure, dst.temperature);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f, temperature=%f\n", cmd_option, dst.timestamp, dst.pressure, dst.temperature);
         return true;
     }
 
@@ -258,7 +260,7 @@ static bool cli_tools_mem_read_cont_index (char* pcWriteBuffer, size_t xWriteBuf
     ContinuityU dst = {};
     if (MEM_OK == memory_manager_get_single_cont_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%i, status=%i\n", cmd_option, dst.timestamp, dst.status);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.timestamp, dst.status);
         return true;
     }
 
@@ -274,7 +276,7 @@ static bool cli_tools_mem_read_flight_event_index (char* pcWriteBuffer, size_t x
     FlightEventU dst = {};
     if (MEM_OK == memory_manager_get_single_flight_event_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%i, status=%i\n", cmd_option, dst.timestamp, dst.status);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.timestamp, dst.status);
         return true;
     }
 
@@ -311,13 +313,13 @@ static bool cli_tools_mem_read_configuration_index (char* pcWriteBuffer, size_t 
         " write_main_continuity_ms        = %i\n"
         "\n"
         "System:\n"
-        " landing_rotation_speed_deg_per_sec      = %i\n"
-        " backup_time_launch_to_apogee_sec        = %i\n"
-        " backup_time_apogee_to_main_sec          = %i\n"
-        " backup_time_main_to_ground_sec          = %i\n"
-        " ground_pressure                         = %i\n"
-        " ground_temperature                      = %i\n"
-        " current_system_time                     = %i\n"
+        " landing_rotation_speed_deg_per_sec      = %lu\n"
+        " backup_time_launch_to_apogee_sec        = %lu\n"
+        " backup_time_apogee_to_main_sec          = %lu\n"
+        " backup_time_main_to_ground_sec          = %lu\n"
+        " ground_pressure                         = %lu\n"
+        " ground_temperature                      = %lu\n"
+        " current_system_time                     = %lu\n"
         " altitude_main_recovery_m                = %i\n"
         " flight_state                            = %i\n"
         " power_mode                              = %i\n"

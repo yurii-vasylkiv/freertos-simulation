@@ -39,6 +39,7 @@
 #define cmdASCII_DEL		( 0x7F )
 
 static xTaskHandle handle;
+static bool s_is_running = false;
 
 static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStringLength, char *pcWriteBuffer, char * cmd_option, char * str_option_arg);
 // ---------------------------------------------------------------------------------------------------------------------
@@ -282,10 +283,11 @@ void prv_cli_function(void * pvParams)
 //             "help"
 //    };
 
-    while(1)
+    s_is_running = true;
+    while(s_is_running)
     {
         /* Process the input string received prior to the newline. */
-        DISPLAY(">> ", NULL);
+        DISPLAY(">> ");
         INPUT(cInputString);
 //        memcpy(cInputString, "task-stats", strlen("task-stats"));
 //        comm_index++;
@@ -310,14 +312,26 @@ void prv_cli_function(void * pvParams)
         cInputIndex = 0;
         memset( cInputString, 0x00, cmdMAX_INPUT_SIZE );
     }
+
+    s_is_running = false;
 }
 
-void command_line_interface_start(void *pvParameters)
+
+
+void command_line_interface_start(void * const pvParameters)
 {
-    if(pdFALSE == xTaskCreate(prv_cli_function, "cli-manager", configMINIMAL_STACK_SIZE, NULL, 5, NULL))
+    if(! s_is_running)
     {
-        board_error_handler( __FILE__, __LINE__ );
+        if (pdFALSE == xTaskCreate(prv_cli_function, "cli-manager", configMINIMAL_STACK_SIZE, NULL, 5, NULL))
+        {
+            board_error_handler(__FILE__, __LINE__);
+        }
     }
+}
+
+bool command_line_interface_is_running()
+{
+    return s_is_running;
 }
 
 
@@ -625,7 +639,7 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
             continue;
         }
 
-        char pcWriteBufferLine [32] = {0};
+        char pcWriteBufferLine [64] = {0};
         sprintf( pcWriteBufferLine,  "%s   %lu     %i      %lu         %i\r\n", task.pcTaskName, task.xTaskNumber, task.eCurrentState, task.uxCurrentPriority, task.usStackHighWaterMark);
         strcat(pcWriteBuffer, pcWriteBufferLine);
     }
