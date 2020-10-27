@@ -112,8 +112,7 @@ def gen_aux_config_files():
         clean.write("rd /s /q \"bin\" > nul 2>&1")
         clean.write("\n")
         clean.write("rd /s /q \"generated\" > nul 2>&1")
-        clean.write("\n")
-        clean.write("del BUILD.bat")
+
 
 
 
