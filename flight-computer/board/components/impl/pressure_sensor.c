@@ -46,6 +46,7 @@ static char buf[128];
 static QueueHandle_t s_queue = {0};
 static struct bmp3_data s_data = {0};
 static uint8_t s_desired_processing_data_rate = 50;
+static bool s_is_running = false;
 
 static void     delay_ms                    (uint32_t period_ms);
 static int8_t   spi_reg_write               (uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint16_t length);
@@ -82,6 +83,16 @@ static struct pressure_sensor_configuration s_current_configuration = {
 
 int pressure_sensor_configure (PressureSensorConfiguration * parameters )
 {
+    if(parameters == NULL)
+    {
+        s_current_configuration = s_default_configuration;
+        return 0;
+    }
+    else
+    {
+        s_current_configuration = *parameters;
+    }
+
     int8_t result = 0;
     
     /* Used to select the settings user needs to change */
@@ -91,10 +102,10 @@ int pressure_sensor_configure (PressureSensorConfiguration * parameters )
     s_device.settings.press_en = BMP3_ENABLE;
     s_device.settings.temp_en = BMP3_ENABLE;
     /* Select the output data rate and oversampling settings for pressure and temperature */
-    s_device.settings.odr_filter.press_os = parameters->pressure_oversampling;
-    s_device.settings.odr_filter.temp_os = parameters->temperature_oversampling;
-    s_device.settings.odr_filter.odr = parameters->output_data_rate;
-    s_device.settings.odr_filter.iir_filter = parameters->infinite_impulse_response_filter_coefficient;
+    s_device.settings.odr_filter.press_os = s_current_configuration.pressure_oversampling;
+    s_device.settings.odr_filter.temp_os = s_current_configuration.temperature_oversampling;
+    s_device.settings.odr_filter.odr = s_current_configuration.output_data_rate;
+    s_device.settings.odr_filter.iir_filter = s_current_configuration.infinite_impulse_response_filter_coefficient;
     /* Assign the settings which needs to be set in the sensor */
     settings_sel = BMP3_PRESS_EN_SEL | BMP3_TEMP_EN_SEL | BMP3_PRESS_OS_SEL | BMP3_TEMP_OS_SEL | BMP3_ODR_SEL | BMP3_IIR_FILTER_SEL;
 
@@ -175,9 +186,10 @@ void pressure_sensor_start(void * const pvParameters)
     }
     
     int8_t result_flag;
-    while(1)
+    s_is_running = true;
+
+    while(s_is_running)
     {
-        
         result_flag = get_sensor_data(&s_data);
         if(BMP3_E_NULL_PTR == result_flag)
         {
@@ -192,6 +204,16 @@ void pressure_sensor_start(void * const pvParameters)
 
         vTaskDelayUntil(&dataStruct.timestamp, s_desired_processing_data_rate);
     }
+}
+
+bool pressure_sensor_is_running     ()
+{
+    return s_is_running;
+}
+
+void pressure_sensor_stop           ()
+{
+    s_is_running = false;
 }
 
 static void delay_ms(uint32_t period_ms)

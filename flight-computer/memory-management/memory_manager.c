@@ -39,6 +39,29 @@ static uint8_t s_is_initialized                         = { 0 };
 static size_t s_configurations_autosave_interval_tick   = { 0 };
 static xTaskHandle handle                               = { 0 };
 
+static const struct memory_manager_configuration s_default_memory_manager_configurations =
+{
+        // TODO: to be edited
+        .write_pre_launch_multiplier         = 0,
+        .write_pre_apogee_multiplier         = 0,
+        .write_post_apogee_multiplier        = 0,
+        .write_ground_multiplier             = 0,
+
+        .write_interval_accelerometer_ms     = 0,
+
+        .write_interval_gyroscope_ms         = 0,
+        .write_interval_magnetometer_ms      = 0,
+
+        .write_interval_pressure_ms          = 0,
+        .write_interval_altitude_ms          = 0,
+
+        .write_interval_temperature_ms       = 0,
+        .write_interval_flight_state_ms      = 0,
+
+        .write_drogue_continuity_ms          = 0,
+        .write_main_continuity_ms            = 0,
+};
+
 
 static uint32_t _get_entries_page_for_sector(uint8_t sector);
 
@@ -316,7 +339,7 @@ MemoryStatus memory_manager_start( )
         return MEM_ERR;
     }
 
-    if ( pdFALSE == xTaskCreate( _queue_monitor_task, "memory-manager", configMINIMAL_STACK_SIZE, NULL, 5, &handle ) )
+    if ( pdFALSE == xTaskCreate( _queue_monitor_task, "mem-manager", configMINIMAL_STACK_SIZE, NULL, 5, &handle ) )
     {
         return MEM_ERR;
     }
@@ -385,6 +408,12 @@ MemoryStatus memory_manager_set_memory_configurations(MemoryManagerConfiguration
     prv_update_configurations( );
 
     return MEM_OK;
+}
+
+
+MemoryManagerConfiguration memory_manager_get_default_memory_configurations()
+{
+    return s_default_memory_manager_configurations;
 }
 
 
@@ -679,19 +708,19 @@ void _queue_monitor_task( void * arg )
             switch ( item.type )
             {
                 case IMU:
-                    printf( "Monitor: IMU was flushed!\n" );
+//                    printf( "Monitor: IMU was flushed!\n" );
                     break;
                 case Pressure:
-                    printf( "Monitor: Pressure was flushed!\n" );
+//                    printf( "Monitor: Pressure was flushed!\n" );
                     break;
                 case Cont:
-                    printf( "Monitor: Cont was flushed!\n" );
+//                    printf( "Monitor: Cont was flushed!\n" );
                     break;
                 case Event:
-                    printf( "Monitor: Event was flushed!\n" );
+//                    printf( "Monitor: Event was flushed!\n" );
                     break;
                 case Conf:
-                    printf( "Monitor: Configuration was flushed!\n" );
+//                    printf( "Monitor: Configuration was flushed!\n" );
                     break;
                 default:
                     printf( "Monitor: Wrong type! Wtf?\n" );

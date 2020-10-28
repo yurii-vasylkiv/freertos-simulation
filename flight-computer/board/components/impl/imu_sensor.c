@@ -45,6 +45,7 @@
 
 static QueueHandle_t s_queue = {0};
 static uint8_t s_desired_processing_data_rate = 50;
+static bool s_is_running = false;
 
 //Wrapper functions for read and write
 int8_t user_spi_read (uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len);
@@ -141,21 +142,30 @@ static float imu_sensor_deg_per_sec2rot     ( float deg_per_sec )
 
 int imu_sensor_configure (IMUSensorConfiguration * parameters )
 {
+    if(parameters == NULL)
+    {
+        s_current_configuration = s_default_configuration;
+        return 0;
+    }
+    else
+    {
+        s_current_configuration = *parameters;
+    }
+
     int status = BMI08X_OK;
 
-    status = accel_config(parameters);
+    status = accel_config(&s_current_configuration);
     if(status != BMI08X_OK)
     {
         return status;
     }
 
-    status = gyro_config(parameters);
+    status = gyro_config(&s_current_configuration);
     if(status != BMI08X_OK)
     {
         return status;
     }
 
-    s_current_configuration = *parameters;
 
     return BMI08X_OK;
 }
@@ -200,8 +210,10 @@ void imu_sensor_start(void * const param)
 
     TickType_t start_timestamp =  xTaskGetTickCount();
 
-    while(1){
-        
+    s_is_running = true;
+
+    while(s_is_running)
+    {
         result_flag = bmi08a_get_data(&container, &s_device);
         if(BMI08X_E_NULL_PTR == result_flag)
         {
@@ -227,6 +239,17 @@ void imu_sensor_start(void * const param)
         vTaskDelayUntil(&dataStruct.timestamp, s_desired_processing_data_rate);
     }
 }
+
+bool imu_sensor_is_running     ()
+{
+    return s_is_running;
+}
+
+void imu_sensor_stop           ()
+{
+    s_is_running = false;
+}
+
 
 bool imu_read(IMUSensorData * buffer)
 {

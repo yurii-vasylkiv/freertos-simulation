@@ -65,6 +65,10 @@ void    pressure_sensor_start               ( void * const pvParameters );
 bool    pressure_sensor_test                ( void );
 bool    pressure_sensor_read                ( PressureSensorData * buffer );
 bool    pressure_sensor_add_measurement     ( PressureSensorData * _data );
+bool    pressure_sensor_is_running          ();
+void    pressure_sensor_stop                ();
+
+
 PressureSensorConfiguration pressure_sensor_get_default_configuration();
 PressureSensorConfiguration pressure_sensor_get_current_configuration();
 bool    pressure_sensor_recalibrate();

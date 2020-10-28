@@ -64,6 +64,8 @@ int  imu_sensor_configure      ( IMUSensorConfiguration * parameters );
 void imu_sensor_start          ( void * const param );
 bool imu_read                  ( IMUSensorData * buffer );
 bool imu_add_measurement       ( IMUSensorData *_data );
+bool imu_sensor_is_running     ();
+void imu_sensor_stop           ();
 
 IMUSensorConfiguration
      imu_sensor_get_default_configuration();

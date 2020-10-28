@@ -16,7 +16,6 @@
 //---------------------------------------------------------------------------------------------------------------------
 
 #include <board/board.h>
-#include "memory-management/memory_manager.h"
 #include "board/components/imu_sensor.h"
 #include "protocols/SPI.h"
 #include "core/system_configuration.h"
@@ -47,6 +46,7 @@ static QueueHandle_t s_queue;
 static xTaskHandle handle;
 static uint8_t dataNeedsToBeConverted = 0;
 static uint8_t s_desired_processing_data_rate = 50;
+static bool s_is_running = false;
 
 static const struct imu_sensor_configuration s_default_configuration = {
 
@@ -158,6 +158,12 @@ int imu_sensor_init( FlightSystemConfiguration * parameters )
 
 int imu_sensor_configure (IMUSensorConfiguration * parameters )
 {
+    if(parameters == NULL)
+    {
+        s_current_configuration = s_default_configuration;
+        return 0;
+    }
+
     s_current_configuration = *parameters;
     return 0;
 }
@@ -186,7 +192,10 @@ void prv_imu_thread_start( void * param )
 
     uint32_t time_start = 0;
 
-    while ( 1 )
+    s_is_running = true;
+    DEBUG_LINE("IMU sensor task has been successfully started.", NULL);
+
+    while ( s_is_running )
     {
 
         result_flag = datafeeder_get_acc( &cxx_data );
@@ -228,34 +237,46 @@ void prv_imu_thread_start( void * param )
 
         imu_add_measurement( &dataStruct );
     }
+
+    DEBUG_LINE("IMU sensor task has successfully exited.", NULL);
 }
 
 
 
 void imu_sensor_start ( void * const param )
 {
-#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
-    #define MAKE_STR(x) _MAKE_STR(x)
-    #define _MAKE_STR(x) #x
-    #if (userconf_USE_COTS_DATA == 1)
-        const char *CSV_FILE_PATH = MAKE_STR(COTS_CSV_FILE_PATH) ;
-        if(!data_feeder_is_started()){
+    #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
+        #define MAKE_STR(x) _MAKE_STR(x)
+        #define _MAKE_STR(x) #x
+        #if (userconf_USE_COTS_DATA == 1)
+            const char *CSV_FILE_PATH = MAKE_STR(COTS_CSV_FILE_PATH) ;
             data_feeder_start ( CSV_FILE_PATH );
-        }
-    #else
-        const char *CSV_FILE_PATH = MAKE_STR(SRAD_CSV_FILE_PATH) ;
-        if(!data_feeder_is_started()){
+        #else
+            const char *CSV_FILE_PATH = MAKE_STR(SRAD_CSV_FILE_PATH) ;
             data_feeder_start ( CSV_FILE_PATH );
-        }
+        #endif
     #endif
-#endif
 
-    if ( pdFALSE == xTaskCreate ( prv_imu_thread_start, "imu-task", configMINIMAL_STACK_SIZE, param, 5, &handle ) )
+    if( ! s_is_running ) {
+        if (pdFALSE == xTaskCreate(prv_imu_thread_start, "imu-manager", configMINIMAL_STACK_SIZE, param, 5, &handle)) {
+            board_error_handler(__FILE__, __LINE__);
+        }
+    }
+    else
     {
-        board_error_handler( __FILE__, __LINE__ );
+        DISPLAY_LINE("IMU Sensor task is already running", NULL);
     }
 }
 
+bool imu_sensor_is_running     ()
+{
+    return s_is_running;
+}
+
+void imu_sensor_stop           ()
+{
+    s_is_running = false;
+}
 
 
 bool imu_read ( IMUSensorData * buffer )

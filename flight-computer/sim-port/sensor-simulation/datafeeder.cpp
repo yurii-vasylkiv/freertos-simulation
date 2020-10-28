@@ -18,6 +18,8 @@
 
 namespace
 {
+    static bool s_is_running        = false;
+
     const int MAX_ITEMS             = 100;
 
     pthread_t                       worker;
@@ -52,7 +54,6 @@ namespace
     }
 
     static int isRunning = 0;
-    static int isStarted = 0;
 }
 
 #ifdef __cplusplus
@@ -62,7 +63,7 @@ extern "C" {
 
 #if (userconf_USE_COTS_DATA == 1)
 uint32_t timestamp_uint;
-void worker_function( void * arg )
+void * worker_function( void * arg )
 {
     double timestamp { };
     xyz_data gyro, acc, mag;
@@ -79,8 +80,8 @@ void worker_function( void * arg )
     // time,acceleration,pres,altMSL,temp,latxacc,latyacc,gyrox,gyroy,gyroz,magx,magy,magz,launch_detect,apogee_detect,Aon,Bon
 
     DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
-
-    while (reader.read_row(timestamp, acc.x, press.pressure, altMSL, press.temperature, acc.y, acc.z, gyro.x, gyro.y, gyro.z, mag.x, mag.y, mag.z, flags[0], flags[1], flags[2], flags[3]))
+    isRunning = 1;
+    while (isRunning && reader.read_row(timestamp, acc.x, press.pressure, altMSL, press.temperature, acc.y, acc.z, gyro.x, gyro.y, gyro.z, mag.x, mag.y, mag.z, flags[0], flags[1], flags[2], flags[3]))
     {
         timestamp_uint += 50;
         acc.timestamp   = timestamp;
@@ -107,8 +108,9 @@ void worker_function( void * arg )
     }
 
     DEBUG_LINE("C++ DataFeeder has successfully exited.", NULL);
+    isRunning = 0;
 
-    //return nullptr;
+    return nullptr;
 }
 
 #else
@@ -127,8 +129,10 @@ void * worker_function( void * arg )
     io::CSVReader<9> reader (csv_file_name);
 
     // time,accx,accy,accz,rotx,roty,rotz,temp,pres,alt,Flags
+    DEBUG_LINE("C++ DataFeeder has successfully started.", NULL);
+    isRunning = 1;
 
-    while (reader.read_row(timestamp, acc.x, acc.y, acc.z, gyro.x, gyro.y, gyro.z, press.pressure, press.temperature))
+    while (isRunning && reader.read_row(timestamp, acc.x, acc.y, acc.z, gyro.x, gyro.y, gyro.z, press.pressure, press.temperature))
     {
         timestamp_uint += 50;
         acc.timestamp   = timestamp_uint;
@@ -161,7 +165,15 @@ void * worker_function( void * arg )
 }
 #endif
 
+int data_feeder_is_running( )
+{
+    return isRunning;
+}
 
+void data_feeder_stop()
+{
+    isRunning = false;
+}
 
 
 #ifdef __cplusplus
@@ -169,17 +181,7 @@ void * worker_function( void * arg )
 
 
 
-int data_feeder_is_running( )
-{
-    return isRunning;
-}
 
-
-
-int data_feeder_is_started( )
-{
-    return isStarted;
-}
 
 
 
@@ -191,11 +193,11 @@ void prv_task_fnc( void * pvParams )
 {
     try
     {
-//        if ( pthread_create( &worker, nullptr, worker_function, nullptr ) )
-//        {
-//            fprintf( stderr, "Error creating thread\n" );
-//            return;
-//        }
+        if ( pthread_create( &worker, nullptr, worker_function, nullptr ) )
+        {
+            fprintf( stderr, "Error creating thread\n" );
+            return;
+        }
     }
     catch ( const char * s )
     {
@@ -208,11 +210,12 @@ void prv_task_fnc( void * pvParams )
 
 int data_feeder_start( const char * file )
 {
-    isStarted = 1;
-    csv_file_name = std::string( file, strlen( file ) );
-    if ( pdFALSE == xTaskCreate( worker_function, "fake-sensor-data", configMINIMAL_STACK_SIZE, nullptr, 5, &handle ) )
+    if( ! isRunning )
     {
-        return 1;
+        csv_file_name = std::string(file, strlen(file));
+        if (pdFALSE == xTaskCreate(prv_task_fnc, "fake-sensor-data", configMINIMAL_STACK_SIZE, nullptr, 5, &handle)) {
+            return 1;
+        }
     }
 
     return 0;

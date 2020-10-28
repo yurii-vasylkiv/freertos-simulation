@@ -57,6 +57,12 @@ bool event_detector_is_flight_started()
 
 int event_detector_init( FlightSystemConfiguration * configurations)
 {
+    if ( INITIALIZED == 1)
+    {
+        DISPLAY_LINE("Event Detector has been already initialized.", NULL);
+        return 0;
+    }
+
     if(configurations == NULL)
     {
         return 1;
@@ -65,13 +71,14 @@ int event_detector_init( FlightSystemConfiguration * configurations)
     GROUND_PRESSURE = configurations->ground_pressure;
     GROUND_ALTITUDE = calculate_altitude ( GROUND_PRESSURE );
 
-    flightState     = FLIGHT_STATE_LAUNCHPAD;
+    // in case of reboot during the flight if memory is not corrupted this flag should change to the
+    // appropriate current flight stage that != FLIGHT_STATE_LAUNCHPAD
+    flightState     = configurations->flight_state;
 
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
-    data_window_init( &altitude_data_window );
-    data_window_init( &vertical_acc_data_window );
+    data_window_init ( &altitude_data_window );
+    data_window_init ( &vertical_acc_data_window );
 #endif
-
 
 
     INITIALIZED = 1;
@@ -82,11 +89,13 @@ int event_detector_update_configurations ( FlightSystemConfiguration * configura
 {
     if (INITIALIZED == 0)
     {
+        DISPLAY_LINE("CANNOT update configurations. Event Detector has not been initialized.", NULL);
         return 1;
     }
 
     if(configurations == NULL)
     {
+        DISPLAY_LINE("CANNOT update configurations. NullPointer.", NULL);
         return 1;
     }
 
@@ -101,6 +110,7 @@ FlightState event_detector_feed ( Data * data)
 {
     if (INITIALIZED == 0)
     {
+        DISPLAY_LINE("CANNOT feed. Event Detector has not been initialized.", NULL);
         return 1;
     }
 

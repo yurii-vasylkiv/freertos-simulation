@@ -53,6 +53,7 @@ IF(BUILD_FOR_SIM_ON_UNIX_OS)
     INCLUDE_DIRECTORIES         (../os-kernel/FreeRTOS-Plus-CLI)
 
     SET(SIM_PORT_SRC        # sensor simulation
+            ../flight-computer/sim-port/sensor-simulation/buzzer.c
             ../flight-computer/sim-port/sensor-simulation/imu_sensor.c
             ../flight-computer/sim-port/sensor-simulation/pressure_sensor.c
             ../flight-computer/sim-port/sensor-simulation/datafeeder.cpp
@@ -161,7 +162,6 @@ ELSE()
             ../os-kernel/FreeRTOS/Source/timers.c
             ../os-kernel/FreeRTOS/Source/event_groups.c
             ../os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-            ../os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
             )
 
     SET(IMPL_FOLDERS_SRC  # Communication/Transmission protocols
@@ -169,6 +169,7 @@ ELSE()
             ../flight-computer/protocols/impl/SPI.c
 
             # sensors
+            ../flight-computer/board/components/impl/buzzer.c
             ../flight-computer/board/components/impl/imu_sensor.c
             ../flight-computer/board/components/impl/pressure_sensor.c
             )
@@ -181,7 +182,6 @@ INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR}/../)
 
 SET(USER_SRC                # Board
         ../flight-computer/board/board.c
-        ../flight-computer/board/components/buzzer.c
         ../flight-computer/board/components/flash.c
         ../flight-computer/board/components/recovery.c
 

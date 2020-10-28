@@ -10,7 +10,7 @@ else()
 endif()
 
 
-OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
 
 ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 
@@ -61,6 +61,7 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
     INCLUDE_DIRECTORIES         (os-kernel/FreeRTOS-Plus-CLI)
 
     SET(SIM_PORT_SRC        # sensor simulation
+        flight-computer/sim-port/sensor-simulation/buzzer.c
         flight-computer/sim-port/sensor-simulation/imu_sensor.c
         flight-computer/sim-port/sensor-simulation/pressure_sensor.c
         flight-computer/sim-port/sensor-simulation/datafeeder.cpp
@@ -160,8 +161,7 @@ ELSE()
                 os-kernel/FreeRTOS/Source/timers.c
                 os-kernel/FreeRTOS/Source/event_groups.c
                 os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-                os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
-                )
+            )
 
     SET(IMPL_FOLDERS_SRC  # Communication/Transmission protocols
         flight-computer/protocols/impl/UART.c
@@ -170,7 +170,7 @@ ELSE()
         # sensors
         flight-computer/board/components/impl/imu_sensor.c
         flight-computer/board/components/impl/pressure_sensor.c
-        )
+        flight-computer/board/components/impl/buzzer.c)
 ENDIF()
 
 
@@ -184,7 +184,6 @@ INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR})
 
 SET(USER_SRC                # Board
         flight-computer/board/board.c
-        flight-computer/board/components/buzzer.c
         flight-computer/board/components/flash.c
         flight-computer/board/components/recovery.c
 
@@ -203,6 +202,7 @@ SET(USER_SRC                # Board
         flight-computer/command-line-interface/tools/read.c
         flight-computer/command-line-interface/tools/configure.c
         flight-computer/command-line-interface/tools/mem.c
+        flight-computer/command-line-interface/tools/sysctl.c
 
         )
 

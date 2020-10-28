@@ -59,7 +59,7 @@ int datafeeder_get_press(press_data * data);
 
 int data_feeder_start(const char * file);
 int data_feeder_is_running();
-int data_feeder_is_started();
+void data_feeder_stop();
 
 void data_feeder_join();
 

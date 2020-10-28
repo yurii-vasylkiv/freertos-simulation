@@ -54,7 +54,7 @@ static QueueHandle_t s_queue;
 static xTaskHandle handle;
 static uint8_t dataNeedsToBeConverted = 0;
 static uint8_t s_desired_processing_data_rate = 50;
-
+static bool s_is_running = false;
 static const struct pressure_sensor_configuration s_default_configuration = {
 
         .output_data_rate                               = CONFIG_PRESSURE_SENSOR_DEFAULT_ODR,
@@ -101,29 +101,11 @@ int pressure_sensor_init( FlightSystemConfiguration * parameters )
 
 void prv_pressure_sensor_start( void * pvParameters )
 {
-#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
-    #define MAKE_STR(x) _MAKE_STR(x)
-    #define _MAKE_STR(x) #x
-    #if (userconf_USE_COTS_DATA == 1)
-        const char *CSV_FILE_PATH = MAKE_STR(COTS_CSV_FILE_PATH) ;
-        if(!data_feeder_is_started()){
-            data_feeder_start ( CSV_FILE_PATH );
-        }
-    #else
-        const char *CSV_FILE_PATH = MAKE_STR(SRAD_CSV_FILE_PATH) ;
-        if(!data_feeder_is_started()){
-            data_feeder_start ( CSV_FILE_PATH );
-        }
-    #endif
-#endif
-
     if(pvParameters != NULL)
     {
         FlightSystemConfiguration * systemConfiguration = ( FlightSystemConfiguration * ) pvParameters;
         dataNeedsToBeConverted = systemConfiguration->pressure_data_needs_to_be_converted;
     }
-
-    (void) pvParameters;
 
     bool result_flag;
     press_data cxx_press_data;
@@ -133,7 +115,10 @@ void prv_pressure_sensor_start( void * pvParameters )
 
     uint32_t time_start = 1;
 
-    while ( 1 )
+    s_is_running = true;
+    DEBUG_LINE("Pressure sensor task has been successfully started.", NULL);
+
+    while ( s_is_running )
     {
         result_flag = datafeeder_get_press ( &cxx_press_data );
         if ( ! result_flag )
@@ -157,15 +142,48 @@ void prv_pressure_sensor_start( void * pvParameters )
         pressure_sensor_add_measurement( &dataStruct );
         memset(&dataStruct, 0, sizeof(PressureSensorData));
     }
+
+    DEBUG_LINE("Pressure sensor task has successfully exited.", NULL);
 }
+
+bool pressure_sensor_is_running     ()
+{
+    return s_is_running;
+}
+
+void pressure_sensor_stop           ()
+{
+    s_is_running = false;
+}
+
 
 
 
 void pressure_sensor_start( void * pvParameters )
 {
-    if ( pdFALSE == xTaskCreate( prv_pressure_sensor_start, "pressure_sensor-task", configMINIMAL_STACK_SIZE, pvParameters, 5, &handle ) )
+    #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
+    #define MAKE_STR(x) _MAKE_STR(x)
+    #define _MAKE_STR(x) #x
+    #if (userconf_USE_COTS_DATA == 1)
+        const char *CSV_FILE_PATH = MAKE_STR(COTS_CSV_FILE_PATH) ;
+        data_feeder_start ( CSV_FILE_PATH );
+    #else
+        const char *CSV_FILE_PATH = MAKE_STR(SRAD_CSV_FILE_PATH) ;
+        data_feeder_start ( CSV_FILE_PATH );
+    #endif
+    #endif
+
+
+    if( ! s_is_running )
     {
-        board_error_handler( __FILE__, __LINE__ );
+        if ( pdFALSE == xTaskCreate(prv_pressure_sensor_start, "ps--manager", configMINIMAL_STACK_SIZE, pvParameters, 5, &handle) )
+        {
+            board_error_handler(__FILE__, __LINE__);
+        }
+    }
+    else
+    {
+        DISPLAY_LINE("Pressure Sensor task is already running", NULL);
     }
 }
 
@@ -198,8 +216,13 @@ bool pressure_sensor_add_measurement ( PressureSensorData * _data )
 
 int pressure_sensor_configure (PressureSensorConfiguration * parameters )
 {
-    s_current_configuration = *parameters;
+    if(parameters == NULL)
+    {
+        s_current_configuration = s_default_configuration;
+        return 0;
+    }
 
+    s_current_configuration = *parameters;
     return 0;
 }
 

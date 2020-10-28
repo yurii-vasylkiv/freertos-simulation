@@ -143,7 +143,7 @@ typedef struct
 
 enum { Conf = 100 };
 
-typedef struct
+typedef struct memory_manager_configuration
 {
     // to keep memory alignment right using 4 of 8-bits integers
     // counted as one 32-bit integer
@@ -168,6 +168,14 @@ typedef struct
     uint16_t write_main_continuity_ms;                // +
 } MemoryManagerConfiguration;
 
+
+typedef union
+{
+    struct{
+        MemoryManagerConfiguration values;
+    };
+    uint8_t bytes[sizeof(MemoryManagerConfiguration)];
+} MemoryManagerConfigurationU;
 
 
 typedef union
@@ -210,6 +218,8 @@ MemoryStatus memory_manager_get_system_configurations(FlightSystemConfiguration 
 MemoryStatus memory_manager_get_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
 MemoryStatus memory_manager_set_system_configurations(FlightSystemConfiguration  * systemConfiguration);
 MemoryStatus memory_manager_set_memory_configurations(MemoryManagerConfiguration * memoryConfiguration);
+MemoryManagerConfiguration memory_manager_get_default_memory_configurations();
+
 
 MemoryStatus memory_manager_get_single_pressure_entry(PressureDataU * dst, uint32_t entry_index );
 MemoryStatus memory_manager_get_single_imu_entry(IMUDataU * dst, uint32_t entry_index );
