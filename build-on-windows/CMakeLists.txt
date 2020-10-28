@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
 
 FIND_PACKAGE(Python 3.0 REQUIRED)
-EXECUTE_PROCESS(COMMAND python generator.py WORKING_DIRECTORY ..)
+EXECUTE_PROCESS(COMMAND python ${CMAKE_SOURCE_DIR}/generator.py WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake")
     INCLUDE(${CMAKE_SOURCE_DIR}/generated/CMakeConfigFile.cmake)
@@ -47,8 +47,8 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
 
 
 
-    SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror  -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
-    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror  -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
+    SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
+    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
 
     FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
     FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
@@ -82,8 +82,7 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
             ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/timers.c
             ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
             ../os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-                # os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
-                )
+            )
 
 ELSE()
     MESSAGE(STATUS "Selected ARM BUILD with ARM-Build tools")
@@ -110,10 +109,10 @@ ELSE()
     SET(SIZE                            ${EABI_PREFIX}-size${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
     SET(GDB                             ${EABI_PREFIX}-gdb${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
 
-    SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
-    SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
+    SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
+    SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
     set(SYS_CALLS_SRC ../sys/syscalls.c)
-    SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/linker-script/STM32F401RE_FLASH.ld)
+    SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/../linker-script/STM32F401RE_FLASH.ld)
     SET(CMAKE_EXE_LINKER_FLAGS          "-Wl,-gc-sections -T ${LINKER_SCRIPT}")
     SET(CMAKE_EXE_LINKER_FLAGS_INIT     "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage")
     SET(CMAKE_SYSTEM_NAME               Generic)
@@ -147,8 +146,8 @@ ELSE()
             ../Startup/startup_stm32f401xe.s
                 )
 
-    FILE(GLOB_RECURSE HAL_SRC "board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
-    FILE(GLOB_RECURSE BOSCH_API_SRC "board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
+    FILE(GLOB_RECURSE HAL_SRC "../board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
+    FILE(GLOB_RECURSE BOSCH_API_SRC "../board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
 
     ADD_LIBRARY(RTOS_LIB
             ../os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
@@ -180,7 +179,7 @@ ENDIF() # BUILD_FOR_SIM_ON_WIN_OS
 
 INCLUDE_DIRECTORIES (../flight-computer)
 INCLUDE_DIRECTORIES (../configurations)
-INCLUDE_DIRECTORIES (${CMAKE_SOURCE_DIR})
+INCLUDE_DIRECTORIES (..)
 
 SET(USER_SRC                # Board
         ../flight-computer/board/board.c

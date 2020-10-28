@@ -34,10 +34,10 @@ def gen_aux_config_files():
         if dataMap is None:
             raise Exception("Configuration file \"configurations.yaml\" is empty!")
         try:
-            if os.path.exists("../generated"):
-                shutil.rmtree("../generated")
+            if os.path.exists("generated"):
+                shutil.rmtree("generated")
 
-            os.mkdir("../generated")
+            os.mkdir("generated")
         except OSError:
             print("Creation of the directory generated failed ")
         else:
