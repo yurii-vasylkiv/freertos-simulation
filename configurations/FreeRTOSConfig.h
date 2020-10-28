@@ -149,7 +149,8 @@ set to ( configUDP_CLI_PORT_NUMBER + 1 ). */
 	configASSERT() when performing code coverage tests though, as it is not
 	intended to asserts() to fail, some some code is intended not to run if no
 	errors are present. */
-	extern void vAssertCalled(unsigned long ulLine, const char * const pcFileName);
+
+	extern void vAssertCalled( unsigned long ulLine, const char * const pcFileName );
 	#define configASSERT( x ) if( ( x ) == 0 ) vAssertCalled( __LINE__, __FILE__ )
 
 	#define configUSE_MALLOC_FAILED_HOOK			1

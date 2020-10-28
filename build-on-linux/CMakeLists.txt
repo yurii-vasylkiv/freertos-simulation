@@ -12,7 +12,7 @@ else()
     message(FATAL_ERROR "Cannot generate project: please, first run \"python process-user-configurations.py\"")
 endif()
 
-OPTION(BUILD_FOR_SIM_ON_UNIX_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
+OPTION(BUILD_FOR_SIM_ON_UNIX_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
 
 IF(BUILD_FOR_SIM_ON_UNIX_OS)
 
@@ -33,8 +33,8 @@ IF(BUILD_FOR_SIM_ON_UNIX_OS)
 
     set (CMAKE_IGNORE_PATH  ${CMAKE_SOURCE_DIR}/../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
 
-    SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections  "   )
-    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function-Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections "  )
+    SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections  "   )
+    SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function-Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections "  )
 
     FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
     FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
@@ -112,8 +112,8 @@ ELSE()
     ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 
-    SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -specs=nano.specs -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections")
-    SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -specs=nano.specs -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections")
+    SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -specs=nano.specs -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections")
+    SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -specs=nano.specs -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -fstack-usage -fdata-sections -fdata-sections")
     set(SYS_CALLS_SRC                   ../sys/syscalls.c)
     SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/../linker-script/STM32F401RE_FLASH.ld)
     SET(CMAKE_EXE_LINKER_FLAGS          "-Wl,-gc-sections -T ${LINKER_SCRIPT}")
