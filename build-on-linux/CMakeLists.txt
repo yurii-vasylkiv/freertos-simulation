@@ -75,7 +75,6 @@ IF(BUILD_FOR_SIM_ON_UNIX_OS)
             ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
             ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/POSIX/utils/wait_for_event.c
             ../os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
-            # ../os-kernel/FreeRTOS-Plus-CLI/Sample-CLI-commands.c
             )
 
 
