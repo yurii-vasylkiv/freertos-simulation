@@ -24,7 +24,7 @@
 
 //User LED(red)
 #define USR_LED_PIN                      GPIO_PIN_5
-#define USR_LED_PORT                     GPIOB
+#define USR_LED_PORT                     GPIOA
 
 //User Pushbutton (S1)
 #define USR_PB_PIN                       GPIO_PIN_1

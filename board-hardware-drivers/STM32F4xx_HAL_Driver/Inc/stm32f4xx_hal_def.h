@@ -44,7 +44,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
-#include "board-hardware-drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h"
+#include "../Legacy/stm32_hal_legacy.h"
 #include <stdio.h>
 
 /* Exported types ------------------------------------------------------------*/

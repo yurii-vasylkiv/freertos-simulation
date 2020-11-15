@@ -45,19 +45,20 @@ BoardStatus system_clock_config( void)
     
     /**Configure the main internal regulator output voltage
     */
-    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_RCC_PWR_CLK_ENABLE(); //__PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
     /**Initializes the CPU, AHB and APB busses clocks
     */
     RCC_OscInitStruct.OscillatorType        = RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.HSIState              = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue   = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.HSICalibrationValue   = RCC_HSICALIBRATION_DEFAULT; // 6
     RCC_OscInitStruct.PLL.PLLState          = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource         = RCC_PLLSOURCE_HSI;
-    RCC_OscInitStruct.PLL.PLLM              = 8;
-    RCC_OscInitStruct.PLL.PLLN              = 84;
-    RCC_OscInitStruct.PLL.PLLP              = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ              = 4;
+    RCC_OscInitStruct.PLL.PLLM              = 8; // 16
+    RCC_OscInitStruct.PLL.PLLN              = 84; // 336
+    RCC_OscInitStruct.PLL.PLLP              = RCC_PLLP_DIV2; // RCC_PLLP_DIV4
+    RCC_OscInitStruct.PLL.PLLQ              = 4; // 7
+
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
         return BOARD_SYS_CLOCK_CONFIG_ERROR;
@@ -69,7 +70,7 @@ BoardStatus system_clock_config( void)
     RCC_ClkInitStruct.AHBCLKDivider         = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider        = RCC_HCLK_DIV2;
     RCC_ClkInitStruct.APB2CLKDivider        = RCC_HCLK_DIV1;
-    
+
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
     {
         return BOARD_SYS_CLOCK_CONFIG_ERROR;
@@ -82,6 +83,7 @@ BoardStatus system_clock_config( void)
 void GPIO_init(void)
 {
     /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     
     GPIO_InitTypeDef GPIO_InitStruct;

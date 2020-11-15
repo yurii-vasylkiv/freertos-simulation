@@ -6,3 +6,5 @@ BUILD.BAT
 CLEAN.BAT
 build-on-linux/BUILD
 build-on-linux/CLEAN
+/Debug/
+/Release/

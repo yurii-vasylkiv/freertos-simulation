@@ -141,9 +141,6 @@ ELSE()
 
     ADD_LIBRARY(CMSIS_LIB
             ../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c
-            ../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_msp.c
-            ../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_hal_timebase_tim.c
-            ../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/stm32f4xx_it.c
             ../Startup/startup_stm32f401xe.s
             )
 
@@ -183,6 +180,7 @@ SET(USER_SRC                # Board
         ../flight-computer/board/board.c
         ../flight-computer/board/components/flash.c
         ../flight-computer/board/components/recovery.c
+        ../flight-computer/board/interrupt_handlers.c
 
         # Core
         ../flight-computer/core/flight_controller.c
