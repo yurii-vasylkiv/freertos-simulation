@@ -51,7 +51,7 @@
   * @retval None
   */
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-void buzz(int milliseconds)
+void buzz_delay(int milliseconds)
 {
     int count = milliseconds * SECOND;
     while (count != 0)

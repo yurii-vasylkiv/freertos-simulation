@@ -3,8 +3,16 @@
 //
 
 #include "interrupt_handlers.h"
-#include "stm32f4xx_hal.h"
+#include "configurations/UserConfig.h"
 
+#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
+#include "stm32f4xx_hal.h"
+#else
+#include "sim-port/hal_port.h"
+#endif
+
+#include "board/board.h"
+#include "board/components/buzzer.h"
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim1;
@@ -37,10 +45,26 @@ void HardFault_Handler(void)
     /* USER CODE BEGIN HardFault_IRQn 0 */
 
     /* USER CODE END HardFault_IRQn 0 */
-    while (1)
-    {
-        /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-        /* USER CODE END W1_HardFault_IRQn 0 */
+    while(1) {
+        buzz_delay(1000);
+        int count = 1000 * SECOND;
+        while (count != 0)
+        {
+            //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_RESET); // sets second pin as low
+            //count to 10,502.56 for proper delay_ms of 0.125 ms
+            TIM2->CNT = 0; //Sets timer_thread_handle count to 0
+            TIM2->CR1 |= 1; //Enables Timer
+            while((TIM2->SR & 1) != 1){} //Waits for timer_thread_handle to reach specified value
+            TIM2->CR1 &= ~1; //Disables Timer
+            TIM2->SR &= ~1; //Resets UIF pin
+            //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_SET); //sets second pin as high
+            TIM2->CNT = 0;
+            TIM2->CR1 |= 1;
+            while((TIM2->SR & 1) != 1){}
+            TIM2->CR1 &= ~1;
+            TIM2->SR &= ~1;
+            count -= 1;
+        }
     }
 }
 
@@ -55,6 +79,8 @@ void MemManage_Handler(void)
     while (1)
     {
         /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+        buzz_delay(1500);
+        HAL_Delay(500);
         /* USER CODE END W1_MemoryManagement_IRQn 0 */
     }
 }
@@ -70,6 +96,8 @@ void BusFault_Handler(void)
     while (1)
     {
         /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+        buzz_delay(2500);
+        HAL_Delay(500);
         /* USER CODE END W1_BusFault_IRQn 0 */
     }
 }
@@ -85,6 +113,25 @@ void UsageFault_Handler(void)
     while (1)
     {
         /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+        buzz_delay(1000);
+        int count = 1000 * SECOND;
+        while (count != 0)
+        {
+            //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_RESET); // sets second pin as low
+            //count to 10,502.56 for proper delay_ms of 0.125 ms
+            TIM2->CNT = 0; //Sets timer_thread_handle count to 0
+            TIM2->CR1 |= 1; //Enables Timer
+            while((TIM2->SR & 1) != 1){} //Waits for timer_thread_handle to reach specified value
+            TIM2->CR1 &= ~1; //Disables Timer
+            TIM2->SR &= ~1; //Resets UIF pin
+            //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_SET); //sets second pin as high
+            TIM2->CNT = 0;
+            TIM2->CR1 |= 1;
+            while((TIM2->SR & 1) != 1){}
+            TIM2->CR1 &= ~1;
+            TIM2->SR &= ~1;
+            count -= 1;
+        }
         /* USER CODE END W1_UsageFault_IRQn 0 */
     }
 }

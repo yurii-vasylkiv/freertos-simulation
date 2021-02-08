@@ -37,23 +37,20 @@ typedef struct
     uint32_t backup_time_launch_to_apogee_sec;        // -
     uint32_t backup_time_apogee_to_main_sec;          // -
     uint32_t backup_time_main_to_ground_sec;          // -
-
+    uint8_t  e_match_line_keep_active_for;             // -
+    uint8_t  launch_acceleration_critical_value_m_s2;  // -
+    uint16_t altitude_main_recovery_m;                // -
     uint32_t ground_pressure;                         // -
     uint32_t ground_temperature;                      // -
-
-    uint32_t current_system_time;                     // -
-    uint16_t altitude_main_recovery_m;                // -
-
-    uint8_t flight_state;                             // -
-    uint8_t power_mode;                               // -
-    uint8_t launch_acceleration_critical_value_m_s2;  // -
-    uint8_t e_match_line_keep_active_for;             // -
-
-    uint8_t imu_data_needs_to_be_converted;
-    uint8_t pressure_data_needs_to_be_converted;
+    uint8_t  imu_data_needs_to_be_converted;
+    uint8_t  pressure_data_needs_to_be_converted;
 
     IMUSensorConfiguration      imu_sensor_configuration;
     PressureSensorConfiguration pressure_sensor_configuration;
+
+//    uint32_t last_current_system_time;                // -
+//    uint8_t last_flight_state;                        // -
+//    uint8_t last_power_mode;                          // -
 
 } FlightSystemConfiguration;
 
@@ -64,6 +61,8 @@ typedef union
     };
     uint8_t bytes[sizeof(FlightSystemConfiguration)];
 } FlightSystemConfigurationU;
+
+extern const FlightSystemConfiguration DEFAULT_FLIGHT_SYSTEM_CONFIGURATION;
 
 // to be removed
 typedef struct
@@ -83,6 +82,12 @@ typedef struct
 
     uint8_t     state;
 }configuration_data_values;
+
+
+
+
+
+
 
 
 #endif // CONFIGURATION_H

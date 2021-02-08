@@ -73,7 +73,8 @@ int event_detector_init( FlightSystemConfiguration * configurations)
 
     // in case of reboot during the flight if memory is not corrupted this flag should change to the
     // appropriate current flight stage that != FLIGHT_STATE_LAUNCHPAD
-    flightState     = configurations->flight_state;
+    // flightState     = configurations->last_flight_state; // TODO: make sure that this is fixed
+    flightState = FLIGHT_STATE_LAUNCHPAD; // <---- temporal fix
 
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
     data_window_init ( &altitude_data_window );
@@ -106,7 +107,7 @@ int event_detector_update_configurations ( FlightSystemConfiguration * configura
 }
 
 
-FlightState event_detector_feed ( Data * data)
+FlightState event_detector_feed ( DataContainer * data)
 {
     if (INITIALIZED == 0)
     {
@@ -114,9 +115,9 @@ FlightState event_detector_feed ( Data * data)
         return 1;
     }
 
-    if(data->pressure.updated)
+    if(data->press.updated)
     {
-        CURRENT_ALTITUDE = calculate_altitude( data->pressure.data.pressure) - GROUND_ALTITUDE;
+        CURRENT_ALTITUDE = calculate_altitude( data->press.data.values.pressure) - GROUND_ALTITUDE;
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
         data_window_insert( &altitude_data_window, &CURRENT_ALTITUDE );
 #endif
@@ -126,9 +127,9 @@ FlightState event_detector_feed ( Data * data)
     {
         case FLIGHT_STATE_LAUNCHPAD:
         {
-            if(data->inertial.updated)
+            if(data->acc.updated)
             {
-                if ( detectLaunch( data->inertial.data.accelerometer[ 0 ] ) )
+                if ( detectLaunch( data->acc.data.values.data[ 0 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_PRE_APOGEE;
@@ -140,7 +141,7 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_PRE_APOGEE:
         {
-            if(data->inertial.updated)
+            if(data->acc.updated)
             {
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
                 // Here we need to start looking at the average altitude and see the differences in the gradient sign
@@ -161,7 +162,7 @@ FlightState event_detector_feed ( Data * data)
                     flightState = FLIGHT_STATE_APOGEE;
                 }
 #else
-                if ( detectApogee( data->inertial.data.accelerometer[ 0 ], data->inertial.data.accelerometer[ 1 ], data->inertial.data.accelerometer[ 2 ] ) )
+                if ( detectApogee( data->acc.data.values.data[ 0 ], data->acc.data.values.data[ 1 ], data->acc.data.values.data[ 2 ] ) )
                 {
                     DISPLAY_LINE( "Detected APOGEE at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_APOGEE;
@@ -182,9 +183,9 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_POST_APOGEE:
         {
-            if(data->pressure.updated)
+            if(data->press.updated)
             {
-                if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->pressure.data.pressure ) )
+                if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_MAIN_CHUTE;
@@ -204,10 +205,10 @@ FlightState event_detector_feed ( Data * data)
 
         case FLIGHT_STATE_POST_MAIN:
         {
-            if(data->inertial.updated)
+            if(data->gyro.updated)
             {
-                if ( detectLanding( data->inertial.data.gyroscope[ 0 ], data->inertial.data.gyroscope[ 1 ],
-                                    data->inertial.data.gyroscope[ 2 ] ) )
+                if ( detectLanding( data->gyro.data.values.data[ 0 ], data->gyro.data.values.data[ 1 ],
+                                    data->gyro.data.values.data[ 2 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_LANDED;
@@ -217,9 +218,9 @@ FlightState event_detector_feed ( Data * data)
 
             // OR
 
-            if(data->pressure.updated)
+            if(data->press.updated)
             {
-                if ( detectAltitude(0, GROUND_ALTITUDE, data->pressure.data.pressure ) )
+                if ( detectAltitude (0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
                     flightState = FLIGHT_STATE_LANDED;

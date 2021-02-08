@@ -215,7 +215,7 @@ size_t xCommandStringLength;
 	else if( pxCommand != NULL )
 	{
 		/* Call the callback function that is registered to this command. */
-		xReturn = pxCommand->pxCommandLineDefinition->pxCommandInterpreter( pcWriteBuffer, xWriteBufferLen, pcCommandInput );
+		xReturn = pxCommand->pxCommandLineDefinition->pxCommandInterpreter ( pcWriteBuffer, xWriteBufferLen, pcCommandInput );
 //		printf("Calling command: \"%s\"\n", pxCommand->pxCommandLineDefinition->pcCommand);
 		/* If xReturn is pdFALSE, then no further strings will be returned
 		after this one, and	pxCommand can be reset to NULL ready to search
@@ -228,7 +228,7 @@ size_t xCommandStringLength;
 	else
 	{
 		/* pxCommand was NULL, the command was not found. */
-		strncpy( pcWriteBuffer, "Command not recognised.  Enter 'help' to view a list of available commands.\r\n\r\n", xWriteBufferLen );
+		strncpy( pcWriteBuffer, "Command not recognised.  Enter \"help\" to view a list of available commands.\r\n\r\n", xWriteBufferLen );
 		xReturn = pdFALSE;
 	}
 

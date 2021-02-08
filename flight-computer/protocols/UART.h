@@ -32,22 +32,22 @@ typedef enum {
 char PRINT_BUFFER[BUFFER_SIZE];
 #define DISPLAY(format, ...)                                                                  \
             sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart2_transmit(PRINT_BUFFER);                                                     \
+            uart6_transmit(PRINT_BUFFER);                                                     \
 
 #define DEBUG(format, ...)                                                                    \
             sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart2_transmit_debug(PRINT_BUFFER);                                               \
+            uart6_transmit_debug(PRINT_BUFFER);                                               \
 
 #define DEBUG_LINE(format, ...)                                                               \
             sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart2_transmit_line_debug(PRINT_BUFFER);                                          \
+            uart6_transmit_line_debug(PRINT_BUFFER);                                          \
 
 #define DISPLAY_LINE(format, ...)                                                             \
             sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart2_transmit_line(PRINT_BUFFER)                                                 \
+            uart6_transmit_line(PRINT_BUFFER)                                                 \
 
 
-#define INPUT(x) const char * t = uart2_receive_command(); memcpy(x, t, strlen(t))
+#define INPUT(x) const char * t = uart6_receive_command(); memcpy(x, t, strlen(t))
 
 int UART_Port2_init(void);
 

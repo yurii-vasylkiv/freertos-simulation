@@ -149,11 +149,12 @@ static char* uart_receive_command(UART_HandleTypeDef *huart)
         if (c == 255)
             continue;
 
-    	buffrx[i++] = c;
+        buffrx[i++] = c;
     }
 
+
     buffrx[i]   = '\0';
-    return (char*)buffrx;
+    return (char*) buffrx;
 }
 static int uart_receive(UART_HandleTypeDef *huart, uint8_t * buf, size_t size)
 {
@@ -193,6 +194,15 @@ int uart6_transmit(const char * message)
 int uart2_transmit_line(const char * message)
 {
     return uart_transmit_line(&uart2, message);
+}
+
+int uart2_transmit_line_debug(char const *message)
+{
+#if defined(PRINT_DEBUG_LOG)
+    return uart_transmit_line(&uart2, message);
+#else
+    return UART_OK;
+#endif
 }
 
 int uart6_transmit_line(char const* message)

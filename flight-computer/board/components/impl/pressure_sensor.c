@@ -19,9 +19,11 @@
 #include "board/components/pressure_sensor.h"
 #include <math.h>
 #include <stdbool.h>
+#include "board/components/pressure_sensor.h"
+#include "board/board.h"
 
 #include "board-hardware-drivers/BMI08x-Sensor-API/Inc/bmp3.h"
-#include "cmsis_os.h"
+#include <cmsis_os.h>
 #include "protocols/SPI.h"
 #include "core/system_configuration.h"
 #include "protocols/UART.h"
@@ -40,13 +42,23 @@
 #define CONFIG_PRESSURE_SENSOR_DEFAULT_TEMPERATURE_OVERSAMPLING  BMP3_OVERSAMPLING_4X
 #define CONFIG_PRESSURE_SENSOR_DEFAULT_IIR_FILTER_COEFF          BMP3_IIR_FILTER_COEFF_15
 
+typedef struct
+{
+    uint8_t isInitialized       ;
+    uint8_t isRunning           ;
+
+    xTaskHandle taskHandle      ;
+    void * taskParameters       ;
+} PressureSensorTaskState;
+
+static PressureSensorTaskState prvController     = {};
+
 
 static char buf[128];
 
 static QueueHandle_t s_queue = {0};
 static struct bmp3_data s_data = {0};
 static uint8_t s_desired_processing_data_rate = 50;
-static bool s_is_running = false;
 
 static void     delay_ms                    (uint32_t period_ms);
 static int8_t   spi_reg_write               (uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint16_t length);
@@ -86,7 +98,6 @@ int pressure_sensor_configure (PressureSensorConfiguration * parameters )
     if(parameters == NULL)
     {
         s_current_configuration = s_default_configuration;
-        return 0;
     }
     else
     {
@@ -147,6 +158,7 @@ int pressure_sensor_init()
 
     vQueueAddToRegistry(s_queue, "bmp3_queue");
 
+    prvController.isInitialized = true;
     return status;
 }
 
@@ -168,27 +180,20 @@ int8_t get_sensor_data(struct bmp3_data *data)
     return bmp3_get_sensor_data(BMP3_PRESS | BMP3_TEMP, data, &s_device);
 }
 
-void pressure_sensor_start(void * const pvParameters)
+static void prv_pressure_sensor_controller_task(void * pvParams)
 {
-    PressureSensorConfiguration *configParams = (PressureSensorConfiguration*) pvParameters;
+    DEBUG_LINE("prv_pressure_sensor_controller_task");
+    PressureSensorConfiguration *configParams = (PressureSensorConfiguration*) pvParams;
+    (void) configParams;
     /* Variable used to store the compensated data */
     PressureSensorData dataStruct;
 
     TickType_t start_timestamp = xTaskGetTickCount();
-    
-    for(size_t i = 0; i < 3; i++)
-    {
-        get_sensor_data(&s_data);
-        dataStruct.pressure     = s_data.pressure;
-        dataStruct.temperature = s_data.temperature;
-        
-        vTaskDelayUntil(&start_timestamp, s_desired_processing_data_rate);
-    }
-    
-    int8_t result_flag;
-    s_is_running = true;
 
-    while(s_is_running)
+    int8_t result_flag;
+    prvController.isRunning = true;
+
+    while(prvController.isRunning)
     {
         result_flag = get_sensor_data(&s_data);
         if(BMP3_E_NULL_PTR == result_flag)
@@ -204,21 +209,49 @@ void pressure_sensor_start(void * const pvParameters)
 
         vTaskDelayUntil(&dataStruct.timestamp, s_desired_processing_data_rate);
     }
+
+    prvController.isRunning = false;
+}
+
+int pressure_sensor_start(void * const pvParameters)
+{
+    DEBUG_LINE("pressure_sensor_start");
+    //Get the parameters.
+    if ( !prvController.isInitialized )
+    {
+        return IMU_ERR;
+    }
+
+    prvController.taskParameters = pvParameters;
+
+    if ( pdFALSE == xTaskCreate(prv_pressure_sensor_controller_task, "ps--manager", configMINIMAL_STACK_SIZE, prvController.taskParameters, 5, &prvController.taskHandle ) )
+    {
+        return IMU_ERR;
+    }
+
+    return IMU_OK;
 }
 
 bool pressure_sensor_is_running     ()
 {
-    return s_is_running;
+    return prvController.isRunning;
 }
 
 void pressure_sensor_stop           ()
 {
-    s_is_running = false;
+    prvController.isRunning = false;
 }
 
 static void delay_ms(uint32_t period_ms)
 {
-    vTaskDelay((TickType_t) period_ms);
+    if ( taskSCHEDULER_NOT_STARTED == xTaskGetSchedulerState() )
+    {
+        board_delay(period_ms);
+    }
+    else
+    {
+        vTaskDelay(pdMS_TO_TICKS( period_ms ) );
+    }
 }
 
 /*!
@@ -238,7 +271,12 @@ static int8_t spi_reg_write(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uin
 {
     int8_t status = 0; //assume success
     status = spi2_send(&reg_addr, 1, reg_data, length, TIMEOUT);
-    return status;
+    if (status != SPI_OK)
+    {
+        return BMP3_FATAL_ERR;
+    }
+
+    return BMP3_OK;
 }
 /*!
  *  @brief Function for reading the sensor's registers through SPI bus.
@@ -257,7 +295,12 @@ static int8_t spi_reg_read(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint
 {
     int status = 0; // assume success
     status = spi2_receive(&reg_addr, 1, reg_data, length, TIMEOUT);
-    return status;
+    if (status != SPI_OK)
+    {
+        return BMP3_FATAL_ERR;
+    }
+
+    return BMP3_OK;
 }
 /*!
  *  @brief Prints the execution status of the APIs.

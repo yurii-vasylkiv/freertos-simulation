@@ -44,7 +44,7 @@ bool cli_tools_sysctl (char *pcWriteBuffer, size_t xWriteBufferLen, const char *
     if (strcmp(cmd_option, "df") == 0)
         return cli_tools_sysctl_df(pcWriteBuffer, xWriteBufferLen, str_option_arg);
 
-    sprintf(pcWriteBuffer, "Command [%s] not recognized\n", cmd_option);
+    sprintf(pcWriteBuffer, "Command [%s] not recognized\r\n", cmd_option);
     return false;
 }
 
@@ -64,7 +64,7 @@ static bool cli_tools_sysctl_fl    (char* pcWriteBuffer, size_t xWriteBufferLen,
         value = true;
     else
     {
-        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.", cmd_option, str_option_arg);
+        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.\r\n", cmd_option, str_option_arg);
         return false;
     }
 
@@ -77,7 +77,7 @@ static bool cli_tools_sysctl_fl    (char* pcWriteBuffer, size_t xWriteBufferLen,
         flight_controller_stop ( NULL );
     }
 
-    sprintf(pcWriteBuffer, "Success!\n");
+    sprintf(pcWriteBuffer, "Success!\r\n");
     return true;
 }
 
@@ -96,7 +96,7 @@ static bool cli_tools_sysctl_imu   (char* pcWriteBuffer, size_t xWriteBufferLen,
         value = true;
     else
     {
-        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.", cmd_option, str_option_arg);
+        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.\r\n", cmd_option, str_option_arg);
         return false;
     }
 
@@ -109,7 +109,7 @@ static bool cli_tools_sysctl_imu   (char* pcWriteBuffer, size_t xWriteBufferLen,
         imu_sensor_stop ( NULL );
     }
 
-    sprintf(pcWriteBuffer, "Success!\n");
+    sprintf(pcWriteBuffer, "Success!\r\n");
     return true;
 }
 
@@ -128,7 +128,7 @@ static bool cli_tools_sysctl_press (char* pcWriteBuffer, size_t xWriteBufferLen,
         value = true;
     else
     {
-        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.", cmd_option, str_option_arg);
+        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.\r\n", cmd_option, str_option_arg);
         return false;
     }
 
@@ -143,7 +143,7 @@ static bool cli_tools_sysctl_press (char* pcWriteBuffer, size_t xWriteBufferLen,
 
 
 
-    sprintf(pcWriteBuffer, "Success!\n");
+    sprintf(pcWriteBuffer, "Success!\r\n");
     return true;
 }
 
@@ -162,7 +162,7 @@ static bool cli_tools_sysctl_df    (char* pcWriteBuffer, size_t xWriteBufferLen,
         value = true;
     else
     {
-        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.", cmd_option, str_option_arg);
+        sprintf(pcWriteBuffer, "[%s]: Argument [%s] is invalid.\r\n", cmd_option, str_option_arg);
         return false;
     }
 
@@ -194,7 +194,7 @@ static bool cli_tools_sysctl_df    (char* pcWriteBuffer, size_t xWriteBufferLen,
     }
 
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 

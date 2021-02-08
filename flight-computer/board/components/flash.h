@@ -21,49 +21,37 @@
  * @todo: maybe in the future we can use a pointer instead then?
  */
 
-/*
- *  Macros for flash commands
- */
-#define FLASH_READ_ID_COMMAND         0x9F
-#define FLASH_ENABLE_WRITE_COMMAND    0x06 // Write Enable
-#define FLASH_PP_COMMAND              0x02 // Page Program Command (write)
-#define FLASH_READ_COMMAND            0x03
-#define FLASH_ERASE_SEC_COMMAND       0xD8
-#define FLASH_ERASE_PARAM_SEC_COMMAND 0x20
-#define FLASH_GET_STATUS_REG_COMMAND  0x05
-#define FLASH_BULK_ERASE_COMMAND      0x60 // Command to erase the whole device.
 
 /**
  *  @brief Macros for constants
  *  @todo I strongly consider changing all the macros that represent constants
  *  to static const type to ensure type safety! This requires a discussion
  */
-#define FLASH_MANUFACTURER_ID         0x01
-#define FLASH_DEVICE_ID_MSB           0x02
-#define FLASH_DEVICE_ID_LSB           0x16
-#define FLASH_HIGH_BYTE_MASK_24B      0x00FF0000
-#define FLASH_MID_BYTE_MASK_24B       0x0000FF00
-#define FLASH_LOW_BYTE_MASK_24B       0x000000FF
-#define FLASH_PAGE_SIZE               256
-#define FLASH_PARAM_SECTOR_SIZE       (FLASH_PAGE_SIZE*16)
-#define FLASH_SECTOR_SIZE             (FLASH_PAGE_SIZE*64)
-#define FLASH_START_ADDRESS           (0x00000000+FLASH_PARAM_SECTOR_SIZE)
-#define FLASH_SIZE_BYTES              (8000000-FLASH_PARAM_SECTOR_SIZE)
-#define FLASH_PARAM_END_ADDRESS       (0x0001FFFF)
-#define FLASH_END_ADDRESS             (0x7FFFFF)
+#define FLASH_MANUFACTURER_ID          0x01
+#define FLASH_DEVICE_ID_MSB            0x02
+#define FLASH_DEVICE_ID_LSB            0x16
+#define FLASH_HIGH_BYTE_MASK_24B       0x00FF0000
+#define FLASH_MID_BYTE_MASK_24B        0x0000FF00
+#define FLASH_LOW_BYTE_MASK_24B        0x000000FF
+#define FLASH_PAGE_SIZE                256
+#define FLASH_4KB_SUBSECTOR_SIZE       ( FLASH_PAGE_SIZE * 16  )
+#define FLASH_64KB_SECTOR_SIZE         ( FLASH_PAGE_SIZE * 256 )
+#define FLASH_START_ADDRESS            ( 0x00000000 )
+#define FLASH_END_ADDRESS              ( 0x7FFFFF )
+#define FLASH_SIZE_BYTES               ( FLASH_END_ADDRESS + 1 )
 
 /*
  *  Status Reg. Bits
  */
-#define FLASH_P_ERR_BIT               0x06 //Programming Error Bit.
-#define FLASH_E_ERR_BIT               0x05 //Erase Error Bit.
-#define FLASH_WEL_BIT                 0x01 //Write Enable Latch Bit.
-#define FLASH_WIP_BIT                 0x00 //Write In Progress Bit.
+#define FLASH_P_ERR_BIT                0x06 // Programming Error Bit.
+#define FLASH_E_ERR_BIT                0x05 // Erase Error Bit.
+#define FLASH_WEL_BIT                  0x01 // Write Enable Latch Bit.
+#define FLASH_WIP_BIT                  0x00 // Write In Progress Bit.
 
-#define FLASH_WAS_PROGRAMING_ERROR(x) ((x >> FLASH_P_ERR_BIT) & 0x01)
-#define FLASH_WAS_ERASE_ERROR(x)      ((x >> FLASH_E_ERR_BIT) & 0x01)
-#define FLASH_IS_WRITE_ENABLE(x)      ((x >> FLASH_WEL_BIT) & 0x01)
-#define FLASH_IS_DEVICE_BUSY(x)       ((x >> FLASH_WIP_BIT) & 0x01)
+#define FLASH_WAS_PROGRAMING_ERROR(x) ( ( x >> FLASH_P_ERR_BIT) & 0x01 )
+#define FLASH_WAS_ERASE_ERROR(x)      ( ( x >> FLASH_E_ERR_BIT) & 0x01 )
+#define FLASH_IS_WRITE_ENABLE(x)      ( ( x >> FLASH_WEL_BIT) & 0x01 )
+#define FLASH_IS_DEVICE_BUSY(x)       ( ( x >> FLASH_WIP_BIT) & 0x01 )
 
 /**
  * @brief Enumeration to indicate the result status of the operation on flash
@@ -74,6 +62,14 @@ typedef enum flash_status_t
     FLASH_ERR, /**< If the lat operation failed. */
     FLASH_BUSY   /**< If the last operation couldn't start because the device was busy. */
 } FlashStatus;
+
+
+#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
+typedef FlashStatus FlashReturnType;
+#else
+typedef uint32_t FlashReturnType;
+#endif
+
 /**
  * @brief Flash structure that holds a communication handler
  */
@@ -87,7 +83,7 @@ typedef enum flash_status_t
  * @return @c FLASH_OK if the setup is successful, @c FLASH_ERROR otherwise.
  * @see https://github.com/UMSATS/Avionics-2019/
  */
-int flash_init();
+FlashStatus flash_init();
 /**
  * @brief
  * This function reads the manufacturer and device IDs of the flash memory.
@@ -108,7 +104,7 @@ FlashStatus flash_check_id();
  * @note The address should be 3 bytes long (0x000000 to 0x7FFFFF).
  * @warning If the LSB of the address is not all 0, then data written past the page will wrap around!
  */
-uint32_t flash_write(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
+FlashReturnType flash_write(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
 /**
  * @brief
  * This reads from a specified location in the flash memory.
@@ -120,7 +116,7 @@ uint32_t flash_write(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes)
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-uint32_t flash_read(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
+FlashReturnType flash_read(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
 /**
  * @brief
  * This erases a specified sector(64 kb) in the flash memory. Will take up to 2 seconds.
@@ -131,7 +127,7 @@ uint32_t flash_read(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashStatus flash_erase_sector(uint32_t address);
+FlashStatus flash_erase_64kb_sector(uint32_t address);
 /**
  * @brief
  * This erases a specified parameter sector(4 kb) in the flash memory. Theses are located at the start(0x00000000) of the address space.
@@ -143,7 +139,10 @@ FlashStatus flash_erase_sector(uint32_t address);
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashStatus flash_erase_param_sector(uint32_t address);
+FlashStatus flash_erase_4Kb_subsector(uint32_t address);
+
+FlashStatus flash_write_range (uint32_t begin_address, uint8_t * data, uint32_t size);
+
 /**
  * @brief
  * This erases the whole flash memory. Will take up to 128 seconds.
@@ -154,15 +153,6 @@ FlashStatus flash_erase_param_sector(uint32_t address);
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
 FlashStatus flash_erase_device();
-/**
- * @brief
- * This returns the status register of teh flash.
- * @param p_flash Pointer to @c Flash structure
- * @return @c uint8_t
- * The status register value (8 bits)
- * @see https://github.com/UMSATS/Avionics-2019/
- */
-uint8_t flash_get_status_register();
 /**
  * @brief
  * This returns the address of the first empty page in memory.

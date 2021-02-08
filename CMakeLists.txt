@@ -50,39 +50,39 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
     SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
     SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
 
-    FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
-    FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "../flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
+    FILE(GLOB_RECURSE SRAD_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/srad_flight.data.csv" )
+    FILE(GLOB_RECURSE COTS_CSV_FILE_PATH "flight-computer/sim-port/sensor-simulation/cots_flight.data.csv" )
 
     ADD_DEFINITIONS(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
     ADD_DEFINITIONS(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
 
-    INCLUDE_DIRECTORIES         (../flight-computer/sim-port/os-kernel/FreeRTOS/Source/include)
-    INCLUDE_DIRECTORIES         (../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
-    INCLUDE_DIRECTORIES         (../os-kernel/FreeRTOS-Plus-CLI)
+    INCLUDE_DIRECTORIES         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/include)
+    INCLUDE_DIRECTORIES         (flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
+    INCLUDE_DIRECTORIES         (os-kernel/FreeRTOS-Plus-CLI)
 
     SET(SIM_PORT_SRC        # sensor simulation
-            ../flight-computer/sim-port/sensor-simulation/buzzer.c
-            ../flight-computer/sim-port/sensor-simulation/imu_sensor.c
-            ../flight-computer/sim-port/sensor-simulation/pressure_sensor.c
-            ../flight-computer/sim-port/sensor-simulation/flash.c
-            ../flight-computer/sim-port/sensor-simulation/datafeeder.cpp
+            flight-computer/sim-port/sensor-simulation/buzzer.c
+            flight-computer/sim-port/sensor-simulation/imu_sensor.c
+            flight-computer/sim-port/sensor-simulation/pressure_sensor.c
+            flight-computer/sim-port/sensor-simulation/flash.c
+            flight-computer/sim-port/sensor-simulation/datafeeder.cpp
 
         # Communication/Transmission protocols
-            ../flight-computer/sim-port/transmission-protocols/SPI.c
-            ../flight-computer/sim-port/transmission-protocols/UART.c
+            flight-computer/sim-port/transmission-protocols/SPI.c
+            flight-computer/sim-port/transmission-protocols/UART.c
         )
 
     ADD_LIBRARY(RTOS_LIB
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/croutine.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/list.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/queue.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/tasks.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/timers.c
-            ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
-            ../os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/croutine.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/list.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/queue.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/tasks.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/timers.c
+            flight-computer/sim-port/os-kernel/FreeRTOS/Source/event_groups.c
+            os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
             )
 
 ELSE()
@@ -112,8 +112,8 @@ ELSE()
 
     SET(CMAKE_C_FLAGS                   "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=gnu11 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
     SET(CMAKE_CXX_FLAGS                 "-g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -std=c++11 -Wno-implicit-function-declaration -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wall -Werror -specs=nano.specs -fstack-usage -fdata-sections -fdata-sections")
-    set(SYS_CALLS_SRC ../sys/syscalls.c)
-    SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/../linker-script/STM32F401RE_FLASH.ld)
+    set(SYS_CALLS_SRC sys/syscalls.c)
+    SET(LINKER_SCRIPT                   ${CMAKE_HOME_DIRECTORY}/linker-script/STM32F401RE_FLASH.ld)
     SET(CMAKE_EXE_LINKER_FLAGS          "-Wl,-gc-sections -T ${LINKER_SCRIPT}")
     SET(CMAKE_EXE_LINKER_FLAGS_INIT     "-Wmissing-prototypes -Wmissing-declarations -Wl,-gc-sections,--print-memory-usage")
     SET(CMAKE_SYSTEM_NAME               Generic)
@@ -128,46 +128,48 @@ ELSE()
     ADD_DEFINITIONS("-D__packed=__attribute__((__packed__))")
 
 
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/BMI08x-Sensor-API)
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/BMI08x-Sensor-API/Inc)
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/CMSIS/Include)
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/STM32F4xx_HAL_Driver/Inc)
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/STM32F4xx_HAL_Driver/Inc/Custom)
-    INCLUDE_DIRECTORIES (../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Include)
-    INCLUDE_DIRECTORIES (../os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F)
-    INCLUDE_DIRECTORIES (../os-kernel/FreeRTOS/Source/CMSIS_RTOS)
-    INCLUDE_DIRECTORIES (../os-kernel/FreeRTOS/Source/include)
-    INCLUDE_DIRECTORIES (../os-kernel/FreeRTOS-Plus-CLI)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/BMI08x-Sensor-API)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/BMI08x-Sensor-API/Inc)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/CMSIS/Include)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/STM32F4xx_HAL_Driver/Inc/Custom)
+    INCLUDE_DIRECTORIES (board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Include)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/CMSIS_RTOS)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS/Source/include)
+    INCLUDE_DIRECTORIES (os-kernel/FreeRTOS-Plus-CLI)
 
     ADD_LIBRARY(CMSIS_LIB
-            ../board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c
-            ../Startup/startup_stm32f401xe.s
+            board-hardware-drivers/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c
+            Startup/startup_stm32f401xe.s
             )
 
-    FILE(GLOB_RECURSE HAL_SRC "../board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
-    FILE(GLOB_RECURSE BOSCH_API_SRC "../board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
+    FILE(GLOB_RECURSE HAL_SRC "board-hardware-drivers/STM32F4xx_HAL_Driver/Src/*.c")
+    FILE(GLOB_RECURSE BOSCH_API_SRC "board-hardware-drivers/BMI08x-Sensor-API/Src/*.c")
 
     ADD_LIBRARY(RTOS_LIB
-            ../os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
-            ../os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
-            ../os-kernel/FreeRTOS/Source/croutine.c
-            ../os-kernel/FreeRTOS/Source/event_groups.c
-            ../os-kernel/FreeRTOS/Source/list.c
-            ../os-kernel/FreeRTOS/Source/queue.c
-            ../os-kernel/FreeRTOS/Source/tasks.c
-            ../os-kernel/FreeRTOS/Source/timers.c
-            ../os-kernel/FreeRTOS/Source/event_groups.c
-            ../os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+            os-kernel/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
+            os-kernel/FreeRTOS/Source/portable/MemMang/heap_1.c
+            os-kernel/FreeRTOS/Source/croutine.c
+            os-kernel/FreeRTOS/Source/event_groups.c
+            os-kernel/FreeRTOS/Source/list.c
+            os-kernel/FreeRTOS/Source/queue.c
+            os-kernel/FreeRTOS/Source/tasks.c
+            os-kernel/FreeRTOS/Source/timers.c
+            os-kernel/FreeRTOS/Source/event_groups.c
+            os-kernel/FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
             )
 
     SET(IMPL_FOLDERS_SRC  # Communication/Transmission protocols
-            ../flight-computer/protocols/impl/UART.c
-            ../flight-computer/protocols/impl/SPI.c
+            flight-computer/protocols/impl/UART.c
+            flight-computer/protocols/impl/SPI.c
 
         # sensors
-            ../flight-computer/board/components/impl/imu_sensor.c
-            ../flight-computer/board/components/impl/pressure_sensor.c
-            ../flight-computer/board/components/impl/buzzer.c)
+            flight-computer/board/components/impl/imu_sensor.c
+            flight-computer/board/components/impl/pressure_sensor.c
+            flight-computer/board/components/impl/buzzer.c
+            flight-computer/board/components/flash.c
+            )
 ENDIF()
 
 
@@ -175,45 +177,44 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
 ELSE() # BUILD_FOR_SIM_ON_WIN_OS
 ENDIF() # BUILD_FOR_SIM_ON_WIN_OS
 
-INCLUDE_DIRECTORIES (../flight-computer)
-INCLUDE_DIRECTORIES (../configurations)
-INCLUDE_DIRECTORIES (..)
+INCLUDE_DIRECTORIES (flight-computer)
+INCLUDE_DIRECTORIES (configurations)
+INCLUDE_DIRECTORIES (.)
 
 SET(USER_SRC                # Board
-        ../flight-computer/board/board.c
-        ../flight-computer/board/components/flash.c
-        ../flight-computer/board/components/recovery.c
-        ../flight-computer/board/interrupt_handlers.c
+        flight-computer/board/board.c
+        flight-computer/board/components/recovery.c
+        flight-computer/board/interrupt_handlers.c
 
         # Core
-        ../flight-computer/core/flight_controller.c
+        flight-computer/core/flight_controller.c
 
         # Memory Management
-        ../flight-computer/memory-management/memory_manager.c
-        ../flight-computer/memory-management/queue.c
+        flight-computer/memory-management/memory_manager.c
+        flight-computer/memory-management/queue.c
 
         # Event Detection
-        ../flight-computer/event-detection/event_detector.c
+        flight-computer/event-detection/event_detector.c
 
         # CLI
-        ../flight-computer/command-line-interface/controller.c
-        ../flight-computer/command-line-interface/tools/read.c
-        ../flight-computer/command-line-interface/tools/configure.c
-        ../flight-computer/command-line-interface/tools/mem.c
-        ../flight-computer/command-line-interface/tools/sysctl.c
+        flight-computer/command-line-interface/controller.c
+        flight-computer/command-line-interface/tools/read.c
+        flight-computer/command-line-interface/tools/configure.c
+        flight-computer/command-line-interface/tools/mem.c
+        flight-computer/command-line-interface/tools/sysctl.c
 
-        )
+        flight-computer/core/system_configuration.c)
 
 
 
 
 IF(BUILD_FOR_SIM_ON_WIN_OS)
 	SET(EXECUTABLE_EXTENSION exe)
-    ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} ../flight-computer/main.c ${USER_SRC} ${SIM_PORT_SRC})
+    ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} flight-computer/main.c ${USER_SRC} ${SIM_PORT_SRC})
     TARGET_LINK_LIBRARIES(RTOS_LIB pthread winmm ws2_32)
 ELSE()
 	SET(EXECUTABLE_EXTENSION elf)
-    ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} ../flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
+    ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} CMSIS_LIB -lm)
 ENDIF()
 

@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <memory.h>
 
-#define BUFFER_QUEUE_CAPACITY 25
+#define BUFFER_QUEUE_CAPACITY       25
 #define INT_FLOAT_QUEUE_CAPACITY    10
 typedef struct
 {

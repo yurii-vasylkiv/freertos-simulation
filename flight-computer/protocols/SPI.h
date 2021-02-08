@@ -22,7 +22,7 @@ extern "C" {
 #include <inttypes.h>
 
 typedef enum {
-    SPI_ERR = 0, SPI_OK = 1
+    SPI_OK = 0, SPI_ERR = 1
 } SPIStatus;
 
 

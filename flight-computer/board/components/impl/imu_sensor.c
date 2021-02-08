@@ -43,15 +43,26 @@
 #define CONFIG_IMU_SENSOR_DEFAULT_GYRO_RANGE		    BMI08X_GYRO_RANGE_1000_DPS
 #define CONFIG_IMU_SENSOR_DEFAULT_GYRO_POWER		    BMI08X_GYRO_PM_NORMAL
 
+typedef struct
+{
+    uint8_t isInitialized       ;
+    uint8_t isRunning           ;
+
+    xTaskHandle taskHandle      ;
+    void * taskParameters       ;
+} IMUSensorTaskState;
+
+static IMUSensorTaskState prvController     = {};
+
+
 static QueueHandle_t s_queue = {0};
 static uint8_t s_desired_processing_data_rate = 50;
-static bool s_is_running = false;
 
 //Wrapper functions for read and write
 int8_t user_spi_read (uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 int8_t user_spi_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
-void delay_ms(uint32_t period);
+void delay_ms(uint32_t period_ms);
 
 // configuration functions for accelerometer and gyroscope
 static int8_t accel_config(IMUSensorConfiguration * configParams);
@@ -145,7 +156,6 @@ int imu_sensor_configure (IMUSensorConfiguration * parameters )
     if(parameters == NULL)
     {
         s_current_configuration = s_default_configuration;
-        return 0;
     }
     else
     {
@@ -173,7 +183,6 @@ int imu_sensor_configure (IMUSensorConfiguration * parameters )
 
 int imu_sensor_init()
 {
-
     int status = spi3_init();
     if(status != 0)
     {
@@ -191,16 +200,18 @@ int imu_sensor_init()
 
     vQueueAddToRegistry(s_queue, "bmi088_queue");
 
+
+    prvController.isInitialized = 1;
     return BMI08X_OK;
 }
 
-
-
-void imu_sensor_start(void * const param)
+static void prv_imu_sensor_controller_task(void * pvParams)
 {
-    //Get the parameters.
-    IMUSensorConfiguration * configParams = (IMUSensorConfiguration *)param;
-    IMUSensorData dataStruct;
+    DEBUG_LINE("prv_imu_sensor_controller_task\r\n");
+    IMUSensorConfiguration * configParams = (IMUSensorConfiguration *)pvParams;
+    (void)configParams;
+
+    IMUSensorData dataStruct = {};
 
     //main loop: continuously read sensor data
     //vTaskDelay(pdMS_TO_TICKS(100));//Wait so to make sure the other tasks have started.
@@ -210,9 +221,9 @@ void imu_sensor_start(void * const param)
 
     TickType_t start_timestamp =  xTaskGetTickCount();
 
-    s_is_running = true;
+    prvController.isRunning = true;
 
-    while(s_is_running)
+    while(prvController.isRunning)
     {
         result_flag = bmi08a_get_data(&container, &s_device);
         if(BMI08X_E_NULL_PTR == result_flag)
@@ -222,32 +233,60 @@ void imu_sensor_start(void * const param)
         dataStruct.acc_x = container.x,
         dataStruct.acc_y = container.y,
         dataStruct.acc_z = container.z;
-        
+
         result_flag = bmi08g_get_data(&container, &s_device);
         if(BMI08X_E_NULL_PTR == result_flag)
         {
             continue;
         }
-        
+
         dataStruct.gyro_x = container.x,
         dataStruct.gyro_y = container.y,
         dataStruct.gyro_z = container.z;
-        
+
         dataStruct.timestamp = xTaskGetTickCount() - start_timestamp;
 
         imu_add_measurement(&dataStruct);
         vTaskDelayUntil(&dataStruct.timestamp, s_desired_processing_data_rate);
     }
+
+    prvController.isRunning = false;
+}
+
+int imu_sensor_start(void * const param)
+{
+    DEBUG_LINE("pressure_sensor_start\r\n");
+    //Get the parameters.
+    if ( !prvController.isInitialized )
+    {
+        return IMU_ERR;
+    }
+
+    prvController.taskParameters = param;
+
+//    TaskHandle_t xTask = controller.taskHandle;
+//    TaskStatus_t pxTaskStatus;
+//    BaseType_t xGetFreeStackSpace = 0;
+//    eTaskState eState = eInvalid;
+//    vTaskGetInfo(xTask, &pxTaskStatus, xGetFreeStackSpace, eState);
+
+
+    if ( pdFALSE == xTaskCreate(prv_imu_sensor_controller_task, "imu-manager", configMINIMAL_STACK_SIZE, prvController.taskParameters, 5, &prvController.taskHandle ) )
+    {
+        return IMU_ERR;
+    }
+
+    return IMU_OK;
 }
 
 bool imu_sensor_is_running     ()
 {
-    return s_is_running;
+    return prvController.isRunning;
 }
 
 void imu_sensor_stop           ()
 {
-    s_is_running = false;
+    prvController.isRunning = false;
 }
 
 
@@ -366,9 +405,16 @@ int8_t user_spi_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_
     return BMI08X_OK;
 }
 
-void delay_ms(uint32_t period)
+void delay_ms ( uint32_t period_ms )
 {
-    vTaskDelay(pdMS_TO_TICKS(period)); // wait for the given amount of milliseconds
+    if ( taskSCHEDULER_NOT_STARTED == xTaskGetSchedulerState() )
+    {
+        board_delay(period_ms);
+    }
+    else
+    {
+        vTaskDelay(pdMS_TO_TICKS ( period_ms ) );
+    }
 }
 
 

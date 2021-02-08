@@ -55,6 +55,10 @@ static BaseType_t prvSystemCtlCommand   ( char *pcWriteBuffer, size_t xWriteBuff
 static BaseType_t prvTaskStatsCommand   ( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 static BaseType_t prvRunTimeStatsCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
+static char*__strtok_r (char *s, const char *delim, char **save_ptr);
+static char* prv_strtok (char *s, const char *delim);
+
+
 #if configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1
 static BaseType_t prvStartStopTraceCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 #endif
@@ -255,8 +259,8 @@ void vRegister_RTOS_Commands(void )
 
 void prv_cli_function(void * pvParams)
 {
-    uart6_transmit_line(INTRO_MESSAGE);
-    uart6_transmit_line(GENERAL_USAGE);
+    DISPLAY("%s", INTRO_MESSAGE);
+    DISPLAY("%s", GENERAL_USAGE);
 
     long lBytes, lByte;
     signed char cInChar, cInputIndex = 0;
@@ -279,8 +283,6 @@ void prv_cli_function(void * pvParams)
 //             "configure set_temp_os:=32" ,
 //             "configure set_data_rate=100 set_accel_range:=6 set_gyro_bw=1 set_temp_os=32" ,
 //             "configure set_data_rate=100 set_accel_range=6 set_gyro_bw=1 set_temp_os=32" ,
-//             "help",
-//             "help"
 //    };
 
     s_is_running = true;
@@ -288,9 +290,8 @@ void prv_cli_function(void * pvParams)
     {
         /* Process the input string received prior to the newline. */
 //        DISPLAY(">> ");
-        vTaskDelay(100);
         INPUT(cInputString);
-//        memcpy(cInputString, "task-stats", strlen("task-stats"));
+//        memcpy(cInputString, commands[comm_index], strlen(commands[comm_index]));
 //        DISPLAY("cInputString");
 //        comm_index++;
 //        if(comm_index ==8)
@@ -739,7 +740,7 @@ static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStri
     pcParameterMutable[xParameterStringLength] = '\0';
 
     // Extract the first token
-    strcpy(cmd_option, strtok(pcParameterMutable, "="));
+    strcpy(cmd_option, prv_strtok(pcParameterMutable, "="));
     if(cmd_option == NULL)
     {
         sprintf( pcWriteBuffer, "Invalid parameter format: %s\n, correct format is option=argument\n", pcParameter);
@@ -754,7 +755,7 @@ static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStri
         }
     }
 
-    const char * tempStr_option_arg = strtok(NULL, "=");
+    const char * tempStr_option_arg = prv_strtok(NULL, "=");
     if(tempStr_option_arg != NULL) {
         strcpy(str_option_arg, tempStr_option_arg);
         if (str_option_arg == NULL) {
@@ -775,6 +776,42 @@ static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStri
     return true;
 }
 
+
+char*__strtok_r (char *s, const char *delim, char **save_ptr)
+{
+    char *end;
+    if (s == NULL)
+        s = *save_ptr;
+    if (*s == '\0')
+    {
+        *save_ptr = s;
+        return NULL;
+    }
+    /* Scan leading delimiters.  */
+    s += strspn (s, delim);
+    if (*s == '\0')
+    {
+        *save_ptr = s;
+        return NULL;
+    }
+    /* Find the end of the token.  */
+    end = s + strcspn (s, delim);
+    if (*end == '\0')
+    {
+        *save_ptr = end;
+        return s;
+    }
+    /* Terminate the token and make *SAVE_PTR point past it.  */
+    *end = '\0';
+    *save_ptr = end + 1;
+    return s;
+}
+
+char* prv_strtok (char *s, const char *delim)
+{
+    static char *olds;
+    return __strtok_r (s, delim, &olds);
+}
 
 
 

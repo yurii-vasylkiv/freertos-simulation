@@ -100,7 +100,7 @@ void * worker_function( void * arg )
 
         taskEXIT_CRITICAL( );
 
-        msleep( 10 );
+        msleep( 5 );
     }
 
     DEBUG_LINE("C++ DataFeeder has successfully exited.");

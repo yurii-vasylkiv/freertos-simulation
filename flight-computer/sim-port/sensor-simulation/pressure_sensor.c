@@ -155,7 +155,7 @@ void pressure_sensor_stop           ()
 
 
 
-void pressure_sensor_start( void * pvParameters )
+int pressure_sensor_start( void * pvParameters )
 {
     #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
     #define MAKE_STR(x) _MAKE_STR(x)
@@ -181,6 +181,8 @@ void pressure_sensor_start( void * pvParameters )
     {
         DISPLAY_LINE("Pressure Sensor task is already running");
     }
+
+    return PRESS_SENSOR_OK;
 }
 
 

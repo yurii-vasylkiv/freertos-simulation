@@ -23,7 +23,7 @@ typedef enum
 
 int event_detector_init( FlightSystemConfiguration * configurations);
 int event_detector_update_configurations ( FlightSystemConfiguration * configurations);
-FlightState event_detector_feed ( Data * data);
+FlightState event_detector_feed ( DataContainer * data);
 float event_detector_current_altitude();
 bool event_detector_is_flight_started();
 

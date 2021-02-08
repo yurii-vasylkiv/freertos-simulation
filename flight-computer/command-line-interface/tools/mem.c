@@ -70,7 +70,7 @@ bool cli_tools_mem (char *pcWriteBuffer, size_t xWriteBufferLen, const char * cm
     if (strcmp(cmd_option, "erase_all") == 0)
         return cli_tools_mem_erase_all(pcWriteBuffer, xWriteBufferLen, NULL);
 
-    sprintf(pcWriteBuffer, "Command [%s] not recognized\n", cmd_option);
+    sprintf(pcWriteBuffer, "Command [%s] not recognized\r\n", cmd_option);
     return false;
 }
 
@@ -81,27 +81,19 @@ bool cli_tools_mem_read (char *pcWriteBuffer, size_t xWriteBufferLen, const char
 
     if(value > 0 && value <= FLASH_END_ADDRESS)
     {
-        sprintf(pcWriteBuffer, "Reading 256 bytes starting at address %lu ...\n", value);
+        sprintf(pcWriteBuffer, "Reading 256 bytes starting at address %lu ...\r\n", value);
 
         uint8_t data_rx[FLASH_PAGE_SIZE];
         FlashStatus stat;
         stat = flash_read(value, data_rx, FLASH_PAGE_SIZE);
 
-        uint8_t busy = stat;
-
-        while(FLASH_IS_DEVICE_BUSY(busy))
-        {
-            busy = flash_get_status_register();
-            vTaskDelay(pdMS_TO_TICKS(1));
-        }
-
         if(stat == FLASH_OK)
         {
-            sprintf(pcWriteBuffer, "Success!\n");
+            sprintf(pcWriteBuffer, "Success!\r\n");
         }
         else
         {
-            sprintf(pcWriteBuffer, "Failed!\n");
+            sprintf(pcWriteBuffer, "Failed!\r\n");
             return false;
         }
 
@@ -109,17 +101,17 @@ bool cli_tools_mem_read (char *pcWriteBuffer, size_t xWriteBufferLen, const char
         {
             if((i + 1) % 16 == 0)
             {
-                sprintf(pcWriteBuffer, "0x%02X\n", data_rx[i]);
+                sprintf(pcWriteBuffer, "0x%02X\r\n", data_rx[i]);
             }else
             {
-                sprintf(pcWriteBuffer, "0x%02X\n", data_rx[i]);
+                sprintf(pcWriteBuffer, "0x%02X\r\n", data_rx[i]);
             }
         }
 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "[%s]: Argument [%s] is in invalid range\n", cmd_option, str_option_arg);
+    sprintf(pcWriteBuffer, "[%s]: Argument [%s] is in invalid range\r\n", cmd_option, str_option_arg);
     return false;
 }
 
@@ -128,9 +120,11 @@ bool cli_tools_mem_scan (char *pcWriteBuffer, size_t xWriteBufferLen, const char
 {
     const char * cmd_option = "scan";
     uint32_t value = atoi(str_option_arg);
+    (void) cmd_option;
+    (void) value;
 
     uint32_t end_Address = flash_scan();
-    sprintf(pcWriteBuffer, "End address :%lu \n", end_Address);
+    sprintf(pcWriteBuffer, "End address :%lu \r\n", end_Address);
 
     return true;
 }
@@ -140,7 +134,7 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
 {
     uint8_t dataRX[FLASH_PAGE_SIZE];
 
-    sprintf(pcWriteBuffer, "Erasing data section ...\n");
+    sprintf(pcWriteBuffer, "Erasing data section ...\r\n");
 
     uint32_t address = FLASH_START_ADDRESS;
     FlashStatus stat = FLASH_ERR;
@@ -148,26 +142,19 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
     while(address <= FLASH_END_ADDRESS)
     {
 
-        if(address > FLASH_PARAM_END_ADDRESS)
+        //if(address > FLASH_PARAM_END_ADDRESS)
         {
-            stat = flash_erase_sector(address);
-            address += FLASH_SECTOR_SIZE;
-        }else
-        {
-            stat = flash_erase_param_sector(address);
-            address += FLASH_PARAM_SECTOR_SIZE;
+            // stat = flash_erase_sector(address);
+            // address += FLASH_SECTOR_SIZE;
         }
-        //Wait for erase to finish
-        while(FLASH_IS_DEVICE_BUSY(stat))
+        //else
         {
-
-            stat = flash_get_status_register();
-
-            vTaskDelay(pdMS_TO_TICKS(1));
+            // stat = flash_erase_param_sector(address);
+            //address += FLASH_PARAM_SECTOR_SIZE;
         }
 
 //        HAL_GPIO_TogglePin(USR_LED_PORT,USR_LED_PIN);
-        sprintf(pcWriteBuffer, "Erasing sector %lu ...\n", address);
+        sprintf(pcWriteBuffer, "Erasing sector %lu ...\r\n", address);
     }
 
     flash_read(FLASH_START_ADDRESS, dataRX, 256);
@@ -185,15 +172,15 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
     if(empty == 0xFFFF)
     {
 
-        sprintf(pcWriteBuffer, "Flash Erased Success!\n");
+        sprintf(pcWriteBuffer, "Flash Erased Success!\r\n");
     }
 
     if(stat == FLASH_OK)
     {
-        sprintf(pcWriteBuffer, "Success!\n");
+        sprintf(pcWriteBuffer, "Success!\r\n");
     }else
     {
-        sprintf(pcWriteBuffer, "Failed!\n");
+        sprintf(pcWriteBuffer, "Failed!\r\n");
         return false;
     }
 
@@ -203,34 +190,59 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
 bool cli_tools_mem_erase_config_section (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
 {
     const char * cmd_option = "erase_config_section";
-    sprintf(pcWriteBuffer, "Success!\n");
+    (void) cmd_option;
+
+    if( MEM_OK != memory_manager_erase_configuration_section() )
+    {
+        sprintf(pcWriteBuffer, "Failure!\r\n");
+        return false;
+    }
+
+    sprintf(pcWriteBuffer, "Success!\r\n");
     return true;
 }
 
 bool cli_tools_mem_erase_all (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
 {
     const char * cmd_option = "erase_all";
-    sprintf(pcWriteBuffer, "Success!\n");
+    (void) cmd_option;
+
+    if( MEM_OK != memory_manager_erase_everything() )
+    {
+        sprintf(pcWriteBuffer, "Failure!\r\n");
+        return false;
+    }
+
+    sprintf(pcWriteBuffer, "Success!\r\n");
     return true;
 }
 
 
 static bool cli_tools_mem_read_imu_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
 {
+
     const char * cmd_option = "read_imu_index";
     uint32_t value = atoi(str_option_arg);
 
     IMUDataU dst = {};
-    if (MEM_OK == memory_manager_get_single_imu_entry(&dst, value) )
+    if (MEM_OK == memory_manager_get_single_gyro_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, accel=[%f, %f, %f], gyro=[%f, %f, %f]\n",
-                cmd_option, dst.timestamp, dst.accelerometer[0], dst.accelerometer[1], dst.accelerometer[2],
-                dst.gyroscope[0], dst.gyroscope[1], dst.gyroscope[2]);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu: gyro=[%f, %f, %f]\n",
+                cmd_option, dst.values.timestamp, dst.values.data[0], dst.values.data[1], dst.values.data[2]);
 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    memset(&dst, 0, sizeof( IMUDataU));
+    if (MEM_OK == memory_manager_get_single_acc_entry(&dst, value) )
+    {
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu: acc=[%f, %f, %f]\n",
+                cmd_option, dst.values.timestamp, dst.values.data[0], dst.values.data[1], dst.values.data[2]);
+
+        return true;
+    }
+
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 
 }
@@ -241,13 +253,13 @@ static bool cli_tools_mem_read_press_index (char* pcWriteBuffer, size_t xWriteBu
     uint32_t value = atoi(str_option_arg);
 
     PressureDataU dst = {};
-    if (MEM_OK == memory_manager_get_single_pressure_entry(&dst, value) )
+    if ( MEM_OK == memory_manager_get_single_press_entry( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f, temperature=%f\n", cmd_option, dst.timestamp, dst.pressure, dst.temperature);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.pressure);
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 
@@ -260,11 +272,11 @@ static bool cli_tools_mem_read_cont_index (char* pcWriteBuffer, size_t xWriteBuf
     ContinuityU dst = {};
     if (MEM_OK == memory_manager_get_single_cont_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.timestamp, dst.status);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status);
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 
@@ -276,127 +288,127 @@ static bool cli_tools_mem_read_flight_event_index (char* pcWriteBuffer, size_t x
     FlightEventU dst = {};
     if (MEM_OK == memory_manager_get_single_flight_event_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.timestamp, dst.status);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status);
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 
 static bool cli_tools_mem_read_configuration_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
 {
-    const char * cmd_option = "read_configuration_index";
+    const char * cmd_option = "read_configuration";
     uint32_t value = atoi(str_option_arg);
 
-    ConfigurationU dst = {};
-    if (MEM_OK == memory_manager_get_single_configuration_entry(&dst, value) )
+    GlobalConfigurationU dst = {};
+    if (MEM_OK == memory_manager_get_single_configuration_entry (&dst, value) )
     {
-        sprintf(pcWriteBuffer,
-        "[%s]:\n"
-        "magic = %s\n"
-        "\n"
-        "Memory:\n"
-        " write_drogue_continuity_ms      = %i\n"
-        " write_pre_launch_multiplier     = %i\n"
-        " write_pre_apogee_multiplier     = %i\n"
-        " write_post_apogee_multiplier    = %i\n"
-        " write_ground_multiplier         = %i\n"
-        " write_interval_accelerometer_ms = %i\n"
-        " write_interval_gyroscope_ms     = %i\n"
-        " write_interval_magnetometer_ms  = %i\n"
-        " write_interval_pressure_ms      = %i\n"
-        " write_interval_altitude_ms      = %i\n"
-        " write_interval_temperature_ms   = %i\n"
-        " write_interval_flight_state_ms  = %i\n"
-        " write_drogue_continuity_ms      = %i\n"
-        " write_main_continuity_ms        = %i\n"
-        "\n"
-        "System:\n"
-        " landing_rotation_speed_deg_per_sec      = %lu\n"
-        " backup_time_launch_to_apogee_sec        = %lu\n"
-        " backup_time_apogee_to_main_sec          = %lu\n"
-        " backup_time_main_to_ground_sec          = %lu\n"
-        " ground_pressure                         = %lu\n"
-        " ground_temperature                      = %lu\n"
-        " current_system_time                     = %lu\n"
-        " altitude_main_recovery_m                = %i\n"
-        " flight_state                            = %i\n"
-        " power_mode                              = %i\n"
-        " launch_acceleration_critical_value_m_s2 = %i\n"
-        " e_match_line_keep_active_for            = %i\n"
-        " imu_data_needs_to_be_converted          = %i\n"
-        " pressure_data_needs_to_be_converted     = %i\n"
-        "\n"
-        "IMU:\n"
-        " accel_bandwidth        = %i\n"
-        " accel_output_data_rate = %i\n"
-        " accel_range            = %i\n"
-        " accel_power            = %i\n"
-        " gyro_bandwidth         = %i\n"
-        " gyro_output_data_rate  = %i\n"
-        " gyro_range             = %i\n"
-        " gyro_power             = %i\n"
-        "\n"
-        "Pressure:\n"
-        " output_data_rate                             = %i\n"
-        " temperature_oversampling                     = %i\n"
-        " pressure_oversampling                        = %i\n"
-        " infinite_impulse_response_filter_coefficient = %i\n",
+        snprintf(pcWriteBuffer, xWriteBufferLen,
+        "[%s]:\r\n"
+        "signature = %s\r\n"
+        "\r\n"
+        "Memory:\r\n"
+        " write_drogue_continuity_ms      = %i\r\n"
+        " write_pre_launch_multiplier     = %i\r\n"
+        " write_pre_apogee_multiplier     = %i\r\n"
+        " write_post_apogee_multiplier    = %i\r\n"
+        " write_ground_multiplier         = %i\r\n"
+        " write_interval_accelerometer_ms = %i\r\n"
+        " write_interval_gyroscope_ms     = %i\r\n"
+        " write_interval_magnetometer_ms  = %i\r\n"
+        " write_interval_pressure_ms      = %i\r\n"
+        " write_interval_altitude_ms      = %i\r\n"
+        " write_interval_temperature_ms   = %i\r\n"
+        " write_interval_flight_state_ms  = %i\r\n"
+        " write_drogue_continuity_ms      = %i\r\n"
+        " write_main_continuity_ms        = %i\r\n"
+        "\r\n"
+        "System:\r\n"
+        " landing_rotation_speed_deg_per_sec      = %lu\r\n"
+        " backup_time_launch_to_apogee_sec        = %lu\r\n"
+        " backup_time_apogee_to_main_sec          = %lu\r\n"
+        " backup_time_main_to_ground_sec          = %lu\r\n"
+        " ground_pressure                         = %lu\r\n"
+        " ground_temperature                      = %lu\r\n"
+        " last_current_system_time                = %lu\r\n"
+        " altitude_main_recovery_m                = %i\r\n"
+        " last_flight_state                       = %i\r\n"
+        " last_power_mode                         = %i\r\n"
+        " launch_acceleration_critical_value_m_s2 = %i\r\n"
+        " e_match_line_keep_active_for            = %i\r\n"
+        " imu_data_needs_to_be_converted          = %i\r\n"
+        " pressure_data_needs_to_be_converted     = %i\r\n"
+        "\r\n"
+        "IMU:\r\n"
+        " accel_bandwidth        = %i\r\n"
+        " accel_output_data_rate = %i\r\n"
+        " accel_range            = %i\r\n"
+        " accel_power            = %i\r\n"
+        " gyro_bandwidth         = %i\r\n"
+        " gyro_output_data_rate  = %i\r\n"
+        " gyro_range             = %i\r\n"
+        " gyro_power             = %i\r\n"
+        "\r\n"
+        "Pressure:\r\n"
+        " output_data_rate                             = %i\r\n"
+        " temperature_oversampling                     = %i\r\n"
+        " pressure_oversampling                        = %i\r\n"
+        " infinite_impulse_response_filter_coefficient = %i\r\n",
 
         cmd_option,
 
-        (const char*) dst.magic,
+        (const char*) dst.values.signature,
 
-        dst.memory.write_drogue_continuity_ms,
-        dst.memory.write_pre_launch_multiplier,
-        dst.memory.write_pre_apogee_multiplier,
-        dst.memory.write_post_apogee_multiplier,
-        dst.memory.write_ground_multiplier,
-        dst.memory.write_interval_accelerometer_ms,
-        dst.memory.write_interval_gyroscope_ms,
-        dst.memory.write_interval_magnetometer_ms,
-        dst.memory.write_interval_pressure_ms,
-        dst.memory.write_interval_altitude_ms,
-        dst.memory.write_interval_temperature_ms,
-        dst.memory.write_interval_flight_state_ms,
-        dst.memory.write_drogue_continuity_ms,
-        dst.memory.write_main_continuity_ms,
+        dst.values.memory.write_drogue_continuity_ms,
+        dst.values.memory.write_pre_launch_multiplier,
+        dst.values.memory.write_pre_apogee_multiplier,
+        dst.values.memory.write_post_apogee_multiplier,
+        dst.values.memory.write_ground_multiplier,
+        dst.values.memory.write_interval_accelerometer_ms,
+        dst.values.memory.write_interval_gyroscope_ms,
+        dst.values.memory.write_interval_magnetometer_ms,
+        dst.values.memory.write_interval_pressure_ms,
+        dst.values.memory.write_interval_altitude_ms,
+        dst.values.memory.write_interval_temperature_ms,
+        dst.values.memory.write_interval_flight_state_ms,
+        dst.values.memory.write_drogue_continuity_ms,
+        dst.values.memory.write_main_continuity_ms,
 
-        dst.system.landing_rotation_speed_deg_per_sec,
-        dst.system.backup_time_launch_to_apogee_sec,
-        dst.system.backup_time_apogee_to_main_sec,
-        dst.system.backup_time_main_to_ground_sec,
-        dst.system.ground_pressure,
-        dst.system.ground_temperature,
-        dst.system.current_system_time,
-        dst.system.altitude_main_recovery_m,
-        dst.system.flight_state,
-        dst.system.power_mode,
-        dst.system.launch_acceleration_critical_value_m_s2,
-        dst.system.e_match_line_keep_active_for,
-        dst.system.imu_data_needs_to_be_converted,
-        dst.system.pressure_data_needs_to_be_converted,
+        dst.values.system.landing_rotation_speed_deg_per_sec,
+        dst.values.system.backup_time_launch_to_apogee_sec,
+        dst.values.system.backup_time_apogee_to_main_sec,
+        dst.values.system.backup_time_main_to_ground_sec,
+        dst.values.system.ground_pressure,
+        dst.values.system.ground_temperature,
+        0L, // dst.values.system.current_system_time,
+        dst.values.system.altitude_main_recovery_m,
+        0, // dst.values.system.flight_state,
+        0, // dst.values.system.power_mode,
+        dst.values.system.launch_acceleration_critical_value_m_s2,
+        dst.values.system.e_match_line_keep_active_for,
+        dst.values.system.imu_data_needs_to_be_converted,
+        dst.values.system.pressure_data_needs_to_be_converted,
 
-        dst.system.imu_sensor_configuration.accel_bandwidth,
-        dst.system.imu_sensor_configuration.accel_output_data_rate,
-        dst.system.imu_sensor_configuration.accel_range,
-        dst.system.imu_sensor_configuration.accel_power,
-        dst.system.imu_sensor_configuration.gyro_bandwidth,
-        dst.system.imu_sensor_configuration.gyro_output_data_rate,
-        dst.system.imu_sensor_configuration.gyro_range,
-        dst.system.imu_sensor_configuration.gyro_power,
+        dst.values.system.imu_sensor_configuration.accel_bandwidth,
+        dst.values.system.imu_sensor_configuration.accel_output_data_rate,
+        dst.values.system.imu_sensor_configuration.accel_range,
+        dst.values.system.imu_sensor_configuration.accel_power,
+        dst.values.system.imu_sensor_configuration.gyro_bandwidth,
+        dst.values.system.imu_sensor_configuration.gyro_output_data_rate,
+        dst.values.system.imu_sensor_configuration.gyro_range,
+        dst.values.system.imu_sensor_configuration.gyro_power,
 
-        dst.system.pressure_sensor_configuration.output_data_rate,
-        dst.system.pressure_sensor_configuration.temperature_oversampling,
-        dst.system.pressure_sensor_configuration.pressure_oversampling,
-        dst.system.pressure_sensor_configuration.infinite_impulse_response_filter_coefficient
+        dst.values.system.pressure_sensor_configuration.output_data_rate,
+        dst.values.system.pressure_sensor_configuration.temperature_oversampling,
+        dst.values.system.pressure_sensor_configuration.pressure_oversampling,
+        dst.values.system.pressure_sensor_configuration.infinite_impulse_response_filter_coefficient
         );
 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 
@@ -405,13 +417,15 @@ static bool cli_tools_mem_stats (char* pcWriteBuffer, size_t xWriteBufferLen, co
 {
     const char * cmd_option = "stats";
     uint32_t value = atoi(str_option_arg);
-    if ( MEM_OK == memory_manager_get_stats() )
+    (void) cmd_option;
+    (void) value;
+
+    if ( MEM_OK == memory_manager_get_stats(pcWriteBuffer, xWriteBufferLen) )
     {
-        sprintf(pcWriteBuffer, "Success!\n");
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\n");
+    sprintf(pcWriteBuffer, "Failure!\r\n");
     return false;
 }
 

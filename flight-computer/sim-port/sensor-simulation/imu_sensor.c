@@ -240,7 +240,7 @@ void prv_imu_thread_start( void * param )
 
 
 
-void imu_sensor_start ( void * const param )
+int imu_sensor_start ( void * const param )
 {
     #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON)
         #define MAKE_STR(x) _MAKE_STR(x)
@@ -263,6 +263,8 @@ void imu_sensor_start ( void * const param )
     {
         DISPLAY_LINE("IMU Sensor task is already running");
     }
+
+    return IMU_OK;
 }
 
 bool imu_sensor_is_running     ()

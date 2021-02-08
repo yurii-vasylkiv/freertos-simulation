@@ -1755,6 +1755,7 @@ typedef struct __SPI_HandleTypeDef
   * @brief GPIO Output Maximum frequency
   * @{
   */
+#define  GPIO_SPEED_LOW              0x00000000U
 #define  GPIO_SPEED_FREQ_LOW         0x00000000U  /*!< IO works at 2 MHz, please refer to the product datasheet */
 #define  GPIO_SPEED_FREQ_MEDIUM      0x00000001U  /*!< range 12,5 MHz to 50 MHz, please refer to the product datasheet */
 #define  GPIO_SPEED_FREQ_HIGH        0x00000002U  /*!< range 25 MHz to 100 MHz, please refer to the product datasheet  */
@@ -2160,6 +2161,13 @@ static inline void HAL_IncTick(void)
   * @brief   AF 15 selection
   */
 #define GPIO_AF15_EVENTOUT      ((uint8_t)0x0F)  /* EVENTOUT Alternate Function mapping */
+
+static inline void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
+{
+
+}
+
+TIM_HandleTypeDef htim1;
 
 #endif
 

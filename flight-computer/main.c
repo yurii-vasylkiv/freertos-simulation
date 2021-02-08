@@ -127,6 +127,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 #include <stddef.h>
 #include <stdio.h>
 #include "configurations/UserConfig.h"
+
 #include "memory-management/memory_manager.h"
 
 #include "board/board.h"
@@ -148,14 +149,17 @@ void assert_failed(uint8_t *file, uint32_t line)
 
 #include "board/components/imu_sensor.h"
 #include "board/components/pressure_sensor.h"
+#include "board/hardware_definitions.h"
 
+#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
-#include "board/hardware_definitions.h"
+#endif
 
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 int main( void )
 {
+    int status;
     BoardStatus board_status = board_init( );
 
     if ( board_status != BOARD_OK )
@@ -163,7 +167,7 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     }
 
-    int status = UART_Port2_init();
+    status = UART_Port6_init();
 
     if ( status != UART_OK )
     {
@@ -173,83 +177,80 @@ int main( void )
         DEBUG_LINE( "UMSATS ROCKETRY FLIGHT COMPUTER");
     }
 
-//    buzzer_init( );
+    buzzer_init( );
+    buzz_delay(500);
     DEBUG_LINE( "Buzzer has been set up.");
 
-//    recovery_init( );
+    recovery_init( );
     DEBUG_LINE( "Recovery GPIO pins have been set up.");
 
-//    status = flash_init();
-//    if ( status != 0 )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Flash ID read successful");
-//    }
+    status = flash_init();
+    if ( status != 0 )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Flash ID read successful");
+    }
 
-//    status = memory_manager_init( );
-//    if ( status != MEM_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Memory Manager has been set");
-//    }
-//
-//    status = memory_manager_configure( );
-//    if ( status != MEM_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Memory Manager has been configured");
-//    }
-//
-//    status = pressure_sensor_init( NULL );
-//    if ( status != PRESS_SENSOR_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Pressure sensor has been set up.");
-//    }
-//
-//    status = imu_sensor_init( NULL );
-//    if (status  != IMU_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "IMU sensor has been set up.");
-//    }
-//
-//    status = flight_controller_init(NULL);
-//    if (status  != FLIGHT_CONTROLLER_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Flight controller has been set up.");
-//    }
-//
-//    status = memory_manager_start( NULL );
-//    if ( status != MEM_OK )
-//    {
-//        board_error_handler( __FILE__, __LINE__ );
-//    } else
-//    {
-//        DEBUG_LINE( "Memory Manager has been started.");
-//    }
+    status = memory_manager_init( );
+    if ( status != MEM_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Memory Manager has been set");
+    }
 
+    status = memory_manager_configure( );
+    if ( status != MEM_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Memory Manager has been configured");
+    }
 
+    status = pressure_sensor_init( NULL );
+    if ( status != PRESS_SENSOR_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Pressure sensor has been set up.");
+    }
+
+    status = imu_sensor_init( NULL );
+    if (status  != IMU_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "IMU sensor has been set up.");
+    }
+
+    status = flight_controller_init(NULL);
+    if (status  != FLIGHT_CONTROLLER_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Flight controller has been set up.");
+    }
+
+    status = memory_manager_start( NULL );
+    if ( status != MEM_OK )
+    {
+        board_error_handler( __FILE__, __LINE__ );
+    } else
+    {
+        DEBUG_LINE( "Memory Manager has been started.");
+    }
 
     command_line_interface_start( NULL );
-//    flight_controller_start ( NULL );
-
+    flight_controller_start ( NULL );
 
     vTaskStartScheduler ( );
-
     for ( ;; );
 }
 /*-----------------------------------------------------------*/

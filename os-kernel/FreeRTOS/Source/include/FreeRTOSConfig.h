@@ -102,8 +102,8 @@
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 7 )
-#define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                    ((size_t)70360)
+#define configMINIMAL_STACK_SIZE                 ((uint16_t) 2048 )
+#define configTOTAL_HEAP_SIZE                    ((size_t) 70360 ) // 93 kB out of 96 Kb available as per STM32F401RET6TR
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configUSE_16_BIT_TICKS                   0
 #define configUSE_MUTEXES                        1

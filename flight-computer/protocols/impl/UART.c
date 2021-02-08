@@ -20,9 +20,11 @@
 #include "FreeRTOS.h"
 #include "portable.h"
 #include "board/hardware_definitions.h"
+#include <FreeRTOS.h>
+#include <task.h>
 
-static uint8_t bufftx[BUFFER_SIZE] = ""; // uart_transmit buffer
-static uint8_t buffrx[BUFFER_SIZE] = ""; // receive buffer
+static uint8_t prvBufftx[BUFFER_SIZE] = ""; // uart_transmit buffer
+static uint8_t prvBuffrx[BUFFER_SIZE] = ""; // receive buffer
 
 static UART_HandleTypeDef uart2 = {0};
 static UART_HandleTypeDef uart6 = {0};
@@ -99,41 +101,40 @@ int UART_Port6_init(void)
     return status;
 }
 
-static int uart_transmit(UART_HandleTypeDef *huart, const char * message)
+static int uart_transmit(UART_HandleTypeDef *huart, const char * message, bool flush)
 {
-    memcpy (&bufftx, message, strlen(message));
-
     HAL_StatusTypeDef status;
-    status = HAL_UART_Transmit(huart, (uint8_t*)bufftx, sizeof(uint8_t) * (strlen(message)), TIMEOUT_MAX);
-    return status;
-}
+    portENTER_CRITICAL();
+    {
+        memset(memcpy, 0, BUFFER_SIZE);
+        size_t i = strlen(message);
+        memcpy(&prvBufftx, message, i);
 
-static int uart_transmit_line(UART_HandleTypeDef *huart, const char * message)
-{
-    size_t i = strlen(message);
-    memcpy (&bufftx, message, i);
-    bufftx[i++] = '\r';
-    bufftx[i++] = '\n';
-    bufftx[i++] = '\0';
+        if (flush)
+        {
+            prvBufftx[i++] = '\r';
+            prvBufftx[i++] = '\n';
+            prvBufftx[i++] = '\0';
+        }
 
-    HAL_StatusTypeDef status;
-    status = HAL_UART_Transmit(huart, (uint8_t*)bufftx, sizeof(uint8_t) * (i), TIMEOUT_MAX);
+        status = HAL_UART_Transmit(huart, prvBufftx, sizeof(uint8_t) * i, TIMEOUT_MAX);
+    }
+    portEXIT_CRITICAL();
     return status;
 }
 
 int uart6_transmit_debug(char const *message)
 {
 #if defined(PRINT_DEBUG_LOG)
-    return uart_transmit(&uart6, message);
+    return uart_transmit(&uart6, message, false);
 #else
     return UART_OK;
 #endif
 }
-
 int uart6_transmit_line_debug(char const *message)
 {
 #if defined(PRINT_DEBUG_LOG)
-    return uart_transmit_line(&uart6, message);
+    return uart_transmit(&uart6, message, true);
 #else
     return UART_OK;
 #endif
@@ -152,7 +153,7 @@ static char* uart_receive_command(UART_HandleTypeDef *huart)
     size_t i;
     
     c = '\0'; //clear out character received
-    buffrx[0] = '\0'; //clear out receive buffer
+    prvBuffrx[0] = '\0'; //clear out receive buffer
     i = 0; //start at beginning of index
     
     while(i < BUFFER_SIZE){
@@ -174,10 +175,10 @@ static char* uart_receive_command(UART_HandleTypeDef *huart)
             }
             else if(c == 127){ //User hits backspace, clear from buffer and display (backspace is \177 or 127)
                 if(i > 0){ i--; } //don't let i become negative
-                buffrx[i] = '\0';
+                prvBuffrx[i] = '\0';
             }
             else{ //add character to end of receive buffer
-                buffrx[i++] = c;
+                prvBuffrx[i++] = c;
             }
             
         }
@@ -189,14 +190,13 @@ static char* uart_receive_command(UART_HandleTypeDef *huart)
         //handle transmission error
     }
 
-    buffrx[i] = '\0'; //string terminator added to the end of the message
+    prvBuffrx[i] = '\0'; //string terminator added to the end of the message
     
-    return (char*)buffrx;
+    return (char*)prvBuffrx;
 }
-static int uart_receive(UART_HandleTypeDef *huart, uint8_t * buf, size_t size){
-    uint8_t c; //key pressed character
+static int uart_receive(UART_HandleTypeDef *huart, uint8_t * buf, size_t size)
+{
     size_t i = 0; //start at beginning of index
-
     while(i < size){
         //get character (BLOCKING COMMAND)
         if (HAL_UART_Receive(huart, &buf[i++], 1, 0xFFFF) != HAL_OK){
@@ -207,62 +207,50 @@ static int uart_receive(UART_HandleTypeDef *huart, uint8_t * buf, size_t size){
     return true;
 }
 
-
 int uart2_transmit(const char * message)
 {
-    return uart_transmit(&uart2, message);
+    return uart_transmit(&uart2, message, false);
 }
-
-int uart6_transmit(const char * message)
-{
-    return uart_transmit(&uart6, message);
-}
-
 int uart2_transmit_line(const char * message)
 {
-    return uart_transmit_line(&uart2, message);
+    return uart_transmit(&uart2, message, true);
 }
-
 int uart2_transmit_line_debug(char const *message)
 {
 #if defined(PRINT_DEBUG_LOG)
-    return uart_transmit_line(&uart2, message);
+    return uart_transmit(&uart2, message, true);
 #else
     return UART_OK;
 #endif
 }
-
-int uart6_transmit_line(const char * message)
-{
-    return uart_transmit_line(&uart2, message);
-}
-
 int uart2_transmit_bytes(uint8_t * bytes, uint16_t numBytes)
 {
     return uart_transmit_bytes(&uart2, bytes, numBytes);
 }
-
-int uart6_transmit_bytes(uint8_t * bytes, uint16_t numBytes)
-{
-    return uart_transmit_bytes(&uart6, bytes, numBytes);
-}
-
 char* uart2_receive_command()
 {
     return uart_receive_command(&uart2);
 }
-
-char* uart6_receive_command()
-{
-    return uart_receive_command(&uart6);
-}
-
 int uart2_receive(uint8_t * buf, size_t size)
 {
     return uart_receive(&uart2, buf, size);
 }
-
-
+int uart6_transmit(const char * message)
+{
+    return uart_transmit(&uart6, message, false);
+}
+int uart6_transmit_line(const char * message)
+{
+    return uart_transmit(&uart6, message, true);
+}
+int uart6_transmit_bytes(uint8_t * bytes, uint16_t numBytes)
+{
+    return uart_transmit_bytes(&uart6, bytes, numBytes);
+}
+char* uart6_receive_command()
+{
+    return uart_receive_command(&uart6);
+}
 int uart6_receive(uint8_t * buf, size_t size)
 {
     return uart_receive(&uart6, buf, size);

@@ -56,12 +56,12 @@ typedef union
     uint8_t bytes[sizeof(PressureSensorData)];
 } PressureSensorDataU;
 
-typedef enum { PRESS_SENSOR_ERR   = 0, PRESS_SENSOR_OK    = 1 } PressureSensorStatus;
+typedef enum { PRESS_SENSOR_OK = 0, PRESS_SENSOR_ERR = 1 } PressureSensorStatus;
 
 
 int     pressure_sensor_init                ();
 int     pressure_sensor_configure           ( PressureSensorConfiguration * parameters );
-void    pressure_sensor_start               ( void * const pvParameters );
+int     pressure_sensor_start               ( void * const pvParameters );
 bool    pressure_sensor_test                ( void );
 bool    pressure_sensor_read                ( PressureSensorData * buffer );
 bool    pressure_sensor_add_measurement     ( PressureSensorData * _data );

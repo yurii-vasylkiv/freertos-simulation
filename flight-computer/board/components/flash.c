@@ -1,264 +1,327 @@
-/**
- * @file flash.c
- * @author UMSATS Rocketry Division. Joseph Howarth
- * @date 2019-03-29
- * @brief Source file for the flash memory interface.
- *
- * Here typically goes a more extensive explanation of what the header
- * defines. Doxygens tags are words preceeded by either a backslash @\
- * or by an at symbol @@.
- * @see https://github.com/UMSATS/Avionics-2019
- */
-
 #include <stdint.h>
 #include "board/board.h"
-
-#include "FreeRTOS.h"
-#include "portable.h"
+#include <math.h>
+#include <string.h>
 
 #include "flash.h"
 #include "board/hardware_definitions.h"
 #include "protocols/SPI.h"
-#include "configurations/UserConfig.h"
 
-#if (userconf_FLASH_DISK_SIMULATION_ON == 1)
+#include <assert.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <unistd.h>
-
-
-#define PAGE_SIZE   256 // 256 bytes per page
-#define FLASH_SIZE 1024*1024*65 // 65 MB
-
-const char FILE_NAME[] = "myFlash.bin"; // The file that will represent the flash
-
-static inline void initialize_flash_disk( void )
-{
-    if ( access( FILE_NAME, F_OK ) != -1 )
-    {
-        FILE * writePrt = fopen( FILE_NAME, "ab+" ); // Open the file new, all old contents are erased
-        if ( !writePrt )
-        {
-            perror( "fopen" );
-        }
-        fseek( writePrt, 0, SEEK_CUR );
-        fclose( writePrt );
-
-    } else
-    {
-        FILE * writePrt = fopen( FILE_NAME, "wb+" ); // Open the file new, all old contents are erased
-        if ( !writePrt )
-        {
-            perror( "fopen" );
-        }
-
-        // Create or over write the file with all 0xff for the specified size
-        fseek( writePrt, FLASH_SIZE, SEEK_SET );
-        fputc( '\0', writePrt );
-        fclose( writePrt );
-    }
-}
-
-
-
-static inline uint32_t program_page( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
-{
-    FILE * writePrt = fopen( FILE_NAME, "rb+" ); // File must exist
-    int32_t bytesWritten = 0;
-
-    if ( address > FLASH_SIZE )
-    {
-        return 0;
-    }
-
-
-    // Go to te given position of memory address (inside he file), fseek return zero if able to seek or non-zero if failed
-    fseek( writePrt, address, SEEK_SET );
-
-    // Overwrite the block of memory with given contents
-    bytesWritten = fwrite( data_buffer, sizeof( uint8_t ), PAGE_SIZE, writePrt );
-
-    fclose( writePrt );
-
-    // Return operation flag
-    return bytesWritten;
-}
-
-
-
-static inline uint32_t read_page( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
-{
-    FILE * readPrt = fopen( FILE_NAME, "rb" );
-
-    if ( address > FLASH_SIZE )
-    {
-        return 0;
-    }
-    int32_t bytesRead = 0;
-
-    // Go to the given position of memory address
-    fseek( readPrt, address,
-           SEEK_SET ); // Go to the position that is number of bytes which is address from the beginning of file
-
-    // Read the given address and number of bytes to read
-    bytesRead = fread( data_buffer, sizeof( uint8_t ), num_bytes, readPrt );
-
-    fclose( readPrt );
-
-    // Return operation flag
-    return bytesRead;
-}
-
-
-
-#endif  // userconf_FLASH_DISK_SIMULATION_ON
-
-
-/**
- * @brief
- * This function sets the write enable. This is needed before a
- * write status register, program or erase command.
- * @param p_flash Pointer to @c Flash structure
- * @return Will be FLASH_BUSY if there is another operation in progress, FLASH_OK otherwise.
- * @see https://github.com/UMSATS/Avionics-2019/
+/*
+ *  Macros for flash commands
  */
-FlashStatus enable_write( )
+typedef enum flash_command_t
 {
-    uint8_t status_reg = flash_get_status_register( );
-    if ( FLASH_IS_DEVICE_BUSY( status_reg ) )
-    {
-        return FLASH_BUSY;
-    } else
-    {
-        uint8_t command = FLASH_ENABLE_WRITE_COMMAND;
-        spi1_transmit( &command, NULL, 1, 10 );
-        return FLASH_OK;
-    }
-}
+    FLASH_READ_ID                         = 0x09F,
+    FLASH_WRITE_ENABLE                    = 0x06, // Write Enable
+    FLASH_WRITE                           = 0x02, // Page Program Command (write)
+    FLASH_READ                            = 0x03,
+    FLASH_ERASE_64KB_SECTOR               = 0xD8,
+    FLASH_ERASE_4KB_SUBSECTOR             = 0x20,
+    FLASH_GET_STATUS_REGISTER             = 0x05,
+    FLASH_ERASE_ENTIRE_DEVICE                    = 0x60 // Command to erase the whole device.
+} FlashCommand;
 
 
 
-/**
- * @brief
- * This function is responsible to work like a generic interface to send any command to the flash driver
- * @param p_flash Pointer to @c Flash structure
- * @param address pointer to where in the flash memory you want to apply the operation to
- * @return Will be FLASH_BUSY if there is another operation in progress, FLASH_OK otherwise.
- * @note Any additional commands should always call this function. If this function does not satisfy the
- * needs later on when the interface is extended to potentially support more operations
- * a developer should modify this function to his needs to keep this function as a generic interface forever
- * @see https://github.com/UMSATS/Avionics-2019/
- */
+static FlashReturnType prvExecuteCommand ( uint32_t address, FlashCommand command, uint8_t * data_buffer, uint16_t num_bytes );
 
-FlashStatus execute_command( uint32_t address, uint8_t command, uint8_t * data_buffer, uint16_t num_bytes )
+
+static FlashStatus prvWaitForLastOperationToFinish()
 {
-#if (userconf_FLASH_DISK_SIMULATION_ON == 1)
-    if(command == FLASH_PP_COMMAND)
+    uint8_t status_reg = 0;
+    if ( FLASH_OK != prvExecuteCommand (0, FLASH_GET_STATUS_REGISTER, &status_reg, 1 ) )
     {
-        return program_page(address, data_buffer, num_bytes);
+        return FLASH_ERR;
     }
-    else if (command == FLASH_READ_COMMAND)
-    {
-        return read_page( address, data_buffer, num_bytes );
-    }
-#endif
 
-    uint8_t status_reg = flash_get_status_register( );
-    if ( FLASH_IS_DEVICE_BUSY( status_reg ) )
+
+    while ( FLASH_IS_DEVICE_BUSY ( status_reg ) )
     {
-        return FLASH_BUSY;
-    } else
-    {
-        enable_write( );
-        if ( command == FLASH_BULK_ERASE_COMMAND )
+        if( FLASH_OK != prvExecuteCommand (0, FLASH_GET_STATUS_REGISTER, &status_reg, 1 ) )
         {
-            enable_write( );
-            spi1_send( &command, 1, data_buffer, num_bytes, 10 );
-            return FLASH_OK;
-        } else
-        {
-            uint8_t command_address[] =
-                    {
-                            ( command ),
-                            ( address & ( FLASH_HIGH_BYTE_MASK_24B ) ) >> 16,
-                            ( address & ( FLASH_MID_BYTE_MASK_24B ) ) >> 8,
-                            ( address & ( FLASH_LOW_BYTE_MASK_24B ) )
-                    };
-
-            spi1_send( command_address, 4, data_buffer, num_bytes, 10 );
-            return FLASH_OK;
-        };
-    }
-}
-
-
-
-uint8_t flash_get_status_register( )
-{
-    uint8_t command = FLASH_GET_STATUS_REG_COMMAND;
-    uint8_t status_reg;
-    spi1_receive( &command, 1, &status_reg, 1, 10 );
-    return status_reg;
-}
-
-
-
-FlashStatus flash_erase_sector( uint32_t address )
-{
-    return execute_command( address, FLASH_ERASE_SEC_COMMAND, NULL, 0 );
-}
-
-
-
-FlashStatus flash_erase_param_sector( uint32_t address )
-{
-    return execute_command( address, FLASH_ERASE_PARAM_SEC_COMMAND, NULL, 0 );
-}
-
-
-
-uint32_t flash_write( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
-{
-    return execute_command(address, FLASH_PP_COMMAND, data_buffer, num_bytes);
-}
-
-
-
-uint32_t flash_read( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
-{
-    return execute_command(address, FLASH_READ_COMMAND, data_buffer, num_bytes);
-}
-
-
-
-FlashStatus flash_erase_device( )
-{
-    return execute_command( 0, FLASH_BULK_ERASE_COMMAND, NULL, 0 );
-}
-
-
-
-FlashStatus flash_check_id( )
-{
-    uint8_t command = FLASH_READ_ID_COMMAND;
-    uint8_t id[3] = { 0, 0, 0 };
-
-    spi1_receive( ( uint8_t * ) &command, 1, id, 3, 10 );
-    if ( ( id[ 0 ] == FLASH_MANUFACTURER_ID ) && ( id[ 1 ] == FLASH_DEVICE_ID_MSB ) &&
-         ( id[ 2 ] == FLASH_DEVICE_ID_LSB ) )
-    {
-        return FLASH_OK;
+            return FLASH_ERR;
+        }
     }
 
     return FLASH_OK;
 }
 
 
+static FlashReturnType prvExecuteCommand ( uint32_t address, FlashCommand command, uint8_t * data_buffer, uint16_t num_bytes )
+{
+    switch (command)
+    {
+        case FLASH_READ_ID:
+        {
+            uint8_t command_buffer = command;
+            if( SPI_OK == spi1_receive( &command_buffer, 1, data_buffer, num_bytes, 10) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_GET_STATUS_REGISTER:
+        {
+            uint8_t command_buffer = command;
+            if( SPI_OK == spi1_receive ( &command_buffer, 1, data_buffer, num_bytes, 10 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_WRITE_ENABLE:
+        {
+            uint8_t command_buffer = command;
+            if( SPI_OK == spi1_transmit ( & command_buffer, NULL, 1, 10 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_READ:
+        {
+            uint8_t command_buffer [ ] = { command, ( address & (FLASH_HIGH_BYTE_MASK_24B))>>16, ( address & (FLASH_MID_BYTE_MASK_24B) )>>8, address & (FLASH_LOW_BYTE_MASK_24B)};
+            if( SPI_OK == spi1_receive ( command_buffer,4, data_buffer, num_bytes,200 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_WRITE:
+        {
+            if ( FLASH_OK != prvExecuteCommand(0, FLASH_WRITE_ENABLE, NULL, 0) )
+            {
+                return FLASH_ERR;
+            }
 
-int flash_init( )
+            if ( FLASH_OK != prvWaitForLastOperationToFinish() )
+            {
+                return FLASH_ERR;
+            }
+
+            uint8_t command_buffer [ ] = {command, ( address & (FLASH_HIGH_BYTE_MASK_24B)) >> 16, ( address & (FLASH_MID_BYTE_MASK_24B) ) >> 8, address & (FLASH_LOW_BYTE_MASK_24B) };
+            if( SPI_OK == spi1_send ( command_buffer, 4, data_buffer, num_bytes, 200 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_ERASE_64KB_SECTOR:
+        {
+            if ( FLASH_OK != prvExecuteCommand(0, FLASH_WRITE_ENABLE, NULL, 0) )
+            {
+                return FLASH_ERR;
+            }
+
+            if ( FLASH_OK != prvWaitForLastOperationToFinish() )
+            {
+                return FLASH_ERR;
+            }
+
+            uint8_t command_buffer [ ] = { command, ( address & (FLASH_HIGH_BYTE_MASK_24B))>>16, ( address & (FLASH_MID_BYTE_MASK_24B) )>>8, address & (FLASH_LOW_BYTE_MASK_24B) };
+            if( SPI_OK == spi1_send ( command_buffer,4, NULL, 0,10 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_ERASE_4KB_SUBSECTOR:
+        {
+            if ( FLASH_OK != prvExecuteCommand(0, FLASH_WRITE_ENABLE, NULL, 0) )
+            {
+                return FLASH_ERR;
+            }
+
+            if ( FLASH_OK != prvWaitForLastOperationToFinish() )
+            {
+                return FLASH_ERR;
+            }
+
+            uint8_t command_buffer [ ] = { command, ( address & (FLASH_HIGH_BYTE_MASK_24B))>>16, (address & (FLASH_MID_BYTE_MASK_24B))>>8, address & (FLASH_LOW_BYTE_MASK_24B) };
+            if( SPI_OK == spi1_send ( command_buffer,4,NULL, 0,10 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+        case FLASH_ERASE_ENTIRE_DEVICE:
+        {
+            if ( FLASH_OK != prvExecuteCommand(0, FLASH_WRITE_ENABLE, NULL, 0) )
+            {
+                return FLASH_ERR;
+            }
+
+            if ( FLASH_OK != prvWaitForLastOperationToFinish() )
+            {
+                return FLASH_ERR;
+            }
+
+            uint8_t command_buffer = command;
+            if( SPI_OK == spi1_send ( &command_buffer,1,NULL,0,10 ) )
+            {
+                return FLASH_OK;
+            }
+            else
+            {
+                return FLASH_ERR;
+            }
+        }
+    }
+
+    return FLASH_ERR;
+}
+
+
+
+FlashStatus flash_erase_64kb_sector ( uint32_t address )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    return prvExecuteCommand(address, FLASH_ERASE_64KB_SECTOR, NULL, 0);
+}
+
+
+
+FlashStatus flash_erase_4Kb_subsector ( uint32_t address )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    return prvExecuteCommand(address, FLASH_ERASE_4KB_SUBSECTOR, NULL, 0);
+}
+
+FlashStatus flash_write_range ( uint32_t begin_address, uint8_t * data, uint32_t size )
+{
+    assert(size > 0);
+
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    if ( size > FLASH_PAGE_SIZE )
+    {
+        uint32_t numberOfPages = ceil ( ( double ) size / FLASH_PAGE_SIZE );
+
+        for ( int i = 0; i < numberOfPages; i++ )
+        {
+            begin_address += ( i * FLASH_PAGE_SIZE );
+
+            if ( FLASH_OK != prvExecuteCommand ( begin_address, FLASH_WRITE, data, FLASH_PAGE_SIZE ) )
+            {
+                return FLASH_ERR;
+            }
+        }
+
+        uint32_t remainingBytes = size - ( numberOfPages * FLASH_PAGE_SIZE ) ;
+
+        if ( FLASH_OK != prvExecuteCommand ( begin_address, FLASH_WRITE, data, remainingBytes ) )
+        {
+            return FLASH_ERR;
+        }
+
+        return FLASH_OK;
+    }
+    else
+    {
+        return prvExecuteCommand ( begin_address, FLASH_WRITE, data, size );
+    }
+}
+
+
+
+FlashReturnType flash_write( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    return prvExecuteCommand(address, FLASH_WRITE, data_buffer, num_bytes);
+}
+
+
+
+FlashReturnType flash_read( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    return prvExecuteCommand(address, FLASH_READ, data_buffer, num_bytes);
+}
+
+
+
+FlashStatus flash_erase_device( )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    return prvExecuteCommand(0, FLASH_ERASE_ENTIRE_DEVICE, NULL, 0);
+}
+
+
+
+FlashStatus flash_check_id( )
+{
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
+    uint8_t id [ 3 ] = { 0, 0, 0 };
+
+    if( FLASH_OK == prvExecuteCommand (0, FLASH_READ_ID, id, 3 ) )
+    {
+        if ( id [ 0 ] == FLASH_MANUFACTURER_ID && id [ 1 ] == FLASH_DEVICE_ID_MSB && id [ 2 ] == FLASH_DEVICE_ID_LSB )
+        {
+            return FLASH_OK;
+        }
+
+        return FLASH_ERR;
+    }
+    else
+    {
+        return FLASH_ERR;
+    }
+}
+
+
+
+FlashStatus flash_init( )
 {
     __HAL_RCC_GPIOB_CLK_ENABLE( );
     __HAL_RCC_GPIOC_CLK_ENABLE( );
@@ -285,22 +348,18 @@ int flash_init( )
     HAL_GPIO_WritePin( FLASH_WP_PORT, FLASH_WP_PIN, GPIO_PIN_SET );
     HAL_GPIO_WritePin( FLASH_HOLD_PORT, FLASH_HOLD_PIN, GPIO_PIN_SET );
     //Set up the SPI interface
-    int status = spi1_init( );
+    int status = spi1_init ( );
     if ( status != SPI_OK )
     {
         return FLASH_ERR;
     }
 
-    HAL_GPIO_WritePin( FLASH_SPI_CS_PORT, FLASH_SPI_CS_PIN, GPIO_PIN_SET );
+    HAL_GPIO_WritePin ( FLASH_SPI_CS_PORT, FLASH_SPI_CS_PIN, GPIO_PIN_SET );
 
     if ( FLASH_ERR == flash_check_id( ) )
     {
         return FLASH_ERR;
     }
-
-#if (userconf_FLASH_DISK_SIMULATION_ON == 1)
-    initialize_flash_disk ( );
-#endif
 
     return FLASH_OK;
 }
@@ -309,6 +368,11 @@ int flash_init( )
 
 size_t flash_scan( )
 {
+    if ( FLASH_OK != prvWaitForLastOperationToFinish ( ) )
+    {
+        return FLASH_ERR;
+    }
+
     size_t result = 0;
     uint8_t dataRX[256];
     size_t i;
@@ -344,7 +408,6 @@ size_t flash_scan( )
     if ( result == 0 ) result = FLASH_SIZE_BYTES;
     return result;
 }
-
 
 
 

@@ -50,8 +50,8 @@
 /****************************************************************************/
 /**\name        Header files
  ****************************************************************************/
-#include "board-hardware-drivers/BMI08x-Sensor-API/Inc/bmi08x.h"
-#include "board-hardware-drivers/BMI08x-Sensor-API/Inc/bmi088.h"
+#include "bmi08x.h"
+#include "bmi088.h"
 
 #if BMI08X_FEATURE_BMI088 == 1
 /****************************************************************************/

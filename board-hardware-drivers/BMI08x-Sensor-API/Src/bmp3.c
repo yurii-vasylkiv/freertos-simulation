@@ -47,7 +47,7 @@
 
 /*! @file bmp3.c
     @brief Sensor driver for BMP3 sensor */
-#include "board-hardware-drivers/BMI08x-Sensor-API/Inc/bmp3.h"
+#include "bmp3.h"
 
 /***************** Internal macros ******************************/
 

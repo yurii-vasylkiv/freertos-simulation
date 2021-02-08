@@ -9,7 +9,7 @@
 
 
 void buzzer_init(void);
-void buzz(int milliseconds);
+void buzz_delay(int milliseconds);
 
 
 #endif // BUZZER_H
