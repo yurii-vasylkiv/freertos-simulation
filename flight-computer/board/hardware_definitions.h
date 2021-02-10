@@ -17,10 +17,14 @@
 #include "FreeRTOS.h"
 #include "configurations/UserConfig.h"
 
-#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
+
+#if ( userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1 )
 #include "sim-port/hal_port.h"
 #else
+
 #include "stm32f4xx_hal.h"
+
+
 #endif
 
 //User LED(red)

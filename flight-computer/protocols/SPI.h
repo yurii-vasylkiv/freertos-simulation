@@ -26,11 +26,11 @@ typedef enum {
 } SPIStatus;
 
 
-int spi1_init();
+int spi1_init ( );
 
-int spi2_init();
+int spi2_init ( );
 
-int spi3_init();
+int spi3_init ( );
 
 // Description:
 //  This function reads one or more bytes over the SPI bus, by sending multiple address bytes
@@ -42,14 +42,14 @@ int spi3_init();
 //     rx_buffer        A pointer to where the received bytes should be stored
 //     rx_buffer_size   The number of bytes being  received.
 //     timeout          The timeout value in milliseconds.
-int spi1_receive(uint8_t *addr_buffer, uint8_t addr_buffer_size, uint8_t *rx_buffer, uint16_t rx_buffer_size,
-                 uint32_t timeout);
+int spi1_receive ( uint8_t * addr_buffer, uint8_t addr_buffer_size, uint8_t * rx_buffer, uint16_t rx_buffer_size,
+                   uint32_t timeout );
 
-int spi2_receive(uint8_t *addr_buffer, uint8_t addr_buffer_size, uint8_t *rx_buffer, uint16_t rx_buffer_size,
-                 uint32_t timeout);
+int spi2_receive ( uint8_t * addr_buffer, uint8_t addr_buffer_size, uint8_t * rx_buffer, uint16_t rx_buffer_size,
+                   uint32_t timeout );
 
-int spi3_receive(uint8_t *addr_buffer, uint8_t addr_buffer_size, uint8_t *rx_buffer, uint16_t rx_buffer_size,
-                 uint32_t timeout);
+int spi3_receive ( uint8_t * addr_buffer, uint8_t addr_buffer_size, uint8_t * rx_buffer, uint16_t rx_buffer_size,
+                   uint32_t timeout );
 
 
 // Description:
@@ -62,11 +62,11 @@ int spi3_receive(uint8_t *addr_buffer, uint8_t addr_buffer_size, uint8_t *rx_buf
 //     tx_buffer       	A pointer to the bytes to send.
 //     size            	The number of bytes being sent.
 //     timeout         	The timeout value in milliseconds.
-int spi1_send(uint8_t *reg_addr, uint8_t reg_addr_size, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint32_t timeout);
+int spi1_send ( uint8_t * reg_addr, uint8_t reg_addr_size, uint8_t * tx_buffer, uint16_t tx_buffer_size, uint32_t timeout );
 
-int spi2_send(uint8_t *reg_addr, uint8_t reg_addr_size, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint32_t timeout);
+int spi2_send ( uint8_t * reg_addr, uint8_t reg_addr_size, uint8_t * tx_buffer, uint16_t tx_buffer_size, uint32_t timeout );
 
-int spi3_send(uint8_t *reg_addr, uint8_t reg_addr_size, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint32_t timeout);
+int spi3_send ( uint8_t * reg_addr, uint8_t reg_addr_size, uint8_t * tx_buffer, uint16_t tx_buffer_size, uint32_t timeout );
 
 
 // Description: DO NOT USE. Will be deleted in future versions of the code!

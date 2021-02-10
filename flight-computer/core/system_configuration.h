@@ -56,10 +56,11 @@ typedef struct
 
 typedef union
 {
-    struct{
+    struct
+    {
         FlightSystemConfiguration values;
     };
-    uint8_t bytes[sizeof(FlightSystemConfiguration)];
+    uint8_t bytes[sizeof ( FlightSystemConfiguration )];
 } FlightSystemConfigurationU;
 
 

@@ -37,22 +37,23 @@ typedef struct imu_sensor_data
 {
     uint32_t timestamp; // time of sensor reading in ticks.
 
-    float    acc_x;
-    float    acc_y;
-    float    acc_z;
+    float acc_x;
+    float acc_y;
+    float acc_z;
 
-    float    gyro_x;
-    float    gyro_y;
-    float    gyro_z;
+    float gyro_x;
+    float gyro_y;
+    float gyro_z;
 
 } IMUSensorData;
 
 typedef union
 {
-    struct{
+    struct
+    {
         IMUSensorData values;
     };
-    uint8_t bytes[sizeof(IMUSensorData)];
+    uint8_t bytes[sizeof ( IMUSensorData )];
 } IMUSensorDataU;
 
 
@@ -66,11 +67,9 @@ bool imu_add_measurement       ( IMUSensorData *_data );
 bool imu_sensor_is_running     ();
 void imu_sensor_stop           ();
 
-IMUSensorConfiguration
-     imu_sensor_get_default_configuration();
+IMUSensorConfiguration imu_sensor_get_default_configuration();
 
-IMUSensorConfiguration
-    imu_sensor_get_current_configuration();
+IMUSensorConfiguration imu_sensor_get_current_configuration();
 
 void imu_sensor_set_desired_processing_data_rate(uint32_t rate);
 

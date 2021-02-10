@@ -435,12 +435,12 @@ static int8_t __imu_config(IMUSensorConfiguration * parameters)
     return result == BMI08X_OK;
 }
 
-IMUSensorConfiguration imu_sensor_get_default_configuration()
+IMUSensorConfiguration imu_sensor_get_default_configuration ( )
 {
     return s_default_configuration;
 }
 
-IMUSensorConfiguration imu_sensor_get_current_configuration()
+IMUSensorConfiguration imu_sensor_get_current_configuration ( )
 {
     return s_current_configuration;
 }

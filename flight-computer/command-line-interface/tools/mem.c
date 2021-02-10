@@ -29,117 +29,140 @@ static bool cli_tools_mem_read_configuration_index       (char* pcWriteBuffer, s
 static bool cli_tools_mem_stats                          (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg);
 
 
-bool cli_tools_mem (char *pcWriteBuffer, size_t xWriteBufferLen, const char * cmd_option, const char * str_option_arg)
+bool cli_tools_mem ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * cmd_option, const char * str_option_arg )
 {
-    if (strcmp(cmd_option, "mem") == 0)
+    if ( strcmp ( cmd_option, "mem" ) == 0 )
     {
-        sprintf(pcWriteBuffer, "%s", str_option_arg);
+        sprintf ( pcWriteBuffer, "%s", str_option_arg );
         return true;
     }
 
-    if (strcmp(cmd_option, "read_imu_index") == 0)
-        return cli_tools_mem_read_imu_index(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "read_imu_index" ) == 0 )
+    {
+        return cli_tools_mem_read_imu_index ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "read_press_index") == 0)
-        return cli_tools_mem_read_press_index(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "read_press_index" ) == 0 )
+    {
+        return cli_tools_mem_read_press_index ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "read_cont_index") == 0)
-        return cli_tools_mem_read_cont_index(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "read_cont_index" ) == 0 )
+    {
+        return cli_tools_mem_read_cont_index ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "read_flight_event_index") == 0)
-        return cli_tools_mem_read_flight_event_index(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "read_flight_event_index" ) == 0 )
+    {
+        return cli_tools_mem_read_flight_event_index ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "read_configuration") == 0)
-        return cli_tools_mem_read_configuration_index(pcWriteBuffer, xWriteBufferLen, "0");
+    if ( strcmp ( cmd_option, "read_configuration" ) == 0 )
+    {
+        return cli_tools_mem_read_configuration_index ( pcWriteBuffer, xWriteBufferLen, "0" );
+    }
 
-    if (strcmp(cmd_option, "stats") == 0)
-        return cli_tools_mem_stats(pcWriteBuffer, xWriteBufferLen, NULL);
+    if ( strcmp ( cmd_option, "stats" ) == 0 )
+    {
+        return cli_tools_mem_stats ( pcWriteBuffer, xWriteBufferLen, NULL );
+    }
 
-    if (strcmp(cmd_option, "read") == 0)
-        return cli_tools_mem_read(pcWriteBuffer, xWriteBufferLen, NULL);
+    if ( strcmp ( cmd_option, "read" ) == 0 )
+    {
+        return cli_tools_mem_read ( pcWriteBuffer, xWriteBufferLen, NULL );
+    }
 
-    if (strcmp(cmd_option, "scan") == 0)
-        return cli_tools_mem_scan(pcWriteBuffer, xWriteBufferLen, NULL);
+    if ( strcmp ( cmd_option, "scan" ) == 0 )
+    {
+        return cli_tools_mem_scan ( pcWriteBuffer, xWriteBufferLen, NULL );
+    }
 
-    if (strcmp(cmd_option, "erase_data_section") == 0)
-        return cli_tools_mem_erase_data_section(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "erase_data_section" ) == 0 )
+    {
+        return cli_tools_mem_erase_data_section ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "erase_config_section") == 0)
-        return cli_tools_mem_erase_config_section(pcWriteBuffer, xWriteBufferLen, str_option_arg);
+    if ( strcmp ( cmd_option, "erase_config_section" ) == 0 )
+    {
+        return cli_tools_mem_erase_config_section ( pcWriteBuffer, xWriteBufferLen, str_option_arg );
+    }
 
-    if (strcmp(cmd_option, "erase_all") == 0)
-        return cli_tools_mem_erase_all(pcWriteBuffer, xWriteBufferLen, NULL);
+    if ( strcmp ( cmd_option, "erase_all" ) == 0 )
+    {
+        return cli_tools_mem_erase_all ( pcWriteBuffer, xWriteBufferLen, NULL );
+    }
 
-    sprintf(pcWriteBuffer, "Command [%s] not recognized\r\n", cmd_option);
+    sprintf ( pcWriteBuffer, "Command [%s] not recognized\r\n", cmd_option );
     return false;
 }
 
-bool cli_tools_mem_read (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
+bool cli_tools_mem_read ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "read";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    if(value > 0 && value <= FLASH_END_ADDRESS)
+    if ( value > 0 && value <= FLASH_END_ADDRESS )
     {
-        sprintf(pcWriteBuffer, "Reading 256 bytes starting at address %lu ...\r\n", value);
+        sprintf ( pcWriteBuffer, "Reading 256 bytes starting at address %lu ...\r\n", value );
 
-        uint8_t data_rx[FLASH_PAGE_SIZE];
+        uint8_t     data_rx[FLASH_PAGE_SIZE];
         FlashStatus stat;
-        stat = flash_read(value, data_rx, FLASH_PAGE_SIZE);
+        stat = flash_read ( value, data_rx, FLASH_PAGE_SIZE );
 
-        if(stat == FLASH_OK)
+        if ( stat == FLASH_OK )
         {
-            sprintf(pcWriteBuffer, "Success!\r\n");
+            sprintf ( pcWriteBuffer, "Success!\r\n" );
         }
         else
         {
-            sprintf(pcWriteBuffer, "Failed!\r\n");
+            sprintf ( pcWriteBuffer, "Failed!\r\n" );
             return false;
         }
 
-        for(size_t i = 0; i < FLASH_PAGE_SIZE; i++)
+        for ( size_t i = 0; i < FLASH_PAGE_SIZE; i++ )
         {
-            if((i + 1) % 16 == 0)
+            if ( ( i + 1 ) % 16 == 0 )
             {
-                sprintf(pcWriteBuffer, "0x%02X\r\n", data_rx[i]);
-            }else
+                sprintf ( pcWriteBuffer, "0x%02X\r\n", data_rx[ i ] );
+            }
+            else
             {
-                sprintf(pcWriteBuffer, "0x%02X\r\n", data_rx[i]);
+                sprintf ( pcWriteBuffer, "0x%02X\r\n", data_rx[ i ] );
             }
         }
 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "[%s]: Argument [%s] is in invalid range\r\n", cmd_option, str_option_arg);
+    sprintf ( pcWriteBuffer, "[%s]: Argument [%s] is in invalid range\r\n", cmd_option, str_option_arg );
     return false;
 }
 
 
-bool cli_tools_mem_scan (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
+bool cli_tools_mem_scan ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "scan";
-    uint32_t value = atoi(str_option_arg);
-    (void) cmd_option;
-    (void) value;
+    uint32_t value = atoi ( str_option_arg );
+    ( void ) cmd_option;
+    ( void ) value;
 
-    uint32_t end_Address = flash_scan();
-    sprintf(pcWriteBuffer, "End address :%lu \r\n", end_Address);
+    uint32_t end_Address = flash_scan ( );
+    sprintf ( pcWriteBuffer, "End address :%lu \r\n", end_Address );
 
     return true;
 }
 
 
-bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
+bool cli_tools_mem_erase_data_section ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
-    uint8_t dataRX[FLASH_PAGE_SIZE];
+    uint8_t dataRX [ FLASH_PAGE_SIZE ];
 
-    sprintf(pcWriteBuffer, "Erasing data section ...\r\n");
+    sprintf ( pcWriteBuffer, "Erasing data section ...\r\n" );
 
-    uint32_t address = FLASH_START_ADDRESS;
-    FlashStatus stat = FLASH_ERR;
+    uint32_t    address = FLASH_START_ADDRESS;
+    FlashStatus stat    = FLASH_ERR;
 
-    while(address <= FLASH_END_ADDRESS)
+    while ( address <= FLASH_END_ADDRESS )
     {
 
         //if(address > FLASH_PARAM_END_ADDRESS)
@@ -154,155 +177,154 @@ bool cli_tools_mem_erase_data_section (char *pcWriteBuffer, size_t xWriteBufferL
         }
 
 //        HAL_GPIO_TogglePin(USR_LED_PORT,USR_LED_PIN);
-        sprintf(pcWriteBuffer, "Erasing sector %lu ...\r\n", address);
+        sprintf ( pcWriteBuffer, "Erasing sector %lu ...\r\n", address );
     }
 
-    flash_read(FLASH_START_ADDRESS, dataRX, 256);
+    flash_read ( FLASH_START_ADDRESS, dataRX, 256 );
     uint16_t empty = 0xFFFF;
-    int i;
-    for(i = 0; i < 256; i++)
+    int      i;
+    for ( i = 0; i < 256; i++ )
     {
 
-        if(dataRX[i] != 0xFF)
+        if ( dataRX[ i ] != 0xFF )
         {
             empty--;
         }
     }
 
-    if(empty == 0xFFFF)
+    if ( empty == 0xFFFF )
     {
 
-        sprintf(pcWriteBuffer, "Flash Erased Success!\r\n");
+        sprintf ( pcWriteBuffer, "Flash Erased Success!\r\n" );
     }
 
-    if(stat == FLASH_OK)
+    if ( stat == FLASH_OK )
     {
-        sprintf(pcWriteBuffer, "Success!\r\n");
-    }else
+        sprintf ( pcWriteBuffer, "Success!\r\n" );
+    }
+    else
     {
-        sprintf(pcWriteBuffer, "Failed!\r\n");
+        sprintf ( pcWriteBuffer, "Failed!\r\n" );
         return false;
     }
 
     return true;
 }
 
-bool cli_tools_mem_erase_config_section (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
+bool cli_tools_mem_erase_config_section ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "erase_config_section";
-    (void) cmd_option;
+    ( void ) cmd_option;
 
-    if( MEM_OK != memory_manager_erase_configuration_section() )
+    if ( MEM_OK != memory_manager_erase_configuration_section ( ) )
     {
-        sprintf(pcWriteBuffer, "Failure!\r\n");
+        sprintf ( pcWriteBuffer, "Failure!\r\n" );
         return false;
     }
 
-    sprintf(pcWriteBuffer, "Success!\r\n");
+    sprintf ( pcWriteBuffer, "Success!\r\n" );
     return true;
 }
 
-bool cli_tools_mem_erase_all (char *pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg)
+bool cli_tools_mem_erase_all ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "erase_all";
-    (void) cmd_option;
+    ( void ) cmd_option;
 
-    if( MEM_OK != memory_manager_erase_everything() )
+    if ( MEM_OK != memory_manager_erase_everything ( ) )
     {
-        sprintf(pcWriteBuffer, "Failure!\r\n");
+        sprintf ( pcWriteBuffer, "Failure!\r\n" );
         return false;
     }
 
-    sprintf(pcWriteBuffer, "Success!\r\n");
+    sprintf ( pcWriteBuffer, "Success!\r\n" );
     return true;
 }
 
 
-static bool cli_tools_mem_read_imu_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_read_imu_index ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
 
     const char * cmd_option = "read_imu_index";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    IMUDataU dst = {};
-    if (MEM_OK == memory_manager_get_single_gyro_entry(&dst, value) )
+    IMUDataU dst = { };
+    if ( MEM_OK == memory_manager_get_single_gyro_entry ( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu: gyro=[%f, %f, %f]\n",
-                cmd_option, dst.values.timestamp, dst.values.data[0], dst.values.data[1], dst.values.data[2]);
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu: gyro=[%f, %f, %f]\n", cmd_option, dst.values.timestamp, dst.values.data[ 0 ], dst.values.data[ 1 ], dst.values.data[ 2 ] );
 
         return true;
     }
 
-    memset(&dst, 0, sizeof( IMUDataU));
-    if (MEM_OK == memory_manager_get_single_acc_entry(&dst, value) )
+    memset ( &dst, 0, sizeof ( IMUDataU ) );
+    if ( MEM_OK == memory_manager_get_single_acc_entry ( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu: acc=[%f, %f, %f]\n",
-                cmd_option, dst.values.timestamp, dst.values.data[0], dst.values.data[1], dst.values.data[2]);
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu: acc=[%f, %f, %f]\n", cmd_option, dst.values.timestamp, dst.values.data[ 0 ], dst.values.data[ 1 ], dst.values.data[ 2 ] );
 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 
 }
 
-static bool cli_tools_mem_read_press_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_read_press_index ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "read_press_index";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    PressureDataU dst = {};
-    if ( MEM_OK == memory_manager_get_single_press_entry( &dst, value ) )
+    PressureDataU dst = { };
+    if ( MEM_OK == memory_manager_get_single_press_entry ( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.pressure);
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.pressure );
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 }
 
 
-static bool cli_tools_mem_read_cont_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_read_cont_index ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "read_cont_index";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    ContinuityU dst = {};
-    if (MEM_OK == memory_manager_get_single_cont_entry(&dst, value) )
+    ContinuityU dst = { };
+    if ( MEM_OK == memory_manager_get_single_cont_entry ( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i,%i\n", cmd_option, dst.values.timestamp, dst.values.status[0], dst.values.status[1]);
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, status=%i,%i\n", cmd_option, dst.values.timestamp, dst.values.status[ 0 ], dst.values.status[ 1 ] );
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 }
 
-static bool cli_tools_mem_read_flight_event_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_read_flight_event_index ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "read_flight_event_index";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    FlightEventU dst = {};
-    if (MEM_OK == memory_manager_get_single_flight_event_entry(&dst, value) )
+    FlightEventU dst = { };
+    if ( MEM_OK == memory_manager_get_single_flight_event_entry ( &dst, value ) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status);
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status );
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 }
 
-static bool cli_tools_mem_read_configuration_index (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_read_configuration_index ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "read_configuration";
-    uint32_t value = atoi(str_option_arg);
+    uint32_t value = atoi ( str_option_arg );
 
-    GlobalConfigurationU dst = {};
-    if (MEM_OK == memory_manager_get_single_configuration_entry (&dst, value) )
+    GlobalConfigurationU dst = { };
+    if ( MEM_OK == memory_manager_get_single_configuration_entry ( &dst, value ) )
     {
         snprintf(pcWriteBuffer, xWriteBufferLen,
         "[%s]:\r\n"
@@ -408,24 +430,24 @@ static bool cli_tools_mem_read_configuration_index (char* pcWriteBuffer, size_t 
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 }
 
 
-static bool cli_tools_mem_stats (char* pcWriteBuffer, size_t xWriteBufferLen, const char* str_option_arg)
+static bool cli_tools_mem_stats ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * str_option_arg )
 {
     const char * cmd_option = "stats";
-    uint32_t value = atoi(str_option_arg);
-    (void) cmd_option;
-    (void) value;
+    uint32_t value = atoi ( str_option_arg );
+    ( void ) cmd_option;
+    ( void ) value;
 
-    if ( MEM_OK == memory_manager_get_stats(pcWriteBuffer, xWriteBufferLen) )
+    if ( MEM_OK == memory_manager_get_stats ( pcWriteBuffer, xWriteBufferLen ) )
     {
         return true;
     }
 
-    sprintf(pcWriteBuffer, "Failure!\r\n");
+    sprintf ( pcWriteBuffer, "Failure!\r\n" );
     return false;
 }
 

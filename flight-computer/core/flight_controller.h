@@ -9,8 +9,8 @@
 
 typedef enum { FLIGHT_CONTROLLER_ERR   = 0, FLIGHT_CONTROLLER_OK    = 1 } FlightControllerStatus;
 
-FlightControllerStatus flight_controller_init(void * pvParams);
-FlightControllerStatus flight_controller_start();
+FlightControllerStatus flight_controller_init  ( void * pvParams );
+FlightControllerStatus flight_controller_start ( );
 void flight_controller_stop();
 
 

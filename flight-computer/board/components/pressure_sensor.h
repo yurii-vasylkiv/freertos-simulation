@@ -69,10 +69,10 @@ bool    pressure_sensor_is_running          ();
 void    pressure_sensor_stop                ();
 
 
-PressureSensorConfiguration pressure_sensor_get_default_configuration();
-PressureSensorConfiguration pressure_sensor_get_current_configuration();
-bool    pressure_sensor_recalibrate();
-void    pressure_sensor_set_desired_processing_data_rate(uint32_t rate);
+PressureSensorConfiguration pressure_sensor_get_default_configuration ( );
+PressureSensorConfiguration pressure_sensor_get_current_configuration ( );
+bool pressure_sensor_recalibrate ( );
+void pressure_sensor_set_desired_processing_data_rate ( uint32_t rate );
 
 
 #ifdef __cplusplus

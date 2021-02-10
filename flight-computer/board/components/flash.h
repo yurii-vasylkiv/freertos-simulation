@@ -64,7 +64,7 @@ typedef enum flash_status_t
 } FlashStatus;
 
 
-#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
+#if ( userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0 )
 typedef FlashStatus FlashReturnType;
 #else
 typedef uint32_t FlashReturnType;
@@ -83,7 +83,8 @@ typedef uint32_t FlashReturnType;
  * @return @c FLASH_OK if the setup is successful, @c FLASH_ERROR otherwise.
  * @see https://github.com/UMSATS/Avionics-2019/
  */
-FlashStatus flash_init();
+FlashStatus flash_init ( );
+
 /**
  * @brief
  * This function reads the manufacturer and device IDs of the flash memory.
@@ -92,7 +93,8 @@ FlashStatus flash_init();
  * @return @c FlashStatus
  * @see https://github.com/UMSATS/Avionics-2019/
  */
-FlashStatus flash_check_id();
+FlashStatus flash_check_id ( );
+
 /**
  * @brief
  * This writes up to 256 bytes (one page) to a specified location in the flash memory.
@@ -104,7 +106,8 @@ FlashStatus flash_check_id();
  * @note The address should be 3 bytes long (0x000000 to 0x7FFFFF).
  * @warning If the LSB of the address is not all 0, then data written past the page will wrap around!
  */
-FlashReturnType flash_write(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
+FlashReturnType flash_write ( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes );
+
 /**
  * @brief
  * This reads from a specified location in the flash memory.
@@ -116,7 +119,8 @@ FlashReturnType flash_write(uint32_t address, uint8_t *data_buffer, uint16_t num
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashReturnType flash_read(uint32_t address, uint8_t *data_buffer, uint16_t num_bytes);
+FlashReturnType flash_read ( uint32_t address, uint8_t * data_buffer, uint16_t num_bytes );
+
 /**
  * @brief
  * This erases a specified sector(64 kb) in the flash memory. Will take up to 2 seconds.
@@ -127,7 +131,8 @@ FlashReturnType flash_read(uint32_t address, uint8_t *data_buffer, uint16_t num_
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashStatus flash_erase_64kb_sector(uint32_t address);
+FlashStatus flash_erase_64kb_sector ( uint32_t address );
+
 /**
  * @brief
  * This erases a specified parameter sector(4 kb) in the flash memory. Theses are located at the start(0x00000000) of the address space.
@@ -139,9 +144,9 @@ FlashStatus flash_erase_64kb_sector(uint32_t address);
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashStatus flash_erase_4Kb_subsector(uint32_t address);
+FlashStatus flash_erase_4Kb_subsector ( uint32_t address );
 
-FlashStatus flash_write_range (uint32_t begin_address, uint8_t * data, uint32_t size);
+FlashStatus flash_write_range ( uint32_t begin_address, uint8_t * data, uint32_t size );
 
 /**
  * @brief
@@ -152,7 +157,8 @@ FlashStatus flash_write_range (uint32_t begin_address, uint8_t * data, uint32_t 
  * @see https://github.com/UMSATS/Avionics-2019/
  * @note If the device is busy the function exits early and returns FLASH_BUSY.
  */
-FlashStatus flash_erase_device();
+FlashStatus flash_erase_device ( );
+
 /**
  * @brief
  * This returns the address of the first empty page in memory.
@@ -162,6 +168,6 @@ FlashStatus flash_erase_device();
  * The address value (32 bits)
  * @see https://github.com/UMSATS/Avionics-2019/
  */
-size_t flash_scan();
+size_t flash_scan ( );
 
 #endif // FLASH_H

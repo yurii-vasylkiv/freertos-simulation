@@ -40,27 +40,30 @@ void NMI_Handler(void)
 /**
   * @brief This function handles Hard fault interrupt.
   */
-void HardFault_Handler(void)
+void HardFault_Handler ( void )
 {
     /* USER CODE BEGIN HardFault_IRQn 0 */
 
     /* USER CODE END HardFault_IRQn 0 */
-    while(1) {
-        buzz_delay(1000);
+    while ( 1 )
+    {
+        buzz_delay ( 1000 );
         int count = 1000 * SECOND;
-        while (count != 0)
+        while ( count != 0 )
         {
             //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_RESET); // sets second pin as low
             //count to 10,502.56 for proper delay_ms of 0.125 ms
             TIM2->CNT = 0; //Sets timer_thread_handle count to 0
             TIM2->CR1 |= 1; //Enables Timer
-            while((TIM2->SR & 1) != 1){} //Waits for timer_thread_handle to reach specified value
+            while ( ( TIM2->SR & 1 ) != 1 )
+            { } //Waits for timer_thread_handle to reach specified value
             TIM2->CR1 &= ~1; //Disables Timer
             TIM2->SR &= ~1; //Resets UIF pin
             //HAL_GPIO_WritePin (GPIOA, PIN2, GPIO_PIN_SET); //sets second pin as high
             TIM2->CNT = 0;
             TIM2->CR1 |= 1;
-            while((TIM2->SR & 1) != 1){}
+            while ( ( TIM2->SR & 1 ) != 1 )
+            { }
             TIM2->CR1 &= ~1;
             TIM2->SR &= ~1;
             count -= 1;

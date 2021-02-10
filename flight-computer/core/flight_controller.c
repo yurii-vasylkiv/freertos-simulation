@@ -290,32 +290,31 @@ static void prv_flight_controller_task(void * pvParams)
 }
 
 
-
-static void get_sensor_data_update( DataContainer * data )
+static void get_sensor_data_update ( DataContainer * data )
 {
-    IMUSensorData imu_data;
+    IMUSensorData      imu_data;
     PressureSensorData pressure_data;
 
     if ( imu_read ( &imu_data ) )
     {
         data->acc.data.values.timestamp = imu_data.timestamp;
-        memcpy( &data->acc.data.values.data, &imu_data.acc_x,  sizeof( float ) * 3 );
+        memcpy ( &data->acc.data.values.data, &imu_data.acc_x, sizeof ( float ) * 3 );
 
         data->gyro.data.values.timestamp = imu_data.timestamp;
-        memcpy( &data->gyro.data.values.data, &imu_data.gyro_x,  sizeof( float ) * 3 );
+        memcpy ( &data->gyro.data.values.data, &imu_data.gyro_x, sizeof ( float ) * 3 );
         data->gyro.updated = true;
-        data->acc.updated = true;
+        data->acc.updated  = true;
     }
 
     if ( pressure_sensor_read ( &pressure_data ) )
     {
-        data->press.data.values.timestamp   = pressure_data.timestamp;
-        data->press.data.values.pressure    = pressure_data.pressure;
-        data->press.updated                 = true;
+        data->press.data.values.timestamp = pressure_data.timestamp;
+        data->press.data.values.pressure  = pressure_data.pressure;
+        data->press.updated               = true;
 
-        data->temp.data.values.timestamp     = pressure_data.timestamp;
-        data->temp.data.values.temperature   = pressure_data.temperature;
-        data->temp.updated                  = true;
+        data->temp.data.values.timestamp   = pressure_data.timestamp;
+        data->temp.data.values.temperature = pressure_data.temperature;
+        data->temp.updated                 = true;
     }
 }
 
@@ -386,7 +385,7 @@ FlightControllerStatus flight_state_machine_init ( FlightState state )
 
 
 
-FlightControllerStatus flight_state_machine_tick( FlightState state, DataContainer * data )
+FlightControllerStatus flight_state_machine_tick ( FlightState state, DataContainer * data )
 {
     if ( data == NULL )
     {
@@ -419,48 +418,48 @@ int sm_STATE_LAUNCHPAD ( DataContainer * data )
 
 int sm_STATE_PRE_APOGEE ( DataContainer * data )
 {
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
 
     return 0;
 }
 
 int sm_STATE_APOGEE ( DataContainer * data )
 {
-    recoveryEnableMOSFET( RecoverSelectDrogueParachute );
-    recoveryActivateMOSFET( RecoverSelectDrogueParachute );
+    recoveryEnableMOSFET ( RecoverSelectDrogueParachute );
+    recoveryActivateMOSFET ( RecoverSelectDrogueParachute );
 
 
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
 
     return 0;
 }
 
 int sm_STATE_POST_APOGEE ( DataContainer * data )
 {
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
     return 0;
 }
 
 int sm_STATE_MAIN_CHUTE ( DataContainer * data )
 {
-    recoveryEnableMOSFET( RecoverySelectMainParachute );
-    recoveryActivateMOSFET( RecoverySelectMainParachute );
+    recoveryEnableMOSFET ( RecoverySelectMainParachute );
+    recoveryActivateMOSFET ( RecoverySelectMainParachute );
 
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
 
     return 0;
 }
 
 int sm_STATE_POST_MAIN ( DataContainer * data )
 {
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
 
     return 0;
 }
 
 int sm_STATE_LANDED ( DataContainer * data )
 {
-    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data );
 
     return 0;
 }

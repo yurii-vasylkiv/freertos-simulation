@@ -55,17 +55,17 @@ static BaseType_t prvSystemCtlCommand   ( char *pcWriteBuffer, size_t xWriteBuff
 static BaseType_t prvTaskStatsCommand   ( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 static BaseType_t prvRunTimeStatsCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
-static char*__strtok_r (char *s, const char *delim, char **save_ptr);
-static char* prv_strtok (char *s, const char *delim);
+static char * __strtok_r ( char * s, const char * delim, char ** save_ptr );
+static char * prv_strtok ( char * s, const char * delim );
 
 
 #if configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1
 static BaseType_t prvStartStopTraceCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 #endif
 
-static const char *INTRO_MESSAGE =   "========== Welcome to Xtract ==========\r\n"
-                                     "This is a command line interface tool made by the Avionics subdivision of the Rockets team.\r\n\r\n"
-                                     "Here are some commands to get you started:";
+static const char * INTRO_MESSAGE = "========== Welcome to Xtract ==========\r\n"
+                                    "This is a command line interface tool made by the Avionics subdivision of the Rockets team.\r\n\r\n"
+                                    "Here are some commands to get you started:";
 
 static const char * GENERAL_USAGE = "Commands:\r\n"
                                     "\t[help] - displays the help menu and more commands\r\n"
@@ -184,40 +184,40 @@ static const CLI_Command_Definition_t xStartCommand =
 };
 
 static const CLI_Command_Definition_t xSystemCtlCommand =
-        {
-                "sysctl", /* The command string to type. */
-                "\r\nsysctl:\r\n "
-                "Provides an interface to enable/disable system components.\r\n"
-                "Usage:\r\n "
-                "[fl]               - flight controller <enable>\\<disable> or <1>\\<0>.\r\n "
-                "[imu]              - IMU sensor <enable>\\<disable> or <1>\\<0>.\r\n "
-                "[press]            - pressure sensor <enable>\\<disable> or <1>\\<0>.\r\n "
-                "[df]               - datafeeder <enable>\\<disable> or <1>\\<0>.\r\n\n",
+{
+        "sysctl", /* The command string to type. */
+        "\r\nsysctl:\r\n "
+        "Provides an interface to enable/disable system components.\r\n"
+        "Usage:\r\n "
+        "[fl]               - flight controller <enable>\\<disable> or <1>\\<0>.\r\n "
+        "[imu]              - IMU sensor <enable>\\<disable> or <1>\\<0>.\r\n "
+        "[press]            - pressure sensor <enable>\\<disable> or <1>\\<0>.\r\n "
+        "[df]               - datafeeder <enable>\\<disable> or <1>\\<0>.\r\n\n",
 
-                prvSystemCtlCommand, /* The function to run. */
-                -1 /* No parameters are expected. */
-        };
+        prvSystemCtlCommand, /* The function to run. */
+        -1 /* No parameters are expected. */
+};
 
 
 /* Structure that defines the "run-time-stats" command line command.   This
 generates a table that shows how much run time each task has */
 static const CLI_Command_Definition_t xRunTimeStats =
-        {
-                "run-time-stats", /* The command string to type. */
-                "\r\nrun-time-stats:\r\n Displays a table showing how much processing time each FreeRTOS task has used\r\n",
-                prvRunTimeStatsCommand, /* The function to run. */
-                0 /* No parameters are expected. */
-        };
+{
+        "run-time-stats", /* The command string to type. */
+        "\r\nrun-time-stats:\r\n Displays a table showing how much processing time each FreeRTOS task has used\r\n",
+        prvRunTimeStatsCommand, /* The function to run. */
+        0 /* No parameters are expected. */
+};
 
 /* Structure that defines the "task-stats" command line command.  This generates
 a table that gives information on each task in the system. */
 static const CLI_Command_Definition_t xTaskStats =
-        {
-                "task-stats", /* The command string to type. */
-                "\r\ntask-stats:\r\n Displays a table showing the state of each FreeRTOS task\r\n",
-                prvTaskStatsCommand, /* The function to run. */
-                0 /* No parameters are expected. */
-        };
+{
+        "task-stats", /* The command string to type. */
+        "\r\ntask-stats:\r\n Displays a table showing the state of each FreeRTOS task\r\n",
+        prvTaskStatsCommand, /* The function to run. */
+        0 /* No parameters are expected. */
+};
 
 #if configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1
 /* Structure that defines the "trace" command line command.  This takes a single
@@ -232,44 +232,43 @@ static const CLI_Command_Definition_t xTaskStats =
 #endif /* configINCLUDE_TRACE_RELATED_CLI_COMMANDS */
 
 
-
-void vRegister_RTOS_Commands(void )
+void vRegister_RTOS_Commands ( void )
 {
     /* Register all the command line commands defined immediately above. */
-    FreeRTOS_CLIRegisterCommand( &xUsageCommand );
-    FreeRTOS_CLIRegisterCommand( &xReadCommand );
-    FreeRTOS_CLIRegisterCommand( &xConfigureCommand );
-    FreeRTOS_CLIRegisterCommand( &xEMatchCommand );
-    FreeRTOS_CLIRegisterCommand( &xMemoryCommand );
-    FreeRTOS_CLIRegisterCommand( &xSaveCommand );
-    FreeRTOS_CLIRegisterCommand( &xStartCommand );
-    FreeRTOS_CLIRegisterCommand( &xSystemCtlCommand );
+    FreeRTOS_CLIRegisterCommand ( &xUsageCommand );
+    FreeRTOS_CLIRegisterCommand ( &xReadCommand );
+    FreeRTOS_CLIRegisterCommand ( &xConfigureCommand );
+    FreeRTOS_CLIRegisterCommand ( &xEMatchCommand );
+    FreeRTOS_CLIRegisterCommand ( &xMemoryCommand );
+    FreeRTOS_CLIRegisterCommand ( &xSaveCommand );
+    FreeRTOS_CLIRegisterCommand ( &xStartCommand );
+    FreeRTOS_CLIRegisterCommand ( &xSystemCtlCommand );
 
 
     /* Register all the command line commands defined immediately above. */
-    FreeRTOS_CLIRegisterCommand( &xTaskStats );
-    FreeRTOS_CLIRegisterCommand( &xRunTimeStats );
+    FreeRTOS_CLIRegisterCommand ( &xTaskStats );
+    FreeRTOS_CLIRegisterCommand ( &xRunTimeStats );
 
-    #if( configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1 )
-        FreeRTOS_CLIRegisterCommand( & xStartStopTrace );
-    #endif
+#if( configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1 )
+    FreeRTOS_CLIRegisterCommand( & xStartStopTrace );
+#endif
 }
 // ---------------------------------------------------------------------------------------------------------------------
 
 
-void prv_cli_function(void * pvParams)
+void prv_cli_function ( void * pvParams )
 {
-    DISPLAY("%s", INTRO_MESSAGE);
-    DISPLAY("%s", GENERAL_USAGE);
+    DISPLAY( "%s", INTRO_MESSAGE );
+    DISPLAY( "%s", GENERAL_USAGE );
 
-    long lBytes, lByte;
-    signed char cInChar, cInputIndex = 0;
-    static char cInputString[ cmdMAX_INPUT_SIZE ], cOutputString[ cmdMAX_OUTPUT_SIZE ], cLocalBuffer[ cmdSOCKET_INPUT_BUFFER_SIZE ];
-    BaseType_t xMoreDataToFollow;
-    volatile int iErrorCode = 0;
+    long         lBytes, lByte;
+    signed char  cInChar, cInputIndex = 0;
+    static char  cInputString[cmdMAX_INPUT_SIZE], cOutputString[cmdMAX_OUTPUT_SIZE], cLocalBuffer[cmdSOCKET_INPUT_BUFFER_SIZE];
+    BaseType_t   xMoreDataToFollow;
+    volatile int iErrorCode           = 0;
 
     /* As per most FreeRTOS tasks, this task is implemented in an infinite loop. */
-    vRegister_RTOS_Commands();
+    vRegister_RTOS_Commands ( );
 
 //    int comm_index = 0;
 //    char commands[10][256] = {
@@ -286,11 +285,11 @@ void prv_cli_function(void * pvParams)
 //    };
 
     s_is_running = true;
-    while(s_is_running)
+    while ( s_is_running )
     {
         /* Process the input string received prior to the newline. */
 //        DISPLAY(">> ");
-        INPUT(cInputString);
+        INPUT( cInputString );
 //        memcpy(cInputString, commands[comm_index], strlen(commands[comm_index]));
 //        DISPLAY("cInputString");
 //        comm_index++;
@@ -304,42 +303,40 @@ void prv_cli_function(void * pvParams)
 
             /* Send the output generated by the command's implementation. */
             const char * cOutputStringP = cOutputString;
-            DISPLAY("%s", cOutputStringP);
-            memset(cOutputString, 0x00, cmdMAX_OUTPUT_SIZE);
+            DISPLAY( "%s", cOutputStringP );
+            memset ( cOutputString, 0x00, cmdMAX_OUTPUT_SIZE );
 
-        } while( xMoreDataToFollow != pdFALSE ); /* Until the command does not generate any more output. */
+        } while ( xMoreDataToFollow != pdFALSE ); /* Until the command does not generate any more output. */
 
         /* All the strings generated by the command processing
         have been sent.  Clear the input string ready to receive
         the next command. */
         cInputIndex = 0;
-        memset( cInputString, 0x00, cmdMAX_INPUT_SIZE );
+        memset ( cInputString, 0x00, cmdMAX_INPUT_SIZE );
     }
 
     s_is_running = false;
 }
 
 
-
-void command_line_interface_start(void * const pvParameters)
+void command_line_interface_start ( void * const pvParameters )
 {
-    if(! s_is_running)
+    if ( !s_is_running )
     {
-        if (pdFALSE == xTaskCreate(prv_cli_function, "cli-manager", configMINIMAL_STACK_SIZE, NULL, 5, NULL))
+        if ( pdFALSE == xTaskCreate ( prv_cli_function, "cli-manager", configMINIMAL_STACK_SIZE, NULL, 5, NULL ) )
         {
-            board_error_handler(__FILE__, __LINE__);
+            board_error_handler ( __FILE__, __LINE__ );
         }
     }
 }
 
-bool command_line_interface_is_running()
+bool command_line_interface_is_running ( )
 {
     return s_is_running;
 }
 
 
-
-static BaseType_t prvUsageCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
+static BaseType_t prvUsageCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
 {
     /* Remove compile time warnings about unused parameters, and check the
    write buffer is not NULL.  NOTE - for simplicity, this example assumes the
@@ -349,16 +346,16 @@ static BaseType_t prvUsageCommand(char *pcWriteBuffer, size_t xWriteBufferLen, c
     configASSERT( pcWriteBuffer );
 
     /* generate response */
-    strcpy (pcWriteBuffer, GENERAL_USAGE );
+    strcpy ( pcWriteBuffer, GENERAL_USAGE );
 
     return pdFALSE;
 }
 
 
-static BaseType_t prvSystemCtlCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
+static BaseType_t prvSystemCtlCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
 {
-    const char *pcParameter;
-    BaseType_t xParameterStringLength, xReturn;
+    const char        * pcParameter;
+    BaseType_t        xParameterStringLength, xReturn;
     static BaseType_t lParameterNumber = 0;
 
     /* Remove compile time warnings about unused parameters, and check the
@@ -368,7 +365,7 @@ static BaseType_t prvSystemCtlCommand(char *pcWriteBuffer, size_t xWriteBufferLe
     ( void ) xWriteBufferLen;
     configASSERT( pcWriteBuffer );
 
-    if( lParameterNumber == 0 )
+    if ( lParameterNumber == 0 )
     {
         /* Next time the function is called the first parameter will be echoed
         back. */
@@ -381,126 +378,21 @@ static BaseType_t prvSystemCtlCommand(char *pcWriteBuffer, size_t xWriteBufferLe
     else
     {
         /* Obtain the parameter string. */
-        pcParameter = FreeRTOS_CLIGetParameter
-                (
-                        pcCommandString,		/* The command string itself. */
-                        lParameterNumber,		/* Return the next parameter. */
-                        &xParameterStringLength	/* Store the parameter string length. */
-                );
-
-        if( pcParameter != NULL )
-        {
-            char cmd_option [xParameterStringLength];
-            char str_option_arg [xParameterStringLength];
-            memset(cmd_option, 0, xParameterStringLength);
-            memset(str_option_arg, 0, xParameterStringLength);
-
-            if(isOptArgSyntaxOk(pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg) ){
-                cli_tools_sysctl(pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg);
-            }
-
-            /* There might be more parameters to return after this one. */
-            xReturn = pdTRUE;
-            lParameterNumber++;
-        }
-        else
-        {
-            if(lParameterNumber == 1L) /* the command was executed with no parameters */
-            {
-                cli_tools_sysctl(pcWriteBuffer, xWriteBufferLen, pcCommandString, xSystemCtlCommand.pcHelpString);
-                DISPLAY("%s", pcWriteBuffer);
-            }
-
-            /* No more parameters were found.  Make sure the write buffer does
-            not contain a valid string. */
-            pcWriteBuffer[ 0 ] = 0x00;
-
-            /* No more data to return. */
-            xReturn = pdFALSE;
-
-            /* Start over the next time this command is executed. */
-            lParameterNumber = 0;
-        }
-    }
-
-    return xReturn;
-}
-
-BaseType_t prvHelpCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
-    /* Remove compile time warnings about unused parameters, and check the
-   write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-   write buffer length is adequate, so does not check for buffer overflows. */
-    ( void ) xWriteBufferLen;
-    ( void ) pcCommandString;
-    configASSERT( pcWriteBuffer );
-
-    /* generate response */
-    strcpy (pcWriteBuffer, GENERAL_USAGE );
-
-    return pdFALSE;
-}
-
-
-static BaseType_t prvReadCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
-    /* Remove compile time warnings about unused parameters, and check the
-   write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-   write buffer length is adequate, so does not check for buffer overflows. */
-    ( void ) xWriteBufferLen;
-    ( void ) pcCommandString;
-    configASSERT( pcWriteBuffer );
-
-    /* generate response */
-    cli_tools_read(pcWriteBuffer, xWriteBufferLen);
-
-    return pdFALSE;
-}
-
-
-
-static BaseType_t prvConfigureCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
-    const char *pcParameter;
-    BaseType_t xParameterStringLength, xReturn;
-    static BaseType_t lParameterNumber = 0;
-
-    /* Remove compile time warnings about unused parameters, and check the
-    write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-    write buffer length is adequate, so does not check for buffer overflows. */
-    ( void ) pcCommandString;
-    ( void ) xWriteBufferLen;
-    configASSERT( pcWriteBuffer );
-
-    if( lParameterNumber == 0 )
-    {
-        /* Next time the function is called the first parameter will be echoed
-        back. */
-        lParameterNumber = 1L;
-
-        /* There is more data to be returned as no parameters have been echoed
-        back yet. */
-        xReturn = pdPASS;
-    }
-    else
-    {
-        /* Obtain the parameter string. */
-        pcParameter = FreeRTOS_CLIGetParameter
-        (
-                pcCommandString,		/* The command string itself. */
-                lParameterNumber,		/* Return the next parameter. */
-                &xParameterStringLength	/* Store the parameter string length. */
+        pcParameter = FreeRTOS_CLIGetParameter ( pcCommandString,        /* The command string itself. */
+                                                 lParameterNumber,        /* Return the next parameter. */
+                                                 &xParameterStringLength    /* Store the parameter string length. */
         );
 
-        if( pcParameter != NULL )
+        if ( pcParameter != NULL )
         {
-            char cmd_option [xParameterStringLength];
-            char str_option_arg [xParameterStringLength];
-            memset(cmd_option, 0, xParameterStringLength);
-            memset(str_option_arg, 0, xParameterStringLength);
+            char cmd_option[xParameterStringLength];
+            char str_option_arg[xParameterStringLength];
+            memset ( cmd_option, 0, xParameterStringLength );
+            memset ( str_option_arg, 0, xParameterStringLength );
 
-            if(isOptArgSyntaxOk(pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg) ){
-                cli_tools_configure(pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg);
+            if ( isOptArgSyntaxOk ( pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg ) )
+            {
+                cli_tools_sysctl ( pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg );
             }
 
             /* There might be more parameters to return after this one. */
@@ -509,10 +401,112 @@ static BaseType_t prvConfigureCommand(char *pcWriteBuffer, size_t xWriteBufferLe
         }
         else
         {
-            if(lParameterNumber == 1L) /* the command was executed with no parameters */
+            if ( lParameterNumber == 1L ) /* the command was executed with no parameters */
             {
-                cli_tools_configure(pcWriteBuffer, xWriteBufferLen, pcCommandString, xConfigureCommand.pcHelpString);
-                DISPLAY("%s", pcWriteBuffer);
+                cli_tools_sysctl ( pcWriteBuffer, xWriteBufferLen, pcCommandString, xSystemCtlCommand.pcHelpString );
+                DISPLAY( "%s", pcWriteBuffer );
+            }
+
+            /* No more parameters were found.  Make sure the write buffer does
+            not contain a valid string. */
+            pcWriteBuffer[ 0 ] = 0x00;
+
+            /* No more data to return. */
+            xReturn = pdFALSE;
+
+            /* Start over the next time this command is executed. */
+            lParameterNumber = 0;
+        }
+    }
+
+    return xReturn;
+}
+
+BaseType_t prvHelpCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
+{
+    /* Remove compile time warnings about unused parameters, and check the
+   write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+   write buffer length is adequate, so does not check for buffer overflows. */
+    ( void ) xWriteBufferLen;
+    ( void ) pcCommandString;
+    configASSERT( pcWriteBuffer );
+
+    /* generate response */
+    strcpy ( pcWriteBuffer, GENERAL_USAGE );
+
+    return pdFALSE;
+}
+
+
+static BaseType_t prvReadCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
+{
+    /* Remove compile time warnings about unused parameters, and check the
+   write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+   write buffer length is adequate, so does not check for buffer overflows. */
+    ( void ) xWriteBufferLen;
+    ( void ) pcCommandString;
+    configASSERT( pcWriteBuffer );
+
+    /* generate response */
+    cli_tools_read ( pcWriteBuffer, xWriteBufferLen );
+
+    return pdFALSE;
+}
+
+
+static BaseType_t prvConfigureCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
+{
+    const char        * pcParameter;
+    BaseType_t        xParameterStringLength, xReturn;
+    static BaseType_t lParameterNumber = 0;
+
+    /* Remove compile time warnings about unused parameters, and check the
+    write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+    write buffer length is adequate, so does not check for buffer overflows. */
+    ( void ) pcCommandString;
+    ( void ) xWriteBufferLen;
+    configASSERT( pcWriteBuffer );
+
+    if ( lParameterNumber == 0 )
+    {
+        /* Next time the function is called the first parameter will be echoed
+        back. */
+        lParameterNumber = 1L;
+
+        /* There is more data to be returned as no parameters have been echoed
+        back yet. */
+        xReturn = pdPASS;
+    }
+    else
+    {
+        /* Obtain the parameter string. */
+        pcParameter = FreeRTOS_CLIGetParameter ( pcCommandString,        /* The command string itself. */
+                                                 lParameterNumber,        /* Return the next parameter. */
+                                                 &xParameterStringLength    /* Store the parameter string length. */
+        );
+
+        if ( pcParameter != NULL )
+        {
+            char cmd_option[xParameterStringLength];
+            char str_option_arg[xParameterStringLength];
+            memset ( cmd_option, 0, xParameterStringLength );
+            memset ( str_option_arg, 0, xParameterStringLength );
+
+            if ( isOptArgSyntaxOk ( pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg ) )
+            {
+                cli_tools_configure ( pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg );
+            }
+
+            /* There might be more parameters to return after this one. */
+            xReturn = pdTRUE;
+            lParameterNumber++;
+        }
+        else
+        {
+            if ( lParameterNumber == 1L ) /* the command was executed with no parameters */
+            {
+                cli_tools_configure ( pcWriteBuffer, xWriteBufferLen, pcCommandString, xConfigureCommand.pcHelpString );
+                DISPLAY( "%s", pcWriteBuffer );
             }
 
             /* No more parameters were found.  Make sure the write buffer does
@@ -531,10 +525,10 @@ static BaseType_t prvConfigureCommand(char *pcWriteBuffer, size_t xWriteBufferLe
 }
 
 
-static BaseType_t prvMemoryCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
+static BaseType_t prvMemoryCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
 {
-    const char *pcParameter;
-    BaseType_t xParameterStringLength, xReturn;
+    const char        * pcParameter;
+    BaseType_t        xParameterStringLength, xReturn;
     static BaseType_t lParameterNumber = 0;
 
     /* Remove compile time warnings about unused parameters, and check the
@@ -544,7 +538,7 @@ static BaseType_t prvMemoryCommand(char *pcWriteBuffer, size_t xWriteBufferLen, 
     ( void ) xWriteBufferLen;
     configASSERT( pcWriteBuffer );
 
-    if( lParameterNumber == 0 )
+    if ( lParameterNumber == 0 )
     {
         /* Next time the function is called the first parameter will be echoed
         back. */
@@ -557,22 +551,21 @@ static BaseType_t prvMemoryCommand(char *pcWriteBuffer, size_t xWriteBufferLen, 
     else
     {
         /* Obtain the parameter string. */
-        pcParameter = FreeRTOS_CLIGetParameter
-                (
-                        pcCommandString,		/* The command string itself. */
-                        lParameterNumber,		/* Return the next parameter. */
-                        &xParameterStringLength	/* Store the parameter string length. */
-                );
+        pcParameter = FreeRTOS_CLIGetParameter ( pcCommandString,        /* The command string itself. */
+                                                 lParameterNumber,        /* Return the next parameter. */
+                                                 &xParameterStringLength    /* Store the parameter string length. */
+        );
 
-        if( pcParameter != NULL )
+        if ( pcParameter != NULL )
         {
-            char cmd_option [xParameterStringLength];
-            char str_option_arg [xParameterStringLength];
-            memset(cmd_option, 0, xParameterStringLength);
-            memset(str_option_arg, 0, xParameterStringLength);
+            char cmd_option[xParameterStringLength];
+            char str_option_arg[xParameterStringLength];
+            memset ( cmd_option, 0, xParameterStringLength );
+            memset ( str_option_arg, 0, xParameterStringLength );
 
-            if(isOptArgSyntaxOk(pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg) ){
-                cli_tools_mem(pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg);
+            if ( isOptArgSyntaxOk ( pcParameter, xParameterStringLength, pcWriteBuffer, cmd_option, str_option_arg ) )
+            {
+                cli_tools_mem ( pcWriteBuffer, xWriteBufferLen, cmd_option, str_option_arg );
             }
 
             /* There might be more parameters to return after this one. */
@@ -581,10 +574,10 @@ static BaseType_t prvMemoryCommand(char *pcWriteBuffer, size_t xWriteBufferLen, 
         }
         else
         {
-            if(lParameterNumber == 1L) /* the command was executed with no parameters */
+            if ( lParameterNumber == 1L ) /* the command was executed with no parameters */
             {
-                cli_tools_mem(pcWriteBuffer, xWriteBufferLen, pcCommandString, xMemoryCommand.pcHelpString);
-                DISPLAY("%s", pcWriteBuffer);
+                cli_tools_mem ( pcWriteBuffer, xWriteBufferLen, pcCommandString, xMemoryCommand.pcHelpString );
+                DISPLAY( "%s", pcWriteBuffer );
             }
 
             /* No more parameters were found.  Make sure the write buffer does
@@ -608,9 +601,9 @@ static BaseType_t prvMemoryCommand(char *pcWriteBuffer, size_t xWriteBufferLen, 
 
 /*-----------------------------------------------------------*/
 
-static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+static BaseType_t prvTaskStatsCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
 {
-    const char *const pcHeader = "\nTask          #  State  Priority  HighWaterMark  \r\n************************************************\r\n";
+    const char * const pcHeader = "\nTask          #  State  Priority  HighWaterMark  \r\n************************************************\r\n";
 
     /* Remove compile time warnings about unused parameters, and check the
     write buffer is not NULL.  NOTE - for simplicity, this example assumes the
@@ -620,40 +613,41 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
     configASSERT( pcWriteBuffer );
 
     /* Generate a table of task stats. */
-    strcpy( pcWriteBuffer, pcHeader );
+    strcpy ( pcWriteBuffer, pcHeader );
 
-    TaskStatus_t pxTaskStatusArray [10] = {0};
-    UBaseType_t uxArraySize = 10;
-    uint32_t pulTotalRunTime;
+    TaskStatus_t pxTaskStatusArray[10] = { 0 };
+    UBaseType_t  uxArraySize           = 10;
+    uint32_t     pulTotalRunTime;
 
-    uxTaskGetSystemState( pxTaskStatusArray, uxArraySize, &pulTotalRunTime );
+    uxTaskGetSystemState ( pxTaskStatusArray, uxArraySize, &pulTotalRunTime );
 
-    for (uint8_t i = 0; i < 10; i++)
+    for ( uint8_t i = 0; i < 10; i++ )
     {
-        TaskStatus_t task = pxTaskStatusArray[i];
+        TaskStatus_t task = pxTaskStatusArray[ i ];
 
-        if(task.xHandle == NULL)
+        if ( task.xHandle == NULL )
         {
             continue;
         }
 
-        if(strcmp(task.pcTaskName, "IDLE") == 0 )
+        if ( strcmp ( task.pcTaskName, "IDLE" ) == 0 )
         {
             continue;
         }
 
-        char pcWriteBufferLine [64] = {0};
-        sprintf( pcWriteBufferLine,  "%s   %lu     %i      %lu         %i\r\n", task.pcTaskName, task.xTaskNumber, task.eCurrentState, task.uxCurrentPriority, task.usStackHighWaterMark);
-        strcat(pcWriteBuffer, pcWriteBufferLine);
+        char pcWriteBufferLine[64] = { 0 };
+        sprintf ( pcWriteBufferLine, "%s   %lu     %i      %lu         %i\r\n", task.pcTaskName, task.xTaskNumber, task.eCurrentState, task.uxCurrentPriority, task.usStackHighWaterMark );
+        strcat ( pcWriteBuffer, pcWriteBufferLine );
     }
 
     /* There is no more data to return after this single string, so return
     pdFALSE. */
     return pdFALSE;
 }
+
 /*-----------------------------------------------------------*/
 
-static BaseType_t prvRunTimeStatsCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+static BaseType_t prvRunTimeStatsCommand ( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString )
 {
     const char * const pcHeader = "\nTask            Abs Time      % Time\r\n****************************************\r\n";
 
@@ -665,7 +659,7 @@ static BaseType_t prvRunTimeStatsCommand( char *pcWriteBuffer, size_t xWriteBuff
     configASSERT( pcWriteBuffer );
 
     /* Generate a table of task stats. */
-    strcpy( pcWriteBuffer, pcHeader );
+    strcpy ( pcWriteBuffer, pcHeader );
 //	vTaskGetRunTimeStats( pcWriteBuffer + strlen( pcHeader ) );
 
     /* There is no more data to return after this single string, so return
@@ -677,97 +671,103 @@ static BaseType_t prvRunTimeStatsCommand( char *pcWriteBuffer, size_t xWriteBuff
 #if configINCLUDE_TRACE_RELATED_CLI_COMMANDS == 1
 
 static BaseType_t prvStartStopTraceCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
-	{
-	const char *pcParameter;
-	BaseType_t lParameterStringLength;
+    {
+    const char *pcParameter;
+    BaseType_t lParameterStringLength;
 
-		/* Remove compile time warnings about unused parameters, and check the
-		write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-		write buffer length is adequate, so does not check for buffer overflows. */
-		( void ) pcCommandString;
-		( void ) xWriteBufferLen;
-		configASSERT( pcWriteBuffer );
+        /* Remove compile time warnings about unused parameters, and check the
+        write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+        write buffer length is adequate, so does not check for buffer overflows. */
+        ( void ) pcCommandString;
+        ( void ) xWriteBufferLen;
+        configASSERT( pcWriteBuffer );
 
-		/* Obtain the parameter string. */
-		pcParameter = FreeRTOS_CLIGetParameter
-						(
-							pcCommandString,		/* The command string itself. */
-							1,						/* Return the first parameter. */
-							&lParameterStringLength	/* Store the parameter string length. */
-						);
+        /* Obtain the parameter string. */
+        pcParameter = FreeRTOS_CLIGetParameter
+                        (
+                            pcCommandString,		/* The command string itself. */
+                            1,						/* Return the first parameter. */
+                            &lParameterStringLength	/* Store the parameter string length. */
+                        );
 
-		/* Sanity check something was returned. */
-		configASSERT( pcParameter );
+        /* Sanity check something was returned. */
+        configASSERT( pcParameter );
 
-		/* There are only two valid parameter values. */
-		if( strncmp( pcParameter, "start", strlen( "start" ) ) == 0 )
-		{
-			/* Start or restart the trace. */
-			vTraceStop();
-			vTraceClear();
-			vTraceStart();
+        /* There are only two valid parameter values. */
+        if( strncmp( pcParameter, "start", strlen( "start" ) ) == 0 )
+        {
+            /* Start or restart the trace. */
+            vTraceStop();
+            vTraceClear();
+            vTraceStart();
 
-			sprintf( pcWriteBuffer, "Trace recording (re)started.\r\n" );
-		}
-		else if( strncmp( pcParameter, "stop", strlen( "stop" ) ) == 0 )
-		{
-			/* End the trace, if one is running. */
-			vTraceStop();
-			sprintf( pcWriteBuffer, "Stopping trace recording.\r\n" );
-		}
-		else
-		{
-			sprintf( pcWriteBuffer, "Valid parameters are 'start' and 'stop'.\r\n" );
-		}
+            sprintf( pcWriteBuffer, "Trace recording (re)started.\r\n" );
+        }
+        else if( strncmp( pcParameter, "stop", strlen( "stop" ) ) == 0 )
+        {
+            /* End the trace, if one is running. */
+            vTraceStop();
+            sprintf( pcWriteBuffer, "Stopping trace recording.\r\n" );
+        }
+        else
+        {
+            sprintf( pcWriteBuffer, "Valid parameters are 'start' and 'stop'.\r\n" );
+        }
 
-		/* There is no more data to return after this single string, so return
-		pdFALSE. */
-		return pdFALSE;
-	}
+        /* There is no more data to return after this single string, so return
+        pdFALSE. */
+        return pdFALSE;
+    }
 
 #endif /* configINCLUDE_TRACE_RELATED_CLI_COMMANDS */
 
 
-static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStringLength, char *pcWriteBuffer, char * cmd_option, char * str_option_arg)
+static bool isOptArgSyntaxOk ( const char * pcParameter, BaseType_t xParameterStringLength, char * pcWriteBuffer, char * cmd_option, char * str_option_arg )
 {
     static const char * ILLEGAL_OPT_ARG_CHARACTERS = "!@#$%^&*(),`~/\\|?><'\";:[]{}+";
     bool parse_failure = false;
-    uint8_t symbol = ' ';
+    uint8_t           symbol                       = ' ';
 
     /* Return the parameter string. */
-    char pcParameterMutable [xParameterStringLength+1];
-    strncpy (pcParameterMutable, pcParameter, xParameterStringLength);
-    pcParameterMutable[xParameterStringLength] = '\0';
+    char pcParameterMutable[xParameterStringLength + 1];
+    strncpy ( pcParameterMutable, pcParameter, xParameterStringLength );
+    pcParameterMutable[ xParameterStringLength ] = '\0';
 
     // Extract the first token
-    strcpy(cmd_option, prv_strtok(pcParameterMutable, "="));
-    if(cmd_option == NULL)
+    strcpy ( cmd_option, prv_strtok ( pcParameterMutable, "=" ) );
+    if ( cmd_option == NULL )
     {
-        sprintf( pcWriteBuffer, "Invalid parameter format: %s\n, correct format is option=argument\n", pcParameter);
+        sprintf ( pcWriteBuffer, "Invalid parameter format: %s\n, correct format is option=argument\n", pcParameter );
         return false;
     }
 
-    for (uint8_t index = 0; index < strlen(ILLEGAL_OPT_ARG_CHARACTERS); index++) {
-        symbol = ILLEGAL_OPT_ARG_CHARACTERS[index];
-        if (strchr(cmd_option, symbol) != NULL) {
-            sprintf(pcWriteBuffer, "Option [%s] contains invalid character: [%c]\n", cmd_option, symbol);
+    for ( uint8_t index = 0; index < strlen ( ILLEGAL_OPT_ARG_CHARACTERS ); index++ )
+    {
+        symbol = ILLEGAL_OPT_ARG_CHARACTERS[ index ];
+        if ( strchr ( cmd_option, symbol ) != NULL )
+        {
+            sprintf ( pcWriteBuffer, "Option [%s] contains invalid character: [%c]\n", cmd_option, symbol );
             return false;
         }
     }
 
-    const char * tempStr_option_arg = prv_strtok(NULL, "=");
-    if(tempStr_option_arg != NULL) {
-        strcpy(str_option_arg, tempStr_option_arg);
-        if (str_option_arg == NULL) {
-            sprintf(pcWriteBuffer, "Invalid parameter format: %s\n, correct format is option=argument\n", pcParameter);
+    const char * tempStr_option_arg = prv_strtok ( NULL, "=" );
+    if ( tempStr_option_arg != NULL )
+    {
+        strcpy ( str_option_arg, tempStr_option_arg );
+        if ( str_option_arg == NULL )
+        {
+            sprintf ( pcWriteBuffer, "Invalid parameter format: %s\n, correct format is option=argument\n", pcParameter );
             return false;
         }
 
         symbol = ' ';
-        for (uint8_t index = 0; index < strlen(ILLEGAL_OPT_ARG_CHARACTERS); index++) {
-            symbol = ILLEGAL_OPT_ARG_CHARACTERS[index];
-            if (strchr(str_option_arg, symbol) != NULL) {
-                sprintf(pcWriteBuffer, "Argument [%s] contains invalid character: [%c]\n", str_option_arg, symbol);
+        for ( uint8_t index = 0; index < strlen ( ILLEGAL_OPT_ARG_CHARACTERS ); index++ )
+        {
+            symbol = ILLEGAL_OPT_ARG_CHARACTERS[ index ];
+            if ( strchr ( str_option_arg, symbol ) != NULL )
+            {
+                sprintf ( pcWriteBuffer, "Argument [%s] contains invalid character: [%c]\n", str_option_arg, symbol );
                 return false;
             }
         }
@@ -777,43 +777,43 @@ static bool isOptArgSyntaxOk (const char *pcParameter, BaseType_t xParameterStri
 }
 
 
-char*__strtok_r (char *s, const char *delim, char **save_ptr)
+char * __strtok_r ( char * s, const char * delim, char ** save_ptr )
 {
-    char *end;
-    if (s == NULL)
+    char * end;
+    if ( s == NULL )
+    {
         s = *save_ptr;
-    if (*s == '\0')
+    }
+    if ( *s == '\0' )
     {
         *save_ptr = s;
         return NULL;
     }
     /* Scan leading delimiters.  */
-    s += strspn (s, delim);
-    if (*s == '\0')
+    s += strspn ( s, delim );
+    if ( *s == '\0' )
     {
         *save_ptr = s;
         return NULL;
     }
     /* Find the end of the token.  */
-    end = s + strcspn (s, delim);
-    if (*end == '\0')
+    end       = s + strcspn ( s, delim );
+    if ( *end == '\0' )
     {
         *save_ptr = end;
         return s;
     }
     /* Terminate the token and make *SAVE_PTR point past it.  */
-    *end = '\0';
+    *end      = '\0';
     *save_ptr = end + 1;
     return s;
 }
 
-char* prv_strtok (char *s, const char *delim)
+char * prv_strtok ( char * s, const char * delim )
 {
-    static char *olds;
-    return __strtok_r (s, delim, &olds);
+    static char * olds;
+    return __strtok_r ( s, delim, &olds );
 }
-
-
 
 
 #endif // CLI_CONTROLLER_SRC

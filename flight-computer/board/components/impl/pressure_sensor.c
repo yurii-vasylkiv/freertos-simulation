@@ -93,9 +93,9 @@ static struct pressure_sensor_configuration s_current_configuration = {
 };
 
 
-int pressure_sensor_configure (PressureSensorConfiguration * parameters )
+int pressure_sensor_configure ( PressureSensorConfiguration * parameters )
 {
-    if(parameters == NULL)
+    if ( parameters == NULL )
     {
         s_current_configuration = s_default_configuration;
     }
@@ -105,117 +105,121 @@ int pressure_sensor_configure (PressureSensorConfiguration * parameters )
     }
 
     int8_t result = 0;
-    
+
     /* Used to select the settings user needs to change */
     uint16_t settings_sel;
-    
+
     /* Select the pressure and temperature sensor to be enabled */
-    s_device.settings.press_en = BMP3_ENABLE;
-    s_device.settings.temp_en = BMP3_ENABLE;
+    s_device.settings.press_en              = BMP3_ENABLE;
+    s_device.settings.temp_en               = BMP3_ENABLE;
     /* Select the output data rate and oversampling settings for pressure and temperature */
-    s_device.settings.odr_filter.press_os = s_current_configuration.pressure_oversampling;
-    s_device.settings.odr_filter.temp_os = s_current_configuration.temperature_oversampling;
-    s_device.settings.odr_filter.odr = s_current_configuration.output_data_rate;
+    s_device.settings.odr_filter.press_os   = s_current_configuration.pressure_oversampling;
+    s_device.settings.odr_filter.temp_os    = s_current_configuration.temperature_oversampling;
+    s_device.settings.odr_filter.odr        = s_current_configuration.output_data_rate;
     s_device.settings.odr_filter.iir_filter = s_current_configuration.infinite_impulse_response_filter_coefficient;
     /* Assign the settings which needs to be set in the sensor */
-    settings_sel = BMP3_PRESS_EN_SEL | BMP3_TEMP_EN_SEL | BMP3_PRESS_OS_SEL | BMP3_TEMP_OS_SEL | BMP3_ODR_SEL | BMP3_IIR_FILTER_SEL;
+    settings_sel = BMP3_PRESS_EN_SEL | BMP3_TEMP_EN_SEL | BMP3_PRESS_OS_SEL | BMP3_TEMP_OS_SEL | BMP3_ODR_SEL |
+                   BMP3_IIR_FILTER_SEL;
 
-    result = bmp3_set_sensor_settings(settings_sel, &s_device);
-    if(BMP3_OK == result)
+    result = bmp3_set_sensor_settings ( settings_sel, &s_device );
+    if ( BMP3_OK == result )
     {
         return BMP3_OK;
     }
-    
+
     /* Set the power mode to normal mode */
     s_device.settings.op_mode = BMP3_NORMAL_MODE;
 
-    result = bmp3_set_op_mode(&s_device);
-    if(BMP3_OK != result)
-	{
-    	return result;
-	}
+    result = bmp3_set_op_mode ( &s_device );
+    if ( BMP3_OK != result )
+    {
+        return result;
+    }
 
     return BMP3_OK;
 }
 
 
-int pressure_sensor_init()
+int pressure_sensor_init ( )
 {
-    int status = spi2_init();
-    if(status != 0)
+    int status = spi2_init ( );
+    if ( status != 0 )
     {
         return status;
     }
 
-    status = bmp3_init(&s_device); // bosch API initialization method
-    if(status != BMP3_OK)
+    status = bmp3_init ( &s_device ); // bosch API initialization method
+    if ( status != BMP3_OK )
+    {
         return status;
+    }
 
-    s_queue = xQueueCreate(10, sizeof(PressureSensorData));
-    if (s_queue == NULL) {
+    s_queue = xQueueCreate( 10, sizeof ( PressureSensorData ) );
+    if ( s_queue == NULL )
+    {
         return 2;
     }
 
-    vQueueAddToRegistry(s_queue, "bmp3_queue");
+    vQueueAddToRegistry ( s_queue, "bmp3_queue" );
 
     prvController.isInitialized = true;
     return status;
 }
 
 
-float pressure_sensor_calculate_altitude(PressureSensorData * reading, float ground_pressure, float ground_altitude)
+float pressure_sensor_calculate_altitude ( PressureSensorData * reading, float ground_pressure, float ground_altitude )
 {
-    if(reading == NULL)
+    if ( reading == NULL )
     {
         return 0.0;
     }
-    
-    float p_term = powf((ground_pressure / (reading->pressure / 100)), (1 / 5.257F)) - 1;
-    float t_term = (reading->temperature / 100) + 273.15F;
-    return (uint32_t) (p_term * t_term) / 0.0065F + ground_altitude;
+
+    float p_term = powf ( ( ground_pressure / ( reading->pressure / 100 ) ), ( 1 / 5.257F ) ) - 1;
+    float t_term = ( reading->temperature / 100 ) + 273.15F;
+    return ( uint32_t ) ( p_term * t_term ) / 0.0065F + ground_altitude;
 }
 
-int8_t get_sensor_data(struct bmp3_data *data)
+int8_t get_sensor_data ( struct bmp3_data * data )
 {
-    return bmp3_get_sensor_data(BMP3_PRESS | BMP3_TEMP, data, &s_device);
+    return bmp3_get_sensor_data ( BMP3_PRESS | BMP3_TEMP, data, &s_device );
 }
 
-static void prv_pressure_sensor_controller_task(void * pvParams)
+static void prv_pressure_sensor_controller_task ( void * pvParams )
 {
-    DEBUG_LINE("prv_pressure_sensor_controller_task");
-    PressureSensorConfiguration *configParams = (PressureSensorConfiguration*) pvParams;
-    (void) configParams;
+    DEBUG_LINE( "prv_pressure_sensor_controller_task" );
+    PressureSensorConfiguration * configParams = ( PressureSensorConfiguration * ) pvParams;
+    ( void ) configParams;
     /* Variable used to store the compensated data */
     PressureSensorData dataStruct;
 
-    TickType_t start_timestamp = xTaskGetTickCount();
+    TickType_t start_timestamp = xTaskGetTickCount ( );
 
     int8_t result_flag;
     prvController.isRunning = true;
 
-    while(prvController.isRunning)
+    while ( prvController.isRunning )
     {
-        result_flag = get_sensor_data(&s_data);
-        if(BMP3_E_NULL_PTR == result_flag)
+        result_flag = get_sensor_data ( &s_data );
+        if ( BMP3_E_NULL_PTR == result_flag )
         {
             continue;
         }
 
-        dataStruct.pressure             = s_data.pressure;
-        dataStruct.temperature          = s_data.temperature;
-        dataStruct.timestamp            = xTaskGetTickCount() - start_timestamp;
+        dataStruct.pressure    = s_data.pressure;
+        dataStruct.temperature = s_data.temperature;
+        dataStruct.timestamp   = xTaskGetTickCount ( ) - start_timestamp;
 
-        pressure_sensor_add_measurement(&dataStruct);
+        pressure_sensor_add_measurement ( &dataStruct );
 
-        vTaskDelayUntil(&dataStruct.timestamp, s_desired_processing_data_rate);
+        vTaskDelayUntil ( &dataStruct.timestamp, s_desired_processing_data_rate );
     }
 
     prvController.isRunning = false;
 }
 
-int pressure_sensor_start(void * const pvParameters)
+int pressure_sensor_start ( void * const pvParameters )
 {
-    DEBUG_LINE("pressure_sensor_start");
+    DEBUG_LINE( "pressure_sensor_start" );
     //Get the parameters.
     if ( !prvController.isInitialized )
     {
@@ -224,7 +228,7 @@ int pressure_sensor_start(void * const pvParameters)
 
     prvController.taskParameters = pvParameters;
 
-    if ( pdFALSE == xTaskCreate(prv_pressure_sensor_controller_task, "ps--manager", configMINIMAL_STACK_SIZE, prvController.taskParameters, 5, &prvController.taskHandle ) )
+    if ( pdFALSE == xTaskCreate ( prv_pressure_sensor_controller_task, "ps--manager", configMINIMAL_STACK_SIZE, prvController.taskParameters, 5, &prvController.taskHandle ) )
     {
         return IMU_ERR;
     }
@@ -232,25 +236,25 @@ int pressure_sensor_start(void * const pvParameters)
     return IMU_OK;
 }
 
-bool pressure_sensor_is_running     ()
+bool pressure_sensor_is_running ( )
 {
     return prvController.isRunning;
 }
 
-void pressure_sensor_stop           ()
+void pressure_sensor_stop ( )
 {
     prvController.isRunning = false;
 }
 
-static void delay_ms(uint32_t period_ms)
+static void delay_ms ( uint32_t period_ms )
 {
-    if ( taskSCHEDULER_NOT_STARTED == xTaskGetSchedulerState() )
+    if ( taskSCHEDULER_NOT_STARTED == xTaskGetSchedulerState ( ) )
     {
-        board_delay(period_ms);
+        board_delay ( period_ms );
     }
     else
     {
-        vTaskDelay(pdMS_TO_TICKS( period_ms ) );
+        vTaskDelay ( pdMS_TO_TICKS( period_ms ) );
     }
 }
 
@@ -267,11 +271,11 @@ static void delay_ms(uint32_t period_ms)
  *  @retval >0 -> Failure Info
  *
  */
-static int8_t spi_reg_write(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint16_t length)
+static int8_t spi_reg_write ( uint8_t cs, uint8_t reg_addr, uint8_t * reg_data, uint16_t length )
 {
     int8_t status = 0; //assume success
-    status = spi2_send(&reg_addr, 1, reg_data, length, TIMEOUT);
-    if (status != SPI_OK)
+    status = spi2_send ( &reg_addr, 1, reg_data, length, TIMEOUT );
+    if ( status != SPI_OK )
     {
         return BMP3_FATAL_ERR;
     }
@@ -291,11 +295,11 @@ static int8_t spi_reg_write(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uin
  *  @retval >0 -> Failure Info
  *
  */
-static int8_t spi_reg_read(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint16_t length)
+static int8_t spi_reg_read ( uint8_t cs, uint8_t reg_addr, uint8_t * reg_data, uint16_t length )
 {
     int status = 0; // assume success
-    status = spi2_receive(&reg_addr, 1, reg_data, length, TIMEOUT);
-    if (status != SPI_OK)
+    status = spi2_receive ( &reg_addr, 1, reg_data, length, TIMEOUT );
+    if ( status != SPI_OK )
     {
         return BMP3_FATAL_ERR;
     }
@@ -310,105 +314,115 @@ static int8_t spi_reg_read(uint8_t cs, uint8_t reg_addr, uint8_t *reg_data, uint
  *
  *  @return void.
  */
-void bmp3_print_result(const char *api_name, int8_t rslt)
+void bmp3_print_result ( const char * api_name, int8_t rslt )
 {
-    if(rslt != BMP3_OK)
+    if ( rslt != BMP3_OK )
     {
         char error_msg[64];
-        if(rslt == BMP3_E_NULL_PTR)
+        if ( rslt == BMP3_E_NULL_PTR )
         {
-            sprintf(error_msg, "Null pointer error");
-        }else if(rslt == BMP3_E_DEV_NOT_FOUND)
+            sprintf ( error_msg, "Null pointer error" );
+        }
+        else if ( rslt == BMP3_E_DEV_NOT_FOUND )
         {
-            sprintf(error_msg, "Device not found");
-        }else if(rslt == BMP3_E_INVALID_ODR_OSR_SETTINGS)
+            sprintf ( error_msg, "Device not found" );
+        }
+        else if ( rslt == BMP3_E_INVALID_ODR_OSR_SETTINGS )
         {
-            sprintf(error_msg, "Invalid ODR OSR settings");
-        }else if(rslt == BMP3_E_CMD_EXEC_FAILED)
+            sprintf ( error_msg, "Invalid ODR OSR settings" );
+        }
+        else if ( rslt == BMP3_E_CMD_EXEC_FAILED )
         {
-            sprintf(error_msg, "Command execution failed");
-        }else if(rslt == BMP3_E_CONFIGURATION_ERR)
+            sprintf ( error_msg, "Command execution failed" );
+        }
+        else if ( rslt == BMP3_E_CONFIGURATION_ERR )
         {
-            sprintf(error_msg, "Configuration error");
-        }else if(rslt == BMP3_E_INVALID_LEN)
+            sprintf ( error_msg, "Configuration error" );
+        }
+        else if ( rslt == BMP3_E_INVALID_LEN )
         {
-            sprintf(error_msg, "Invalid length");
-        }else if(rslt == BMP3_E_COMM_FAIL)
+            sprintf ( error_msg, "Invalid length" );
+        }
+        else if ( rslt == BMP3_E_COMM_FAIL )
         {
-            sprintf(error_msg, "Communication failure");
-        }else if(rslt == BMP3_E_FIFO_WATERMARK_NOT_REACHED)
+            sprintf ( error_msg, "Communication failure" );
+        }
+        else if ( rslt == BMP3_E_FIFO_WATERMARK_NOT_REACHED )
         {
-            sprintf(error_msg, "FIFO Watermark not reached");
-        }else
+            sprintf ( error_msg, "FIFO Watermark not reached" );
+        }
+        else
         {
             //For more error codes refer "bmp3_defs.h"
-            sprintf(error_msg, "Unknown error code");
+            sprintf ( error_msg, "Unknown error code" );
         }
 
-        sprintf(buf, "\r\nERROR [%d] %s : %s\r\n", rslt, api_name, error_msg);
+        sprintf ( buf, "\r\nERROR [%d] %s : %s\r\n", rslt, api_name, error_msg );
     }
-    
-    uart6_transmit(buf);
+
+    uart6_transmit ( buf );
 }
 
 
-bool pressure_sensor_test(void)
+bool pressure_sensor_test ( void )
 {
-    char result = 0;
-    uint8_t id= 0x50;
-    
-    uint8_t command[] = {0x80};
-    uint8_t id_read[] = {0x00,0x00};
-    
-    int status = spi2_receive(command,1,id_read,2,10);
+    char    result = 0;
+    uint8_t id     = 0x50;
 
-    if(status != 0)
+    uint8_t command[] = { 0x80 };
+    uint8_t id_read[] = { 0x00, 0x00 };
+
+    int status = spi2_receive ( command, 1, id_read, 2, 10 );
+
+    if ( status != 0 )
+    {
         return false;
-    
-    if(id_read[1] == id)
+    }
+
+    if ( id_read[ 1 ] == id )
     {
         result = 1;
     }
-    
+
     return result == 1;
 }
 
-bool pressure_sensor_read(PressureSensorData * buffer)
+bool pressure_sensor_read ( PressureSensorData * buffer )
 {
-    return pdPASS == xQueueReceive(s_queue, buffer, 0);
+    return pdPASS == xQueueReceive( s_queue, buffer, 0 );
 }
 
 
-void pressure_sensor_data_pack(PressureSensorData bmp_reading, float ground_pressure, float ground_temperature, uint8_t * bytes)
+void pressure_sensor_data_pack ( PressureSensorData bmp_reading, float ground_pressure, float ground_temperature, uint8_t * bytes )
 {
     //Update the header bytes.
-    uint32_t header = (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
+    uint32_t header = ( bytes[ 0 ] << 16 ) + ( bytes[ 1 ] << 8 ) + bytes[ 2 ];
     header |= PRES_TYPE | TEMP_TYPE;
 
-    common_write_24(header, &bytes[0]);
-    common_write_24(bmp_reading.pressure,    &bytes[15]);
-    common_write_24(bmp_reading.temperature, &bytes[18]);
-    float altitude = pressure_sensor_calculate_altitude(&bmp_reading, ground_pressure, ground_temperature);
-    common_float2bytes(altitude, &bytes[21]);
+    common_write_24 ( header, &bytes[ 0 ] );
+    common_write_24 ( bmp_reading.pressure, &bytes[ 15 ] );
+    common_write_24 ( bmp_reading.temperature, &bytes[ 18 ] );
+    float altitude = pressure_sensor_calculate_altitude ( &bmp_reading, ground_pressure, ground_temperature );
+    common_float2bytes ( altitude, &bytes[ 21 ] );
 }
 
-bool pressure_sensor_add_measurement (PressureSensorData * _data)
+bool pressure_sensor_add_measurement ( PressureSensorData * _data )
 {
-    return pdTRUE == xQueueSend(s_queue, _data, 0);
+    return pdTRUE == xQueueSend( s_queue, _data, 0 );
 }
 
-PressureSensorConfiguration pressure_sensor_get_default_configuration()
+PressureSensorConfiguration pressure_sensor_get_default_configuration ( )
 {
     return s_default_configuration;
 }
 
 
-PressureSensorConfiguration pressure_sensor_get_current_configuration()
+PressureSensorConfiguration pressure_sensor_get_current_configuration ( )
 {
     return s_current_configuration;
 }
 
-void pressure_sensor_set_desired_processing_data_rate(uint32_t rate)
+void pressure_sensor_set_desired_processing_data_rate ( uint32_t rate )
 {
     s_desired_processing_data_rate = rate;
 }

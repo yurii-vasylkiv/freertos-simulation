@@ -8,8 +8,9 @@
 //#define PIN2 GPIO_PIN_5
 
 
-void buzzer_init(void);
-void buzz_delay(int milliseconds);
+void buzzer_init ( void );
+
+void buzz_delay ( int milliseconds );
 
 
 #endif // BUZZER_H
