@@ -20,10 +20,12 @@ typedef enum
     FLIGHT_STATE_COUNT
 } FlightState;
 
+typedef enum { EVENT_DETECTOR_ERR   = 0, EVENT_DETECTOR_OK    = 1 } EventDetectorStatus;
 
-int event_detector_init( FlightSystemConfiguration * configurations);
-int event_detector_update_configurations ( FlightSystemConfiguration * configurations);
-FlightState event_detector_feed ( DataContainer * data);
+
+EventDetectorStatus event_detector_init( FlightSystemConfiguration * configurations);
+EventDetectorStatus event_detector_update_configurations ( FlightSystemConfiguration * configurations);
+EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * state );
 float event_detector_current_altitude();
 bool event_detector_is_flight_started();
 

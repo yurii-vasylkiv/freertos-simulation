@@ -3,6 +3,7 @@
 #include <math.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <utilities/common.h>
 #include "configurations/UserConfig.h"
 
 #include "protocols/UART.h"
@@ -15,7 +16,7 @@
 
 #define ALTITUDE_SENSITIVITY_THRESHOLD  5
 
-static FlightState flightState;
+static FlightState prvFlightState;
 
 static float CURRENT_ALTITUDE          = 0;
 static uint32_t GROUND_PRESSURE        = 0;
@@ -51,21 +52,21 @@ float event_detector_current_altitude()
 
 bool event_detector_is_flight_started()
 {
-    return flightState != FLIGHT_STATE_LAUNCHPAD;
+    return prvFlightState != FLIGHT_STATE_LAUNCHPAD;
 }
 
 
-int event_detector_init( FlightSystemConfiguration * configurations)
+EventDetectorStatus event_detector_init ( FlightSystemConfiguration * configurations )
 {
     if ( INITIALIZED == 1)
     {
         DISPLAY_LINE("Event Detector has been already initialized.");
-        return 0;
+        return EVENT_DETECTOR_OK;
     }
 
     if(configurations == NULL)
     {
-        return 1;
+        return EVENT_DETECTOR_ERR;
     }
 
     GROUND_PRESSURE = configurations->ground_pressure;
@@ -73,8 +74,20 @@ int event_detector_init( FlightSystemConfiguration * configurations)
 
     // in case of reboot during the flight if memory is not corrupted this flag should change to the
     // appropriate current flight stage that != FLIGHT_STATE_LAUNCHPAD
-    // flightState     = configurations->last_flight_state; // TODO: make sure that this is fixed
-    flightState = FLIGHT_STATE_LAUNCHPAD; // <---- temporal fix
+    FlightEventU lastFlightEventEntry = {0};
+    if ( MEM_OK != memory_manager_get_last_flight_event_entry ( &lastFlightEventEntry ) )
+    {
+        return EVENT_DETECTOR_ERR;
+    }
+
+    if ( common_is_mem_empty ( lastFlightEventEntry.bytes, sizeof ( FlightEventU ) ) )
+    {
+        prvFlightState = FLIGHT_STATE_LAUNCHPAD;
+    }
+    else
+    {
+        prvFlightState = lastFlightEventEntry.values.status; // TODO: make sure that this is fixed
+    }
 
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
     data_window_init ( &altitude_data_window );
@@ -83,36 +96,36 @@ int event_detector_init( FlightSystemConfiguration * configurations)
 
 
     INITIALIZED = 1;
-    return 0;
+    return EVENT_DETECTOR_OK;
 }
 
-int event_detector_update_configurations ( FlightSystemConfiguration * configurations)
+EventDetectorStatus event_detector_update_configurations ( FlightSystemConfiguration * configurations)
 {
     if (INITIALIZED == 0)
     {
         DISPLAY_LINE("CANNOT update configurations. Event Detector has not been initialized.");
-        return 1;
+        return EVENT_DETECTOR_ERR;
     }
 
     if(configurations == NULL)
     {
         DISPLAY_LINE("CANNOT update configurations. NullPointer.");
-        return 1;
+        return EVENT_DETECTOR_ERR;
     }
 
     GROUND_PRESSURE = configurations->ground_pressure;
     GROUND_ALTITUDE = calculate_altitude ( GROUND_PRESSURE );
 
-    return 0;
+    return EVENT_DETECTOR_OK;
 }
 
 
-FlightState event_detector_feed ( DataContainer * data)
+EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * flightState )
 {
     if (INITIALIZED == 0)
     {
         DISPLAY_LINE("CANNOT feed. Event Detector has not been initialized.");
-        return 1;
+        return EVENT_DETECTOR_ERR;
     }
 
     if(data->press.updated)
@@ -123,7 +136,7 @@ FlightState event_detector_feed ( DataContainer * data)
 #endif
     }
 
-    switch ( flightState )
+    switch ( prvFlightState )
     {
         case FLIGHT_STATE_LAUNCHPAD:
         {
@@ -132,11 +145,12 @@ FlightState event_detector_feed ( DataContainer * data)
                 if ( detectLaunch( data->acc.data.values.data[ 0 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_PRE_APOGEE;
+                    prvFlightState = FLIGHT_STATE_PRE_APOGEE;
                 }
             }
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_PRE_APOGEE:
@@ -159,26 +173,28 @@ FlightState event_detector_feed ( DataContainer * data)
                 if((difference < 0) && absolute_difference < 5 && absolute_difference > 0.2)
                 {
                     DEBUG_LINE( "FLIGHT_STATE_PRE_APOGEE: Detected APOGEE at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_APOGEE;
+                    prvFlightState = FLIGHT_STATE_APOGEE;
                 }
 #else
                 if ( detectApogee( data->acc.data.values.data[ 0 ], data->acc.data.values.data[ 1 ], data->acc.data.values.data[ 2 ] ) )
                 {
                     DISPLAY_LINE( "Detected APOGEE at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_APOGEE;
+                    prvFlightState = FLIGHT_STATE_APOGEE;
                 }
 #endif
 
             }
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
         case FLIGHT_STATE_APOGEE:
         {
             DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue");
-            flightState = FLIGHT_STATE_POST_APOGEE;
+            prvFlightState = FLIGHT_STATE_POST_APOGEE;
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_POST_APOGEE:
@@ -188,19 +204,21 @@ FlightState event_detector_feed ( DataContainer * data)
                 if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_MAIN_CHUTE;
+                    prvFlightState = FLIGHT_STATE_MAIN_CHUTE;
                 }
             }
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_MAIN_CHUTE:
         {
             DEBUG_LINE("FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute");
-            flightState = FLIGHT_STATE_POST_MAIN;
+            prvFlightState = FLIGHT_STATE_POST_MAIN;
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_POST_MAIN:
@@ -211,8 +229,10 @@ FlightState event_detector_feed ( DataContainer * data)
                                     data->gyro.data.values.data[ 2 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_LANDED;
-                    return 0;
+                    prvFlightState = FLIGHT_STATE_LANDED;
+
+                    *flightState = prvFlightState;
+                    return EVENT_DETECTOR_OK;
                 }
             }
 
@@ -223,32 +243,35 @@ FlightState event_detector_feed ( DataContainer * data)
                 if ( detectAltitude (0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
-                    flightState = FLIGHT_STATE_LANDED;
-                    return 0;
+                    prvFlightState = FLIGHT_STATE_LANDED;
+                    return EVENT_DETECTOR_OK;
                 }
             }
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
         case FLIGHT_STATE_LANDED:
         {
             DEBUG_LINE("FLIGHT_STATE_LANDED: Rocket landed!");
-            flightState = FLIGHT_STATE_EXIT;
+            prvFlightState = FLIGHT_STATE_EXIT;
 
-            return 0;
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_EXIT:
         {
             DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!");
-            flightState = FLIGHT_STATE_COUNT;
-            return 0;
+            prvFlightState = FLIGHT_STATE_COUNT;
+
+            *flightState = prvFlightState;
+            return EVENT_DETECTOR_OK;
         }
         case FLIGHT_STATE_COUNT:
-            break;
+        default:
+            return EVENT_DETECTOR_ERR;
     }
-
-    return 1;
 }
 
 

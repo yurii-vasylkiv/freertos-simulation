@@ -61,16 +61,12 @@ typedef enum
 
 } MemorySector;
 
-#define toUserDataSector(memory_sector) ( UserDataSector ) memory_sector - 2
-#define toSystemSector(memory_sector) memory_sector
-#define toMemorySector(user_sector) ( MemorySector ) user_sector + 2
-
 typedef struct
 {
     uint32_t size;
     uint32_t startAddress;
     uint32_t endAddress;
-    uint32_t lastWriteAddress;
+    uint32_t bytesWritten;
 
 } MemorySectorInfo;
 
@@ -78,7 +74,7 @@ typedef struct
 {
     uint32_t startAddress;
     uint32_t endAddress;
-    uint32_t lastWriteAddress;
+    uint32_t bytesWritten;
 
 } BufferInfo;
 
@@ -349,16 +345,27 @@ MemoryManagerConfiguration memory_manager_get_default_memory_configurations();
 void memory_manager_set_metadata_update_mode( MetaDataUpdateFrequencyMode mode );
 
 
-MemoryManagerStatus memory_manager_get_single_press_entry ( PressureDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_temp_entry  ( TemperatureDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_gyro_entry ( IMUDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_acc_entry ( IMUDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_mag_entry ( IMUDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_press_entry           ( PressureDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_temp_entry            ( TemperatureDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_gyro_entry            ( IMUDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_acc_entry             ( IMUDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_mag_entry             ( IMUDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_cont_entry            ( ContinuityU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_flight_event_entry    ( FlightEventU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_configuration_entry   ( GlobalConfigurationU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_metadata_entry        ( MemoryLayoutMetaDataU * dst, uint32_t entry_index );
 
-MemoryManagerStatus memory_manager_get_single_cont_entry ( ContinuityU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_flight_event_entry ( FlightEventU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_configuration_entry ( GlobalConfigurationU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_metadata_entry ( MemoryLayoutMetaDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_last_press_entry             ( PressureDataU * dst );
+MemoryManagerStatus memory_manager_get_last_temp_entry              ( TemperatureDataU * dst );
+MemoryManagerStatus memory_manager_get_last_gyro_entry              ( IMUDataU * dst );
+MemoryManagerStatus memory_manager_get_last_acc_entry               ( IMUDataU * dst );
+MemoryManagerStatus memory_manager_get_last_mag_entry               ( IMUDataU * dst );
+MemoryManagerStatus memory_manager_get_last_cont_entry              ( ContinuityU * dst );
+MemoryManagerStatus memory_manager_get_last_flight_event_entry      ( FlightEventU * dst );
+MemoryManagerStatus memory_manager_get_last_configuration_entry     ( GlobalConfigurationU * dst );
+MemoryManagerStatus memory_manager_get_last_metadata_entry          ( MemoryLayoutMetaDataU * dst );
+
+
 
 MemoryManagerStatus memory_manager_get_stats( char* buffer, size_t xBufferLen );
 

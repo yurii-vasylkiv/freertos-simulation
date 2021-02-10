@@ -15,12 +15,12 @@ typedef struct
 
 typedef enum { FLIGHT_CONTROLLER_ERR   = 0, FLIGHT_CONTROLLER_OK    = 1 } FlightControllerStatus;
 
-int flight_controller_init(void * pvParams);
-int flight_controller_start();
+FlightControllerStatus flight_controller_init(void * pvParams);
+FlightControllerStatus flight_controller_start();
 void flight_controller_stop();
 
 
-int flight_state_machine_init ( FlightState state );
-int flight_state_machine_tick ( FlightState state, FlightStateMachineTickParameters * parameters);
+FlightControllerStatus flight_state_machine_init ( FlightState state );
+FlightControllerStatus flight_state_machine_tick ( FlightState state, FlightStateMachineTickParameters * parameters);
 
 #endif // DATA_LOGGING_H

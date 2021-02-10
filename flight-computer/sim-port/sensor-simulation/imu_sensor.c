@@ -48,7 +48,7 @@ static uint8_t dataNeedsToBeConverted = 0;
 static uint8_t s_desired_processing_data_rate = 50;
 static bool s_is_running = false;
 
-static const struct imu_sensor_configuration s_default_configuration = {
+static const IMUSensorConfiguration s_default_configuration = {
 
         .accel_bandwidth                = CONFIG_IMU_SENSOR_DEFAULT_ACC_BANDWIDTH,
         .accel_output_data_rate         = CONFIG_IMU_SENSOR_DEFAULT_ACC_ODR,
@@ -61,7 +61,7 @@ static const struct imu_sensor_configuration s_default_configuration = {
         .gyro_power                     = CONFIG_IMU_SENSOR_DEFAULT_GYRO_POWER,
 };
 
-static struct imu_sensor_configuration s_current_configuration = {
+static IMUSensorConfiguration s_current_configuration = {
 
         .accel_bandwidth                = CONFIG_IMU_SENSOR_DEFAULT_ACC_BANDWIDTH,
         .accel_output_data_rate         = CONFIG_IMU_SENSOR_DEFAULT_ACC_ODR,

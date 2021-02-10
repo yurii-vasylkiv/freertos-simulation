@@ -100,6 +100,9 @@
 #define GLOBAL_CONFIGURATION_ENTRIES_PER_PAGE           ( (int) ( PAGE_SIZE / sizeof ( GlobalConfigurationU ) ) )
 #define MEMORY_METADATA_ENTRIES_PER_PAGE                ( (int) ( PAGE_SIZE / sizeof ( MemoryLayoutMetaDataU ) ) )
 
+#define toUserDataSector( memory_sector ) ( UserDataSector ) memory_sector - 2
+#define   toSystemSector( memory_sector ) ( SystemSector   ) memory_sector
+#define   toMemorySector( user_sector   ) ( MemorySector   ) user_sector + 2
 
 // signature sequence used as an identification of the flash memory data validity
 // the sequence is written at the beginning of the first or the second 4KB subsector of the flash memory
@@ -108,6 +111,7 @@ const char * MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE                            
 
 // Variable used to control the initialization process of the memory manager to prevent any actions if this flag is not set
 static bool prvIsInitialized                                                            = { 0 };
+static bool prvIsConfigured                                                             = { 0 };
 
 // a circular buffer queue is a processing queue that is used to temporarily store the pages of information to be fetched by a flash write monitor
 static buffer_queue prvPageBuffer                                                       = { 0 };
@@ -119,10 +123,10 @@ static buffer_queue prvPageBuffer                                               
 // the state of this structure is written to flash for every X any sensor (IMU, Pressure) data updates or every N time
 // where X equals to whatever number macro METADATA_AUTOSAVE_DATA_BASED_INTERVAL is.
 // where N equals to whatever number macro METADATA_AUTOSAVE_TIME_BASED_INTERVAL is.
-// The check is performed in prvMemoryAddNewDataEntry()
+// The check is performed in prvMemoryAddNewUserDataSectorEntry()
 static MemoryLayoutMetaDataContainer prvMemoryMetaDataFlashSnapshot                     = { 0 };
 
-// used as a counter that once it reaches CONFIGURATION_AUTOSAVE_INTERVAL, prvGlobalConfigurationFlashSnapshot is then sent to the
+// used as a counter that once it reaches CONFIGURATION_AUTOSAVE_INTERVAL, prvGlobalConfigurationDiskSnapshot is then sent to the
 // flash write monitor processing queue (prvPageBuffer)
 static size_t prvMetadataAutosaveDataBasedCounter                                       = { 0 };
 static size_t prvMetadataAutosaveTimeBasedCounter                                       = { 0 };
@@ -131,20 +135,23 @@ static MetaDataUpdateFrequencyMode prvMetaDataUpdateMode = MetaDataUpdateTimeBas
 
 // used as an up-to-date representation of the global configuration data sector to be written to flash
 // the state of this structure must be written to flash before the flight ONLY
-static GlobalConfigurationContainer prvGlobalConfigurationFlashSnapshot                 = { 0 };
+static GlobalConfigurationContainer prvGlobalConfigurationDiskSnapshot                 = { 0 };
 
 
 // used to hold the writing position addresses updated after each write to flash operation
-// so that with each subsequent call of prvMemoryAddNewDataEntry() the memory manager logic could place the data into the right
+// so that with each subsequent call of prvMemoryAddNewUserDataSectorEntry() the memory manager logic could place the data into the right
 // position in the temporary buffer, and thus, into the correct position on flash memory later
 static MemorySectorBuffer prvCurrentUserDataMemorySectorRAMBuffers [ UserDataSectorCount ]       = { 0 };
-static MemorySectorBuffer prvCurrentSystemMemorySectorRAMBuffers   [ SystemSectorCount   ]       = { 0 };
+static BufferInfo prvCurrentSystemMemorySectorDataPointersOnDisk   [ SystemSectorCount   ]       = { 0 };
 
-static uint8_t is_queue_monitor_running                                                 = { 0 };
-static xTaskHandle prvQueueMonitorTaskHandle                                            = { 0 };
+static uint8_t is_queue_monitor_running                                                          = { 0 };
+static xTaskHandle prvQueueMonitorTaskHandle                                                     = { 0 };
 
 
-static const struct memory_manager_configuration prvDefaultMemoryManagerConfiguration =
+static int prvMemorySectorFindLastWrittenPageIndexResults          [ MemorySectorCount ]         = { 0 };
+
+
+static const MemoryManagerConfiguration prvDefaultMemoryManagerConfiguration =
 {
         // TODO: to be edited from GUI
         .write_pre_launch_multiplier         = 0,
@@ -187,30 +194,36 @@ void memory_manager_set_metadata_update_mode( MetaDataUpdateFrequencyMode mode )
     prvMetaDataUpdateMode = mode;
 }
 
-static uint32_t prvMemorySectorGetDataEntriesPerPage ( MemorySector sector);
+static uint32_t prvMemorySectorGetSize ( MemorySector sector );
+
+static uint32_t prvMemorySectorGetDataEntriesPerPage ( MemorySector sector );
 
 static uint32_t prvMemorySectorGetDataStructSize ( MemorySector sector );
 
 static uint32_t prvMemorySectorGetAlignedDataStructSize ( MemorySector sector );
 
-static MemoryManagerStatus prvMemoryAddNewDataEntry ( MemorySector sector, uint8_t * buffer );
+static MemoryManagerStatus prvMemorySectorFindLastWrittenPageIndex ( MemorySector sector, uint32_t * result );
+
+static MemoryManagerStatus prvMemoryAddNewUserDataSectorEntry ( UserDataSector sector, uint8_t * buffer );
 
 static void prvMemoryAsyncWriteAnyMemorySectorIfAvailable ( );
 
-static void prvQueueMonitorTask( void * arg );
+static void prvQueueMonitorTask ( void * arg );
 
-static MemoryManagerStatus prvMemoryWriteAsyncMetaDataSector( );
+static MemoryManagerStatus prvMemoryWriteAsyncMetaDataSector ( );
 
-static MemoryManagerStatus prvMemoryWriteAsyncGlobalConfigurationSector( );
+static MemoryManagerStatus prvMemoryWriteAsyncGlobalConfigurationSector ( );
 
 
 static MemoryManagerStatus prvVerifySystemSectorIntegrity ( SystemSector sector, uint8_t * data, bool * status );
 
-static MemoryManagerStatus prvMemoryAccessPage( MemorySector sector, uint16_t pageIndex, uint8_t * dest );
+static MemoryManagerStatus prvMemoryAccessPage ( MemorySector sector, int64_t pageIndex, uint8_t * dest );
 
-static MemoryManagerStatus prvMemoryWritePageNow( MemorySector sector, uint8_t * data );
+static MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data );
 
-static MemoryManagerStatus prvMemoryAccessSectorSingleDataEntry( MemorySector sector, uint32_t index, void * dst );
+static MemoryManagerStatus prvMemoryAccessSectorSingleDataEntry ( MemorySector sector, uint32_t index, void * dst );
+
+static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, void * dst );
 
 
 MemoryManagerStatus memory_manager_init( ) /* noexcept */
@@ -236,20 +249,6 @@ MemoryManagerStatus memory_manager_init( ) /* noexcept */
         }
     }
 
-    for ( SystemSector sector = SystemSectorGlobalConfigurationData ; sector < SystemSectorCount ; sector++ )
-    {
-        if ( prvCurrentSystemMemorySectorRAMBuffers [ sector ].write == NULL )
-        {
-            prvCurrentSystemMemorySectorRAMBuffers [ sector ].write = &prvCurrentSystemMemorySectorRAMBuffers [ sector ].buffers[ 0 ];
-        }
-
-        if ( prvCurrentSystemMemorySectorRAMBuffers [ sector ].read == NULL )
-        {
-            prvCurrentSystemMemorySectorRAMBuffers [ sector ].read = &prvCurrentSystemMemorySectorRAMBuffers [ sector ].buffers[ 1 ];
-        }
-    }
-
-    
     // important part of initialization is the buffer queue that will hold a page of information to be written
     // to the flash memory
     buffer_queue_init( &prvPageBuffer );
@@ -274,32 +273,36 @@ MemoryManagerStatus memory_manager_configure( )
     bool isIntegrityOK = false;
 
     // then find out whether the fetched meta configuration is a valid meta configuration subsector
-    if ( MEM_OK != prvVerifySystemSectorIntegrity( SystemSectorGlobalConfigurationData, prvGlobalConfigurationFlashSnapshot.data.bytes, &isIntegrityOK ) )
+    if ( MEM_OK != prvVerifySystemSectorIntegrity ( SystemSectorGlobalConfigurationData, prvGlobalConfigurationDiskSnapshot.data.bytes, &isIntegrityOK ) )
     {
         return MEM_ERR;
     }
 
     if ( isIntegrityOK == true )
     {
-        // then prvGlobalConfigurationFlashSnapshot already holds correct data and we must not modify it at this point
+        // then prvGlobalConfigurationDiskSnapshot already holds correct data and we must not modify it at this point
+        // Thus, we only update the pointer to the data on disk
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorGlobalConfigurationData ].bytesWritten = prvMemorySectorFindLastWrittenPageIndexResults [ MemorySystemSectorGlobalConfigurationData ] * PAGE_SIZE;
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData  ].startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData  ].endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
     }
     else
     {
         // in case if memory was erased, flash memory sets all bits high, and we cannot use such data with ASCII table.
         // Thus, we need to set everything we read to zeros
-        memset ( &prvGlobalConfigurationFlashSnapshot, 0, sizeof ( GlobalConfigurationContainer  ) );
+        memset ( &prvGlobalConfigurationDiskSnapshot, 0, sizeof ( GlobalConfigurationContainer  ) );
 
         // meta configuration sector is invalid and thus either the data was invalidated or the memory was erased
         // ---- initiate a fresh start ------
-        prvGlobalConfigurationFlashSnapshot.updated = true;
-        prvGlobalConfigurationFlashSnapshot.data.values.memory = prvDefaultMemoryManagerConfiguration;
-        prvGlobalConfigurationFlashSnapshot.data.values.system = DEFAULT_FLIGHT_SYSTEM_CONFIGURATION;
-        memcpy ( prvGlobalConfigurationFlashSnapshot.data.values.signature, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE_BUFFER_LENGTH ) ;
-        prvGlobalConfigurationFlashSnapshot.updated  = 1;
+        prvGlobalConfigurationDiskSnapshot.updated = true;
+        prvGlobalConfigurationDiskSnapshot.data.values.memory = prvDefaultMemoryManagerConfiguration;
+        prvGlobalConfigurationDiskSnapshot.data.values.system = get_default_system_configuration();
+        memcpy ( prvGlobalConfigurationDiskSnapshot.data.values.signature, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE_BUFFER_LENGTH ) ;
+        prvGlobalConfigurationDiskSnapshot.updated  = 1;
     }
 
     // then find out whether the fetched meta configuration is a valid meta configuration subsector
-    if ( MEM_OK != prvVerifySystemSectorIntegrity( SystemSectorUserDataSectorMetaData, prvMemoryMetaDataFlashSnapshot.data.bytes, &isIntegrityOK ) )
+    if ( MEM_OK != prvVerifySystemSectorIntegrity ( SystemSectorUserDataSectorMetaData, prvMemoryMetaDataFlashSnapshot.data.bytes, &isIntegrityOK ) )
     {
         return MEM_ERR;
     }
@@ -307,6 +310,10 @@ MemoryManagerStatus memory_manager_configure( )
     if ( isIntegrityOK == true )
     {
         // then prvMemoryMetaDataFlashSnapshot already holds correct data and we must not modify it at this point
+        // Thus, we only update the pointer to the data on disk
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData ].bytesWritten = prvMemorySectorFindLastWrittenPageIndexResults [ MemorySystemSectorUserDataSectorMetaData ] * PAGE_SIZE;
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData ].startAddress = MEMORY_METADATA_SECTOR_BASE;
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData ].endAddress   = MEMORY_METADATA_SECTOR_OFFSET;
     }
     else
     {
@@ -330,20 +337,20 @@ MemoryManagerStatus memory_manager_configure( )
 
             // it is a data sector, so we initialize it properly using the right offsets and sizes
             sectorInfo->endAddress       = sectorInfo->startAddress + sectorInfo->size;
-            sectorInfo->lastWriteAddress = 0; /* nothing has been written to this memory sector, hence — 0 */
+            sectorInfo->bytesWritten = 0; /* nothing has been written to this memory sector, hence — 0 */
         }
 
         // for reserved sectors
         // we need to fill in the information about the meta configuration sector from scratch
-        BufferInfo * blockInfo = & prvCurrentSystemMemorySectorRAMBuffers [ SystemSectorGlobalConfigurationData ].write->info;
+        BufferInfo * blockInfo = & prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorGlobalConfigurationData ];
         blockInfo->startAddress         = GLOBAL_CONFIGURATION_SECTOR_BASE;
         blockInfo->endAddress           = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
-        blockInfo->lastWriteAddress     = 0; /* nothing has been written to this memory sector, hence — 0 */
+        blockInfo->bytesWritten     = 0; /* nothing has been written to this memory sector, hence — 0 */
 
-        blockInfo = & prvCurrentSystemMemorySectorRAMBuffers [ SystemSectorUserDataSectorMetaData ].write->info;
+        blockInfo = & prvCurrentSystemMemorySectorDataPointersOnDisk [ SystemSectorUserDataSectorMetaData ];
         blockInfo->startAddress         = MEMORY_METADATA_SECTOR_BASE;
         blockInfo->endAddress           = MEMORY_METADATA_SECTOR_OFFSET;
-        blockInfo->lastWriteAddress     = 0; /* nothing has been written to this memory sector, hence — 0 */
+        blockInfo->bytesWritten     = 0; /* nothing has been written to this memory sector, hence — 0 */
 
         // storing the signature number
         memcpy ( prvMemoryMetaDataFlashSnapshot.data.values.signature, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE_BUFFER_LENGTH );
@@ -351,6 +358,8 @@ MemoryManagerStatus memory_manager_configure( )
         // so that this state is put into the processing queue of the flash write monitor right away
         prvMemoryMetaDataFlashSnapshot.updated       = 1;
     }
+
+    prvIsConfigured = true;
 
     return MEM_OK;
 }
@@ -453,7 +462,7 @@ MemoryManagerStatus memory_manager_get_system_configurations ( FlightSystemConfi
         return MEM_ERR;
     }
 
-    memcpy ( systemConfiguration, &prvGlobalConfigurationFlashSnapshot.data.values.system, sizeof ( FlightSystemConfiguration ));
+    memcpy ( systemConfiguration, &prvGlobalConfigurationDiskSnapshot.data.values.system, sizeof ( FlightSystemConfiguration ));
 
     return MEM_OK;
 }
@@ -465,8 +474,8 @@ MemoryManagerStatus memory_manager_set_system_configurations ( FlightSystemConfi
         return MEM_ERR;
     }
 
-    memset ( &prvGlobalConfigurationFlashSnapshot.data.values.system, 0, sizeof ( FlightSystemConfiguration ) );
-    prvGlobalConfigurationFlashSnapshot.data.values.system = *systemConfiguration;
+    memset ( &prvGlobalConfigurationDiskSnapshot.data.values.system, 0, sizeof ( FlightSystemConfiguration ) );
+    prvGlobalConfigurationDiskSnapshot.data.values.system = *systemConfiguration;
 
     prvMemoryWriteAsyncGlobalConfigurationSector( );
     return MEM_OK;
@@ -479,7 +488,7 @@ MemoryManagerStatus memory_manager_get_memory_configurations ( MemoryManagerConf
         return MEM_ERR;
     }
 
-    memcpy( memoryConfiguration, &prvGlobalConfigurationFlashSnapshot.data.values.memory, sizeof ( MemoryManagerConfiguration ));
+    memcpy( memoryConfiguration, &prvGlobalConfigurationDiskSnapshot.data.values.memory, sizeof ( MemoryManagerConfiguration ));
 
     return MEM_OK;
 }
@@ -491,8 +500,8 @@ MemoryManagerStatus memory_manager_set_memory_configurations ( MemoryManagerConf
         return MEM_ERR;
     }
 
-    memset ( &prvGlobalConfigurationFlashSnapshot.data.values.memory, 0, sizeof ( MemoryManagerConfiguration ) );
-    prvGlobalConfigurationFlashSnapshot.data.values.memory = *memoryConfiguration;
+    memset ( &prvGlobalConfigurationDiskSnapshot.data.values.memory, 0, sizeof ( MemoryManagerConfiguration ) );
+    prvGlobalConfigurationDiskSnapshot.data.values.memory = *memoryConfiguration;
 
     prvMemoryWriteAsyncGlobalConfigurationSector( );
 
@@ -537,7 +546,7 @@ MemoryManagerStatus prvVerifySystemSectorIntegrity ( SystemSector sector, uint8_
 
     MemoryBuffer buffer = {};
     // try reading the metadata from flash before all (we first try the very first subsector)
-    if ( MEM_OK != prvMemoryAccessPage( ( MemorySector ) sector, 0, buffer.data ) )
+    if ( MEM_OK != prvMemoryAccessPage ( ( MemorySector ) sector, -1, buffer.data ) )
     {
         return MEM_ERR;
     }
@@ -559,7 +568,7 @@ MemoryManagerStatus prvVerifySystemSectorIntegrity ( SystemSector sector, uint8_
 }
 
 
-MemoryManagerStatus prvMemoryAddNewDataEntry ( MemorySector sector, uint8_t * buffer )
+MemoryManagerStatus prvMemoryAddNewUserDataSectorEntry ( UserDataSector sector, uint8_t * buffer )
 {
     if ( prvIsInitialized == false )
     {
@@ -571,52 +580,39 @@ MemoryManagerStatus prvMemoryAddNewDataEntry ( MemorySector sector, uint8_t * bu
         return MEM_ERR;
     }
 
-    uint32_t size = prvMemorySectorGetDataStructSize  ( sector );
+    uint32_t size = prvMemorySectorGetDataStructSize  ( toMemorySector ( sector ) );
 
-    MemorySectorBuffer * memorySectorBuffer;
-
-    if ( sector == MemorySystemSectorGlobalConfigurationData || sector == MemorySystemSectorUserDataSectorMetaData )
-    {
-        memorySectorBuffer = prvCurrentSystemMemorySectorRAMBuffers;
-        sector = toSystemSector ( sector ) ;
-    }
-    else
-    {
-        memorySectorBuffer = prvCurrentUserDataMemorySectorRAMBuffers;
-        sector = toUserDataSector ( sector ) ;
-    };
-
-    int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize ( sector );
+    int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize ( toMemorySector ( sector ) );
     // check whether the number of data entries filled up the page size, such that no more entries of this data type
     // will fit into the page size without over-fitting.
-    if ( memorySectorBuffer [ sector ].write->info.lastWriteAddress >=  page_aligned_boundary )
+    if ( prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.bytesWritten >= page_aligned_boundary )
     {
         // if there is no more room for another data entry then we signal to the monitor that it is time to take out this
         // page and flush it ont ot the memory. To do that we swap the read and write buffer, so that the read buffer now
         // contains that full page of data (write buffer), while the write buffer should be come empty and ready for new data
-        MemoryBuffer * temp_read = memorySectorBuffer [ sector ].read;
-        memorySectorBuffer [ sector ].read = memorySectorBuffer [ sector ].write;
-        memorySectorBuffer [ sector ].write = temp_read;
+        MemoryBuffer * temp_read = prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read;
+        prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read = prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write;
+        prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write = temp_read;
 
         // here's the signal to the monitor to process that page.
         prvMemoryAsyncWriteAnyMemorySectorIfAvailable( );
 
         // safeguard check: if the read buffer that was supposed to be processed by the monitor has actually been already processed or not yet
-        if ( temp_read->info.lastWriteAddress >= size )
+        if ( temp_read->info.bytesWritten >= size )
         {
             // if not then the monitor did not manage to do it before we landed here. Maybe the producing data is faster than its consuming?
             printf( "The page was not saved. Probably the monitor has stuck, or it ia just too slow for the data producer. Overwriting the page...\n" );
             // resetting the current data pointer
-            memorySectorBuffer [ sector ].write->info.lastWriteAddress = 0;
+            prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.bytesWritten = 0;
         }
     }
 
     // now that we emptied the write buffer and it is newly fresh and ready, we are copying the incoming data entry to it
-    MemoryBuffer * currentBuffer = memorySectorBuffer [ sector ].write;
-    uint8_t * currWriteBufferPosition = &currentBuffer->data [ currentBuffer->info.lastWriteAddress ];
+    MemoryBuffer * currentBuffer = prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write;
+    uint8_t * currWriteBufferPosition = &currentBuffer->data [ currentBuffer->info.bytesWritten ];
     memcpy ( currWriteBufferPosition, buffer, size );
     // and updating its current data pointer
-    currentBuffer->info.lastWriteAddress += size;
+    currentBuffer->info.bytesWritten += size;
 
     return MEM_OK;
 }
@@ -645,7 +641,7 @@ static MemoryManagerStatus prvMemoryWriteAsyncGlobalConfigurationSector( )
 
     buffer_item item = { };
     item.type = MemorySystemSectorGlobalConfigurationData;
-    memmove ( item.data, prvGlobalConfigurationFlashSnapshot.data.bytes, prvMemorySectorGetDataStructSize( MemorySystemSectorGlobalConfigurationData ) );
+    memmove ( item.data, prvGlobalConfigurationDiskSnapshot.data.bytes, prvMemorySectorGetDataStructSize( MemorySystemSectorGlobalConfigurationData ) );
     buffer_queue_push_back( &prvPageBuffer, &item );
 //    xTaskGenericNotify(handle, 0, eNoAction, NULL);
     return MEM_OK;
@@ -656,50 +652,49 @@ void prvMemoryAsyncWriteAnyMemorySectorIfAvailable ( )
     // free the read page
     for ( UserDataSector sector = UserDataSectorGyro ; sector < UserDataSectorCount ; sector++ )
     {
-        int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize( toMemorySector(sector) );
-        if ( prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read->info.lastWriteAddress >= page_aligned_boundary )
+        int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize ( toMemorySector(sector) );
+        if ( prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read->info.bytesWritten >= page_aligned_boundary )
         {
             buffer_item item = { };
-            item.type = sector;
+            item.type = toMemorySector ( sector );
             memmove( item.data, prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read->data, PAGE_SIZE );
-            prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read->info.lastWriteAddress = 0;
+            prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read->info.bytesWritten = 0;
             buffer_queue_push_back ( &prvPageBuffer, &item );
             // xTaskGenericNotify(handle, 0, eNoAction, NULL);
         }
     }
 
-    for ( SystemSector sector = SystemSectorGlobalConfigurationData ; sector < SystemSectorCount ; sector++ )
-    {
-        if(sector == SystemSectorUserDataSectorMetaData)
-        {
-            continue;
-        }
-        else
-        {
-            int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize( toMemorySector ( sector ) );
-            if ( prvCurrentSystemMemorySectorRAMBuffers [ sector ].read->info.lastWriteAddress >= page_aligned_boundary )
-            {
-                buffer_item item = { };
-                item.type = toMemorySector ( sector );
-                memmove( item.data, prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->data, PAGE_SIZE );
-                prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->info.lastWriteAddress = 0;
-                buffer_queue_push_back( &prvPageBuffer, &item );
-                // xTaskGenericNotify(handle, 0, eNoAction, NULL);
-            }
-        }
-    }
+//    for ( SystemSector sector = SystemSectorGlobalConfigurationData ; sector < SystemSectorCount ; sector++ )
+//    {
+//        if(sector == SystemSectorUserDataSectorMetaData)
+//        {
+//            continue;
+//        }
+//        else
+//        {
+//            int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize( toMemorySector ( sector ) );
+//            if ( prvCurrentSystemMemorySectorRAMBuffers [ sector ].read->info.bytesWritten >= page_aligned_boundary )
+//            {
+//                buffer_item item = { };
+//                item.type = toMemorySector ( sector );
+//                memmove( item.data, prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->data, PAGE_SIZE );
+//                prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->info.bytesWritten = 0;
+//                buffer_queue_push_back( &prvPageBuffer, &item );
+//                // xTaskGenericNotify(handle, 0, eNoAction, NULL);
+//            }
+//        }
+//    }
 }
 
 MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data )
 {
     if( sector == MemorySystemSectorGlobalConfigurationData )
     {
-        sector = toSystemSector ( sector );
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
 
         memory_manager_erase_configuration_section();
-        FlashStatus status = flash_write ( GLOBAL_CONFIGURATION_SECTOR_BASE, data, prvMemorySectorGetDataStructSize ( MemorySystemSectorGlobalConfigurationData ) );
+        FlashStatus status = flash_write ( GLOBAL_CONFIGURATION_SECTOR_BASE, data, PAGE_SIZE );
         if ( status != FLASH_OK)
         {
             return MEM_ERR;
@@ -712,20 +707,18 @@ MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data 
             return MEM_ERR;
         }
 #endif
-        MemoryBuffer * buffer = prvCurrentSystemMemorySectorRAMBuffers[sector].read;
-        buffer->info.lastWriteAddress = prvMemorySectorGetDataStructSize( MemorySystemSectorGlobalConfigurationData );
+
     }
 
     else if ( sector == MemorySystemSectorUserDataSectorMetaData )
     {
-        sector = toSystemSector ( sector );
+        SystemSector systemSector = toSystemSector ( sector );
 
-        MemoryBuffer * buffer = prvCurrentSystemMemorySectorRAMBuffers[sector].read;
-        const uint32_t OFFSET = MEMORY_METADATA_SECTOR_BASE + buffer->info.startAddress;
+        const uint32_t OFFSET = MEMORY_METADATA_SECTOR_BASE + prvCurrentSystemMemorySectorDataPointersOnDisk [ systemSector ].bytesWritten;
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
 
-        FlashStatus status = flash_write ( OFFSET, data, prvMemorySectorGetDataStructSize ( MemorySystemSectorUserDataSectorMetaData ) );
+        FlashStatus status = flash_write ( OFFSET, data, PAGE_SIZE );
         if ( status != FLASH_OK)
         {
             return MEM_ERR;
@@ -744,19 +737,13 @@ MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data 
             return MEM_ERR;
         }
 #endif
-        buffer->info.lastWriteAddress = 0;
-        buffer->info.startAddress += PAGE_SIZE;
+
+        prvCurrentSystemMemorySectorDataPointersOnDisk [ systemSector ].bytesWritten += PAGE_SIZE;
     }
     else
     {
-        // security check: to ensure that the the page buffer has correct startAddress and correct lastWriteAddress
-        assert ( prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.lastWriteAddress - prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.startAddress <= PAGE_SIZE );
-
-        // memorizing the aligned boundary size
-        int aligned_page_boundary = prvMemorySectorGetAlignedDataStructSize ( sector ) ;
-
-        sector = toUserDataSector( sector );
-        const uint32_t OFFSET = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ sector ].startAddress + prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.startAddress;
+        UserDataSector userDataSector = toUserDataSector ( sector );
+        const uint32_t OFFSET = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ userDataSector ].startAddress + prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ userDataSector ].bytesWritten;
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
 
@@ -772,55 +759,67 @@ MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data 
             return MEM_ERR;
         }
 #endif
-
-        // adding up only the remainder of bytes that finish the page, so that when we update the metadata, it will point to the page boundaries exactly
-        int lastPageEndAddress = prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.lastWriteAddress + ( PAGE_SIZE -  aligned_page_boundary );
-        prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ sector ].lastWriteAddress = lastPageEndAddress;
-
-        // flagging to the other components that this piece of data has been already processed and emptied
-        prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.lastWriteAddress = 0 ;
-//        memset(prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->data, 0 , PAGE_SIZE);
-
         // now start address should point to a page size away from the previous one
-        prvCurrentUserDataMemorySectorRAMBuffers [ sector ].write->info.startAddress += PAGE_SIZE;
+        prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ userDataSector ].bytesWritten += PAGE_SIZE;
+
+        // reset the read RAM buffer cursor
+        // flagging to the other components that this piece of data has been already processed and emptied
+        memset(prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read, 0 , PAGE_SIZE);
     }
 
     return MEM_OK;
 }
 
-
-static MemoryManagerStatus prvMemoryAccessPage ( MemorySector sector, uint16_t pageIndex, uint8_t * dest )
+/**
+ * @param sector: desired memory sector
+ * @param pageIndex: -1 for the last available page in the given sector, 0-N to indicate the page index to be retrieved
+ * @param dest: destination buffer (Note: MUST be at least 255 bytes of size)
+ * @return MemoryManagerStatus: OK or ERR
+ */
+static MemoryManagerStatus prvMemoryAccessPage ( MemorySector sector, int64_t pageIndex, uint8_t * dest )
 {
     uint32_t OFFSET = 0;
+    uint32_t PAGE_INDEX = 0;
 
-    // meta configuration sector has only META_CONFIGURATION_SUBSECTOR_COUNT subsectors, thus indexes greater than that
-    // will cause reading invalid data and thus must be avoided
-    if ( sector == MemorySystemSectorGlobalConfigurationData)
+    if ( pageIndex == -1 )
     {
-        if ( pageIndex >= ( GLOBAL_CONFIGURATION_SECTOR_SIZE / PAGE_SIZE ) )
-        {
-            return MEM_ERR;
-        }
-
-        OFFSET = GLOBAL_CONFIGURATION_SECTOR_BASE + pageIndex * PAGE_SIZE;
-    }
-    else if ( sector == MemorySystemSectorUserDataSectorMetaData)
-    {
-        if ( pageIndex >= ( MEMORY_METADATA_SECTOR_SUB_COUNT / PAGE_SIZE ) )
-        {
-            return MEM_ERR;
-        }
-
-        OFFSET = MEMORY_METADATA_SECTOR_BASE + pageIndex * PAGE_SIZE;
+        prvMemorySectorFindLastWrittenPageIndex ( sector, &PAGE_INDEX );
+        prvMemorySectorFindLastWrittenPageIndexResults [ sector ] = PAGE_INDEX;
     }
     else
     {
-        if ( PAGE_SIZE * pageIndex > prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].lastWriteAddress )
+        PAGE_INDEX = pageIndex;
+    }
+
+
+    // meta configuration sector has only META_CONFIGURATION_SUBSECTOR_COUNT subsectors, thus indexes greater than that
+    // will cause reading invalid data and thus must be avoided
+    if ( sector == MemorySystemSectorGlobalConfigurationData )
+    {
+        if ( PAGE_INDEX >= ( GLOBAL_CONFIGURATION_SECTOR_SIZE / PAGE_SIZE ) )
         {
             return MEM_ERR;
         }
 
-        OFFSET = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].startAddress + ( pageIndex * PAGE_SIZE );
+        OFFSET = GLOBAL_CONFIGURATION_SECTOR_BASE + PAGE_INDEX * PAGE_SIZE;
+    }
+    else if ( sector == MemorySystemSectorUserDataSectorMetaData)
+    {
+        if ( PAGE_INDEX >= ( MEMORY_METADATA_SECTOR_SIZE / PAGE_SIZE ) )
+        {
+            return MEM_ERR;
+        }
+
+        OFFSET = MEMORY_METADATA_SECTOR_BASE + PAGE_INDEX * PAGE_SIZE;
+    }
+    else
+    {
+        if ( PAGE_SIZE * PAGE_INDEX > prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].bytesWritten )
+        {
+            return MEM_ERR;
+        }
+
+        OFFSET = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].startAddress + ( PAGE_INDEX * PAGE_SIZE );
     }
 
 
@@ -854,7 +853,7 @@ MemoryManagerStatus prvMemoryAccessSectorSingleDataEntry ( MemorySector sector, 
     uint8_t entries_per_page = prvMemorySectorGetDataEntriesPerPage ( sector );
     uint8_t struct_size      = prvMemorySectorGetDataStructSize ( sector );
 
-    if ( PAGE_SIZE * trunc( ( double ) index / prvMemorySectorGetDataEntriesPerPage( sector ) ) > prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ sector ].lastWriteAddress )
+    if ( PAGE_SIZE * trunc( ( double ) index / prvMemorySectorGetDataEntriesPerPage( sector ) ) > prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ sector ].bytesWritten )
     {
         return MEM_ERR;
     }
@@ -876,6 +875,41 @@ MemoryManagerStatus prvMemoryAccessSectorSingleDataEntry ( MemorySector sector, 
     index = (pageIndex * entries_per_page ) - index ;
 
     memcpy( dst, &buffer.data [ index ], struct_size );
+
+    return MEM_OK;
+}
+
+static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, void * dst )
+{
+    if ( dst == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    if ( toSystemSector ( sector ) < SystemSectorCount )
+    {
+        uint32_t lastPageIndex = 0;
+        if( MEM_OK != prvMemorySectorFindLastWrittenPageIndex ( sector, &lastPageIndex ) )
+        {
+            return MEM_ERR;
+        }
+
+        if( MEM_OK != prvMemoryAccessPage ( sector, lastPageIndex, dst ) )
+        {
+            return MEM_ERR;
+        }
+    }
+
+    else
+    {
+        uint32_t lastAddress = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].bytesWritten
+                               - prvMemorySectorGetDataStructSize ( sector ) ;
+
+        if( FLASH_OK != flash_read ( lastAddress, dst, prvMemorySectorGetDataStructSize ( sector ) ) )
+        {
+            return MEM_ERR;
+        }
+    }
 
     return MEM_OK;
 }
@@ -925,23 +959,23 @@ void prvQueueMonitorTask( void * arg )
             switch ( ( MemorySector) item.type )
             {
                 case MemorySystemSectorGlobalConfigurationData:
-                    uart6_transmit_line( "Monitor: Configuration was flushed!" );
+//                    uart6_transmit_line( "Monitor: Configuration was flushed!" );
                     break;
                 case MemorySystemSectorUserDataSectorMetaData:
-                    uart6_transmit_line( "Monitor: MetaData was flushed!" );
+//                    uart6_transmit_line( "Monitor: MetaData was flushed!" );
                     break;
                 case MemoryUserDataSectorGyro:
-                    // uart6_transmit_line( "Monitor: Gyro was flushed!" );
+//                     uart6_transmit_line( "Monitor: Gyro was flushed!" );
                 case MemoryUserDataSectorAccel:
                     // uart6_transmit_line( "Monitor: Accel was flushed!" );
                 case MemoryUserDataSectorMag:
                     // uart6_transmit_line( "Monitor: Mag was flushed!" );
                     break;
                 case MemoryUserDataSectorPressure:
-                    // uart6_transmit_line( "Monitor: Pressure was flushed!" );
+                     uart6_transmit_line( "Monitor: Pressure was flushed!" );
                     break;
                 case MemoryUserDataSectorTemperature:
-                    // uart6_transmit_line( "Monitor: Temperature was flushed!" );
+                     uart6_transmit_line( "Monitor: Temperature was flushed!" );
                     break;
                 case MemoryUserDataSectorContinuity:
                     // uart6_transmit_line( "Monitor: Cont was flushed!" );
@@ -1038,93 +1072,330 @@ static uint32_t prvMemorySectorGetAlignedDataStructSize ( MemorySector sector )
     }
 }
 
+int prvMemorySectorGetPageCount ( MemorySector sector )
+{
+    if ( toSystemSector ( sector ) < SystemSectorCount )
+    {
+        // we are accessing the system sector where their sizes are predetermined
+        switch ( sector )
+        {
+            case SystemSectorGlobalConfigurationData:
+                return ( GLOBAL_CONFIGURATION_SECTOR_SIZE / PAGE_SIZE ) ;
+            case SystemSectorUserDataSectorMetaData:
+                return ( MEMORY_METADATA_SECTOR_SIZE / PAGE_SIZE ) ;
+            case SystemSectorCount:
+            default:
+                return 0;
+        }
+    } else {
+        // we are accessing the user data sector where the sizes are changed by user and not known before the configuration sector is read
+        // thus this function will not work for user data sections without prior call to memory_manager_configure () that was successful
+        // the indication of that can be checked with prvIsConfigured variable (true if successful, false, if not successful, or has not been called)
+        if ( prvIsConfigured == false )
+        {
+            // returning 0 makes sense because if everything goes right, there is no way that sector would have 0 pages
+            return 0;
+        }
+
+        // if prvIsConfigured == true, then we can freely use prvGlobalConfigurationDiskSnapshot variable and can safely use user_data_sector_sizes to
+        // find out the user sector sizes.
+        return ( prvGlobalConfigurationDiskSnapshot.data.values.memory.user_data_sector_sizes[ toUserDataSector ( sector ) ] / PAGE_SIZE );
+    }
+}
+
+static uint32_t prvMemorySectorGetSize ( MemorySector sector )
+{
+    if ( toSystemSector ( sector ) < SystemSectorCount )
+    {
+        // we are accessing the system sector where their sizes are predetermined
+        switch ( sector )
+        {
+            case SystemSectorGlobalConfigurationData:
+                return ( GLOBAL_CONFIGURATION_SECTOR_SIZE ) ;
+            case SystemSectorUserDataSectorMetaData:
+                return ( MEMORY_METADATA_SECTOR_SIZE ) ;
+            case SystemSectorCount:
+            default:
+                return 0;
+        }
+    } else {
+        // we are accessing the user data sector where the sizes are changed by user and not known before the configuration sector is read
+        // thus this function will not work for user data sections without prior call to memory_manager_configure () that was successful
+        // the indication of that can be checked with prvIsConfigured variable (true if successful, false, if not successful, or has not been called)
+        if ( prvIsConfigured == false )
+        {
+            // returning 0 makes sense because if everything goes right, there is no way that sector would have 0 pages
+            return 0;
+        }
+
+        // if prvIsConfigured == true, then we can freely use prvGlobalConfigurationDiskSnapshot variable and can safely use user_data_sector_sizes to
+        // find out the user sector sizes.
+        return prvGlobalConfigurationDiskSnapshot.data.values.memory.user_data_sector_sizes [ toUserDataSector ( sector ) ] ;
+    }
+}
+
+
+static MemoryManagerStatus prvMemorySectorFindLastWrittenPageIndex ( MemorySector sector, uint32_t * result )
+{
+    if( result == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    int pageIndex = 0;
+
+    int sectorPageCount = prvMemorySectorGetPageCount ( sector );
+    // need to search the sector and find the latest record
+
+    uint8_t dataRX [ 256 ];
+
+    int j;
+
+    while ( pageIndex < sectorPageCount )
+    {
+        memset ( dataRX, 0, PAGE_SIZE ) ;
+
+        if ( prvMemoryAccessPage ( sector, pageIndex, dataRX ) == MEM_ERR )
+        {
+            return MEM_ERR;
+        }
+
+        if ( common_is_mem_empty ( dataRX, PAGE_SIZE ) )
+        {
+            if ( pageIndex != 0 )
+            {
+                pageIndex--;
+            }
+
+            break;
+        }
+
+        pageIndex++;
+    }
+
+    ( *result ) = pageIndex;
+
+    return MEM_OK;
+}
+
+
+
 
 MemoryManagerStatus memory_manager_add_gyro_update( IMUDataU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorGyro, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorGyro, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_accel_update( IMUDataU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorAccel, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorAccel, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_mag_update( IMUDataU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorMag, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorMag, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_pressure_update( PressureDataU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorPressure, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorPressure, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_temp_update( TemperatureDataU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorTemperature, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorTemperature, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_continuity_update( ContinuityU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorContinuity, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorContinuity, _container->bytes );
 }
 
 MemoryManagerStatus memory_manager_add_flight_event_update( FlightEventU * _container )
 {
-    return prvMemoryAddNewDataEntry ( MemoryUserDataSectorFlightEvent, _container->bytes );
-}
-
-
-MemoryManagerStatus memory_manager_add_meta_data_update( MemoryLayoutMetaDataU * _container )
-{
-    return prvMemoryAddNewDataEntry ( MemorySystemSectorUserDataSectorMetaData, _container->bytes );
+    return prvMemoryAddNewUserDataSectorEntry( UserDataSectorFlightEvent, _container->bytes );
 }
 
 
 MemoryManagerStatus memory_manager_get_single_press_entry( PressureDataU * dst, uint32_t entry_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorPressure, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_temp_entry ( TemperatureDataU * dst, uint32_t entry_index )
 {
-    return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorTemperature, entry_index, dst );
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
 
+    return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorTemperature, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_gyro_entry ( IMUDataU * dst, uint32_t entry_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorGyro, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_acc_entry ( IMUDataU * dst, uint32_t entry_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorAccel, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_mag_entry ( IMUDataU * dst, uint32_t entry_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorMag, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_cont_entry ( ContinuityU * dst, uint32_t measurement_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorContinuity, measurement_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_flight_event_entry ( FlightEventU * dst, uint32_t measurement_index )
 {
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemoryUserDataSectorFlightEvent, measurement_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_configuration_entry ( GlobalConfigurationU * dst, uint32_t entry_index )
 {
+    if (dst == NULL )
+    {
+        return MEM_ERR;
+    }
+
     return prvMemoryAccessSectorSingleDataEntry( MemorySystemSectorGlobalConfigurationData, entry_index, dst );
 }
 
 MemoryManagerStatus memory_manager_get_single_metadata_entry ( MemoryLayoutMetaDataU * dst, uint32_t entry_index )
 {
-    return prvMemoryAccessSectorSingleDataEntry( MemorySystemSectorUserDataSectorMetaData, entry_index, dst );
+    if (dst == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessSectorSingleDataEntry ( MemorySystemSectorUserDataSectorMetaData, entry_index, dst );
+}
+
+
+MemoryManagerStatus memory_manager_get_last_press_entry ( PressureDataU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorPressure, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_temp_entry ( TemperatureDataU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorTemperature, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_gyro_entry ( IMUDataU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorGyro, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_acc_entry ( IMUDataU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorAccel, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_mag_entry ( IMUDataU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorMag, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_cont_entry ( ContinuityU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorContinuity, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_flight_event_entry ( FlightEventU * dst )
+{
+    if (dst == NULL || ! prvIsConfigured || !prvIsInitialized )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemoryUserDataSectorFlightEvent, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_configuration_entry ( GlobalConfigurationU * dst )
+{
+    if ( dst == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemorySystemSectorGlobalConfigurationData, dst) ;
+}
+
+MemoryManagerStatus memory_manager_get_last_metadata_entry ( MemoryLayoutMetaDataU * dst )
+{
+    if ( dst == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    return prvMemoryAccessLastDataEntry (MemorySystemSectorUserDataSectorMetaData, dst ) ;
 }
 
 
@@ -1132,7 +1403,7 @@ MemoryManagerStatus memory_manager_get_stats ( char* buffer, size_t xBufferLen )
 {
     int length = 0;
     length += snprintf (buffer+length, xBufferLen, "\n----- Memory Statistics -----\r\n");
-    length += snprintf (buffer+length, xBufferLen, "signature: %s\r\n", prvGlobalConfigurationFlashSnapshot.data.values.signature);
+    length += snprintf (buffer+length, xBufferLen, "signature: %s\r\n", prvGlobalConfigurationDiskSnapshot.data.values.signature);
     length += snprintf (buffer+length, xBufferLen, "Data Sectors: ");
 
     for ( UserDataSector sector = UserDataSectorGyro ; sector < UserDataSectorCount ; sector++ )
@@ -1151,9 +1422,9 @@ MemoryManagerStatus memory_manager_get_stats ( char* buffer, size_t xBufferLen )
         length += snprintf (buffer+length, xBufferLen, " size:            %lu\r\n", dataSector.size );
         length += snprintf (buffer+length, xBufferLen, " begin:           %lu\r\n", dataSector.startAddress );
         length += snprintf (buffer+length, xBufferLen, " end:             %lu\r\n", dataSector.endAddress );
-        length += snprintf (buffer+length, xBufferLen, " size on disk:    %lu\r\n", dataSector.lastWriteAddress );
-        length += snprintf (buffer+length, xBufferLen, " pages on disk:   %lu\r\n", dataSector.lastWriteAddress / PAGE_SIZE );
-        length += snprintf (buffer+length, xBufferLen, " entries on disk: %lu\r\n", dataSector.lastWriteAddress / PAGE_SIZE * prvMemorySectorGetDataEntriesPerPage( toMemorySector(sector) ));
+        length += snprintf (buffer+length, xBufferLen, " size on disk:    %lu\r\n", dataSector.bytesWritten );
+        length += snprintf (buffer+length, xBufferLen, " pages on disk:   %lu\r\n", dataSector.bytesWritten / PAGE_SIZE );
+        length += snprintf (buffer+length, xBufferLen, " entries on disk: %lu\r\n", dataSector.bytesWritten / PAGE_SIZE * prvMemorySectorGetDataEntriesPerPage( toMemorySector( sector) ));
 
 //        uint8_t dst [prvMemorySectorGetDataStructSize(sector)];
 //        memset(dst, 0, prvMemorySectorGetDataStructSize(sector));
@@ -1187,9 +1458,9 @@ MemoryManagerStatus memory_manager_get_configurations( GlobalConfigurationU * pC
     }
 
     // validation
-    if ( memcmp ( prvGlobalConfigurationFlashSnapshot.data.values.signature, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE_BUFFER_LENGTH ) == 0 ) // signature sequences match)
+    if ( memcmp ( prvGlobalConfigurationDiskSnapshot.data.values.signature, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE, MEMORY_MANAGER_DATA_INTEGRITY_SIGNATURE_BUFFER_LENGTH ) == 0 ) // signature sequences match)
     {
-        pConfigs = &prvGlobalConfigurationFlashSnapshot.data;
+        pConfigs = &prvGlobalConfigurationDiskSnapshot.data;
         return MEM_OK;
     }
 
@@ -1204,7 +1475,7 @@ MemoryManagerStatus memory_manager_update_sensors_ground_data( GroundDataU * _da
         return MEM_ERR;
     }
 
-    prvGlobalConfigurationFlashSnapshot.data.values.system.ground_pressure = _data->pressure;
+    prvGlobalConfigurationDiskSnapshot.data.values.system.ground_pressure = _data->pressure;
 
     prvMemoryWriteAsyncMetaDataSector( );
     return MEM_OK;
@@ -1218,7 +1489,7 @@ MemoryManagerStatus memory_manager_update_sensors_ground_data( GroundDataU * _da
 // debug function
 MemoryManagerStatus _access_single_page_in_user_data_sector( MemorySector sector, uint32_t pageIndex )
 {
-    assert ( PAGE_SIZE * pageIndex <= prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ UserDataSectorPressure ].lastWriteAddress );
+    assert ( PAGE_SIZE * pageIndex <= prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ UserDataSectorPressure ].bytesWritten );
 
     MemoryBuffer buffer = { };
 

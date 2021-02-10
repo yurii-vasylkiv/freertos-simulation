@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "configurations/UserConfig.h"
+
 #define DESERIALIZE(type, size)                                         \
     static inline type common_to_##type(uint8_t* src) {                 \
         union {                                                         \
@@ -82,12 +84,29 @@ static inline uint16_t common_read_16(const uint8_t * src)
            ((((uint8_t) src[1]) << 0) & 0xFF);
 }
 
-static inline bool common_is_mem_not_set(uint8_t * buffer, size_t size)
+static inline bool common_is_mem_empty ( uint8_t * buffer, size_t size )
 {
-    for(size_t i = 0; i < size; i++)
-            if(buffer[i] != 0)
-                    return false;
-    return true;
+#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
+    const int EMPTY_VALUE = 0;
+#else
+    const uint8_t EMPTY_VALUE = 0xFF;
+#endif
+
+    uint16_t emptyByteCounter = 0;
+    for ( size_t i = 0; i < size; i++ )
+    {
+        if ( buffer [ i ] ==  EMPTY_VALUE )
+        {
+            emptyByteCounter++;
+        }
+    }
+
+    if ( emptyByteCounter == size )
+    {
+        return true;
+    }
+
+    return false;
 }
 
 static inline void common_clear_mem(uint8_t * buffer, size_t size)
