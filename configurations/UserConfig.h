@@ -4,7 +4,7 @@
 #define userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON       1
 
 // Simulation
-#define userconf_FREE_RTOS_SIMULATOR_MODE_ON                1
+#define userconf_FREE_RTOS_SIMULATOR_MODE_ON                0
 
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
     #define userconf_FLASH_DISK_SIMULATION_ON               1

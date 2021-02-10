@@ -10,7 +10,7 @@ else()
 endif()
 
 
-OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
 
 ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 

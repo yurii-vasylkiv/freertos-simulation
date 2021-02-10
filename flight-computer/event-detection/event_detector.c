@@ -42,12 +42,20 @@ static moving_data_buffer altitude_data_window, vertical_acc_data_window;
 static float mean( float * array, size_t length, size_t start, size_t end);
 #endif
 
-static float calculate_altitude ( float pressure );
 
-static bool detectLaunch    ( float vertical_acceleration_in_g );
-static bool detectApogee    ( float acceleration_x_in_g, float acceleration_y_in_g, float acceleration_z_in_g );
-static bool detectAltitude  ( float target_altitude, uint32_t ground_pressure, uint32_t current_pressure );
-static bool detectLanding   ( float gyro_x_in_deg_per_sec, float gyro_y_in_deg_per_sec, float gyro_z_in_deg_per_sec );
+static float prvCalculateAltitude ( float pressure );
+static bool prvDetectLaunch    ( float vertical_acceleration_in_g );
+static bool prvDetectApogee    ( float acceleration_x_in_g, float acceleration_y_in_g, float acceleration_z_in_g );
+static bool prvDetectAltitude  ( float target_altitude, uint32_t ground_pressure, uint32_t current_pressure );
+static bool prvDetectLanding   ( float gyro_x_in_deg_per_sec, float gyro_y_in_deg_per_sec, float gyro_z_in_deg_per_sec );
+
+void prvMarkNewEvent ( DataContainer * data )
+{
+    data->event.updated = true;
+    data->event.data.values.status = prvFlightState;
+    data->event.data.values.timestamp = xTaskGetTickCount();
+}
+
 
 float event_detector_current_altitude()
 {
@@ -74,7 +82,7 @@ EventDetectorStatus event_detector_init ( FlightSystemConfiguration * configurat
     }
 
     GROUND_PRESSURE = configurations->ground_pressure;
-    GROUND_ALTITUDE = calculate_altitude ( GROUND_PRESSURE );
+    GROUND_ALTITUDE = prvCalculateAltitude( GROUND_PRESSURE );
 
     // in case of reboot during the flight if memory is not corrupted this flag should change to the
     // appropriate current flight stage that != FLIGHT_STATE_LAUNCHPAD
@@ -103,12 +111,7 @@ EventDetectorStatus event_detector_init ( FlightSystemConfiguration * configurat
     return EVENT_DETECTOR_OK;
 }
 
-void prvMarkNewEvent ( DataContainer * data )
-{
-    data->event.updated = true;
-    data->event.data.values.status = prvFlightState;
-    data->event.data.values.timestamp = xTaskGetTickCount();
-}
+
 
 EventDetectorStatus event_detector_update_configurations ( FlightSystemConfiguration * configurations)
 {
@@ -125,7 +128,7 @@ EventDetectorStatus event_detector_update_configurations ( FlightSystemConfigura
     }
 
     GROUND_PRESSURE = configurations->ground_pressure;
-    GROUND_ALTITUDE = calculate_altitude ( GROUND_PRESSURE );
+    GROUND_ALTITUDE = prvCalculateAltitude( GROUND_PRESSURE );
 
     return EVENT_DETECTOR_OK;
 }
@@ -141,7 +144,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
     if(data->press.updated)
     {
-        CURRENT_ALTITUDE = calculate_altitude( data->press.data.values.pressure) - GROUND_ALTITUDE;
+        CURRENT_ALTITUDE = prvCalculateAltitude( data->press.data.values.pressure ) - GROUND_ALTITUDE;
 #if (userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1)
         data_window_insert( &altitude_data_window, &CURRENT_ALTITUDE );
 #endif
@@ -153,7 +156,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         {
             if(data->acc.updated)
             {
-                if ( detectLaunch( data->acc.data.values.data[ 0 ] ) )
+                if ( prvDetectLaunch ( data->acc.data.values.data[ 0 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE);
                     prvFlightState = FLIGHT_STATE_PRE_APOGEE;
@@ -191,12 +194,13 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
                     prvMarkNewEvent ( data );
                 }
 #else
-                if ( detectApogee( data->acc.data.values.data[ 0 ], data->acc.data.values.data[ 1 ], data->acc.data.values.data[ 2 ] ) )
+                if ( prvDetectApogee( data->acc.data.values.data[ 0 ], data->acc.data.values.data[ 1 ],
+                                      data->acc.data.values.data[ 2 ] ) )
                 {
                     DISPLAY_LINE( "Detected APOGEE at %fm", CURRENT_ALTITUDE);
                     prvFlightState = FLIGHT_STATE_APOGEE;
                     *flightState = prvFlightState;
-                    prvOnNewEvent( data );
+                    prvMarkNewEvent ( data );
                 }
 #endif
 
@@ -220,7 +224,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         {
             if(data->press.updated)
             {
-                if ( detectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
+                if ( prvDetectAltitude( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE);
 
@@ -249,8 +253,8 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         {
             if(data->gyro.updated)
             {
-                if ( detectLanding( data->gyro.data.values.data[ 0 ], data->gyro.data.values.data[ 1 ],
-                                    data->gyro.data.values.data[ 2 ] ) )
+                if ( prvDetectLanding( data->gyro.data.values.data[ 0 ], data->gyro.data.values.data[ 1 ],
+                                       data->gyro.data.values.data[ 2 ] ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
 
@@ -266,7 +270,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
             if(data->press.updated)
             {
-                if ( detectAltitude (0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
+                if ( prvDetectAltitude( 0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE);
 
@@ -308,33 +312,33 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 }
 
 
-static bool detectLaunch    ( float vertical_acceleration_in_g )
+static bool prvDetectLaunch    ( float vertical_acceleration_in_g )
 {
     return vertical_acceleration_in_g > CRITICAL_VERTICAL_ACCELERATION;
 }
 
 
-static bool detectApogee    ( float acceleration_x_in_g, float acceleration_y_in_g, float acceleration_z_in_g )
+static bool prvDetectApogee    ( float acceleration_x_in_g, float acceleration_y_in_g, float acceleration_z_in_g )
 {
     const float ACCELERATION_VECTOR = sqrt(acceleration_x_in_g*acceleration_x_in_g + acceleration_y_in_g*acceleration_y_in_g + acceleration_z_in_g*acceleration_z_in_g);
     return ACCELERATION_VECTOR < APOGEE_ACCELERATION;
 }
 
 
-static bool detectAltitude  ( float target_altitude, uint32_t ground_altitude, uint32_t current_pressure )
+static bool prvDetectAltitude  ( float target_altitude, uint32_t ground_pressure, uint32_t current_pressure )
 {
-    float current_altitude = calculate_altitude( current_pressure ) - ground_altitude;
+    float current_altitude = prvCalculateAltitude( current_pressure ) - ground_pressure;
     return fabsf ( ( current_altitude ) - ( target_altitude ) ) < ALTITUDE_SENSITIVITY_THRESHOLD;
 }
 
-static bool detectLanding   ( float gyro_x_in_deg_per_sec, float gyro_y_in_deg_per_sec, float gyro_z_in_deg_per_sec )
+static bool prvDetectLanding   ( float gyro_x_in_deg_per_sec, float gyro_y_in_deg_per_sec, float gyro_z_in_deg_per_sec )
 {
     float gyroscope_orientation_vector = sqrt( gyro_x_in_deg_per_sec * gyro_x_in_deg_per_sec + gyro_y_in_deg_per_sec * gyro_y_in_deg_per_sec + gyro_z_in_deg_per_sec * gyro_z_in_deg_per_sec);
     return gyroscope_orientation_vector < LANDING_ROTATION_SPEED;
 }
 
 
-static float calculate_altitude( float pressure )
+static float prvCalculateAltitude( float pressure )
 {
     /*
      Pb = static pressure (pressure at sea level) [Pa]

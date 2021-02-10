@@ -272,7 +272,7 @@ static bool cli_tools_mem_read_cont_index (char* pcWriteBuffer, size_t xWriteBuf
     ContinuityU dst = {};
     if (MEM_OK == memory_manager_get_single_cont_entry(&dst, value) )
     {
-        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status);
+        sprintf(pcWriteBuffer, "[%s]: timestamp=%lu, status=%i,%i\n", cmd_option, dst.values.timestamp, dst.values.status[0], dst.values.status[1]);
         return true;
     }
 

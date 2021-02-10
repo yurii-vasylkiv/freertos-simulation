@@ -663,27 +663,6 @@ void prvMemoryAsyncWriteAnyMemorySectorIfAvailable ( )
             // xTaskGenericNotify(handle, 0, eNoAction, NULL);
         }
     }
-
-//    for ( SystemSector sector = SystemSectorGlobalConfigurationData ; sector < SystemSectorCount ; sector++ )
-//    {
-//        if(sector == SystemSectorUserDataSectorMetaData)
-//        {
-//            continue;
-//        }
-//        else
-//        {
-//            int page_aligned_boundary = prvMemorySectorGetAlignedDataStructSize( toMemorySector ( sector ) );
-//            if ( prvCurrentSystemMemorySectorRAMBuffers [ sector ].read->info.bytesWritten >= page_aligned_boundary )
-//            {
-//                buffer_item item = { };
-//                item.type = toMemorySector ( sector );
-//                memmove( item.data, prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->data, PAGE_SIZE );
-//                prvCurrentSystemMemorySectorRAMBuffers[ sector ].read->info.bytesWritten = 0;
-//                buffer_queue_push_back( &prvPageBuffer, &item );
-//                // xTaskGenericNotify(handle, 0, eNoAction, NULL);
-//            }
-//        }
-//    }
 }
 
 MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data )
@@ -926,16 +905,7 @@ void prvQueueMonitorTask( void * arg )
 //                        ULONG_MAX,  /* Reset the notification value to 0 on exit.  */
 //                        NULL,      /* Notified value pass out in ulNotifiedValue. */
 //                         250);
-
 //        DISPLAY_LINE("monitor woke up!");
-//        prvMetadataAutosaveCounter++;
-//        if ( prvMetadataAutosaveCounter >= CONFIGURATION_AUTOSAVE_INTERVAL )
-//        {
-//            // it is time to update the configurations
-//            prvMemoryWriteAsyncMetaDataSector( );
-//            // reset the timer
-//            prvMetadataAutosaveCounter = 0;
-//        }
 
         while ( buffer_queue_pop_front( &prvPageBuffer, &item ) )
         {
@@ -944,33 +914,33 @@ void prvQueueMonitorTask( void * arg )
             switch ( ( MemorySector) item.type )
             {
                 case MemorySystemSectorGlobalConfigurationData:
-//                    uart6_transmit_line( "Monitor: Configuration was flushed!" );
+                    uart6_transmit_line( "Monitor: Configuration was flushed!" );
                     break;
                 case MemorySystemSectorUserDataSectorMetaData:
-//                    uart6_transmit_line( "Monitor: MetaData was flushed!" );
+                    uart6_transmit_line( "Monitor: MetaData was flushed!" );
                     break;
                 case MemoryUserDataSectorGyro:
-//                     uart6_transmit_line( "Monitor: Gyro was flushed!" );
+                     uart6_transmit_line( "Monitor: Gyro was flushed!" );
                 case MemoryUserDataSectorAccel:
-                    // uart6_transmit_line( "Monitor: Accel was flushed!" );
+                     uart6_transmit_line( "Monitor: Accel was flushed!" );
                 case MemoryUserDataSectorMag:
-                    // uart6_transmit_line( "Monitor: Mag was flushed!" );
-                    break;
+                     uart6_transmit_line( "Monitor: Mag was flushed!" );
+                     break;
                 case MemoryUserDataSectorPressure:
-//                     uart6_transmit_line( "Monitor: Pressure was flushed!" );
-                    break;
+                     uart6_transmit_line( "Monitor: Pressure was flushed!" );
+                     break;
                 case MemoryUserDataSectorTemperature:
-//                     uart6_transmit_line( "Monitor: Temperature was flushed!" );
-                    break;
+                     uart6_transmit_line( "Monitor: Temperature was flushed!" );
+                     break;
                 case MemoryUserDataSectorContinuity:
                      uart6_transmit_line( "Monitor: Cont was flushed!" );
-                    break;
+                     break;
                 case MemoryUserDataSectorFlightEvent:
                      uart6_transmit_line( "Monitor: Event was flushed!" );
-                    break;
+                     break;
                 case MemorySectorCount:
                 default:
-                    break;
+                     break;
             }
         }
     }
