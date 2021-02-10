@@ -58,9 +58,9 @@
  */
 typedef enum flash_status_t
 {
-    FLASH_OK,    /**< If the last operation was successful. */
-    FLASH_ERR, /**< If the lat operation failed. */
-    FLASH_BUSY   /**< If the last operation couldn't start because the device was busy. */
+    FLASH_ERR = 0, /**< If the lat operation failed. */
+    FLASH_OK  = 1, /**< If the last operation was successful. */
+    FLASH_BUSY    /**< If the last operation couldn't start because the device was busy. */
 } FlashStatus;
 
 

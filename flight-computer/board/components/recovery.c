@@ -18,6 +18,10 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
+
+
+
+
 void recovery_init(){
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -58,23 +62,26 @@ void recovery_init(){
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void recovery_enable_mosfet(RecoverySelect recov_event){
-
-    if(recov_event == MAIN){
+void recoveryEnableMOSFET ( RecoverySelect recoverySelect )
+{
+    if( recoverySelect == RecoverySelectMainParachute)
+    {
         //Active low.
         HAL_GPIO_WritePin(RECOV_MAIN_ENABLE_PORT,RECOV_MAIN_ENABLE_PIN,GPIO_PIN_RESET);
     }
-    else if(recov_event == DROGUE){
-
+    else if( recoverySelect == RecoverSelectDrogueParachute)
+    {
         //Active low.
         HAL_GPIO_WritePin(RECOV_DROGUE_ENABLE_PORT,RECOV_DROGUE_ENABLE_PIN,GPIO_PIN_RESET);
     }
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void recovery_activate_mosfet(RecoverySelect recov_event){
+void recoveryActivateMOSFET ( RecoverySelect recoverySelect )
+{
 
-    if(recov_event == MAIN){
+    if( recoverySelect == RecoverySelectMainParachute )
+    {
 
         //Write pin low in case there was a fault.
         HAL_GPIO_WritePin(RECOV_MAIN_ACTIVATE_PORT,RECOV_MAIN_ACTIVATE_PIN,GPIO_PIN_RESET);
@@ -90,7 +97,8 @@ void recovery_activate_mosfet(RecoverySelect recov_event){
         //Disable driver.
         HAL_GPIO_WritePin(RECOV_MAIN_ENABLE_PORT,RECOV_MAIN_ENABLE_PIN,GPIO_PIN_SET);
     }
-    else if(recov_event == DROGUE){
+    else if( recoverySelect == RecoverSelectDrogueParachute)
+    {
 
         //Write pin low in case there was a fault.
         HAL_GPIO_WritePin(RECOV_DROGUE_ACTIVATE_PORT,RECOV_DROGUE_ACTIVATE_PIN,GPIO_PIN_RESET);
@@ -111,49 +119,57 @@ void recovery_activate_mosfet(RecoverySelect recov_event){
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-RecoveryContinuityStatus recovery_check_continuity(RecoverySelect recov_event){
+RecoveryContinuityStatus recoveryCheckContinuity ( RecoverySelect recoverySelect )
+{
 
     GPIO_PinState result = GPIO_PIN_RESET;//Should the default be to read open or closed circuit???
     RecoveryContinuityStatus cont;
 
-    if(recov_event == MAIN){
+    if( recoverySelect == RecoverySelectMainParachute){
         result = HAL_GPIO_ReadPin(RECOV_MAIN_CONTINUITY_PORT, RECOV_MAIN_CONTINUITY_PIN);
     }
-    else if(recov_event == DROGUE){
+    else if( recoverySelect == RecoverSelectDrogueParachute){
         result = HAL_GPIO_ReadPin(RECOV_DROGUE_CONTINUITY_PORT, RECOV_DROGUE_CONTINUITY_PIN);
     }
 
-    if(result == GPIO_PIN_SET){
-        cont = SHORT_CIRCUIT;
+    if(result == GPIO_PIN_SET)
+    {
+        cont = RecoveryContinuityStatusShortCircuit;
     }
-    else{
-        cont = OPEN_CIRCUIT;
+    else
+    {
+        cont = RecoveryContinuityStatusOpenCircuit;
     }
 
     return cont;
 }
 
 
-RecoveryOverCurrentStatus recovery_check_overcurrent(RecoverySelect recov_event){
+RecoveryOverCurrentStatus recoveryCheckOverCurrent ( RecoverySelect recoverySelect )
+{
 
     GPIO_PinState result = GPIO_PIN_RESET;//Should the default be to read open or closed circuit???
-    RecoveryOverCurrentStatus overcurrent;
+    RecoveryOverCurrentStatus overCurrent;
 
-    if(recov_event == MAIN){
+    if( recoverySelect == RecoverySelectMainParachute)
+    {
         result = HAL_GPIO_ReadPin(RECOV_MAIN_OVERCURRENT_PORT, RECOV_MAIN_OVERCURRENT_PIN);
     }
-    else if(recov_event == DROGUE){
+    else if( recoverySelect == RecoverSelectDrogueParachute )
+    {
         result = HAL_GPIO_ReadPin(RECOV_DROGUE_OVERCURRENT_PORT, RECOV_DROGUE_OVERCURRENT_PIN);
     }
 
-    if(result == GPIO_PIN_SET){
-        overcurrent = NO_OVERCURRENT;
+    if(result == GPIO_PIN_SET)
+    {
+        overCurrent = RecoveryOverCurrentStatusNoOverCurrent;
     }
-    else{
-        overcurrent = OVERCURRENT;
+    else
+    {
+        overCurrent = RecoveryOverCurrentStatusOverCurrent;
     }
 
-    return overcurrent;
+    return overCurrent;
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

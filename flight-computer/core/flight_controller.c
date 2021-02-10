@@ -2,6 +2,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <string.h>
+#include "board/components/recovery.h"
 
 #include "board/board.h"
 #include "memory-management/memory_manager.h"
@@ -17,6 +18,10 @@
 #if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 1)
 #include "sim-port/sensor-simulation/datafeeder.h"
 #endif
+
+
+static int prvLastRecoverContinuityStatus  [ RecoveryContinuityStatusCount  ] = { RecoveryContinuityStatusOpenCircuit,    RecoveryContinuityStatusOpenCircuit    };
+static int prvLastRecoverOverCurrentStatus [ RecoveryOverCurrentStatusCount ] = { RecoveryOverCurrentStatusNoOverCurrent, RecoveryOverCurrentStatusNoOverCurrent };
 
 
 typedef struct
@@ -250,7 +255,6 @@ static void prv_flight_controller_task(void * pvParams)
 
     static DataContainer flightData = {0};
     static FlightState flightState;
-    static FlightStateMachineTickParameters smParams;
 
     prvTaskState.isRunning    = 1;
 
@@ -265,7 +269,7 @@ static void prv_flight_controller_task(void * pvParams)
 
         event_detector_feed ( &flightData, &flightState );
 
-        flight_state_machine_tick ( flightState, &smParams );
+        flight_state_machine_tick ( flightState, &flightData );
 
         memory_manager_user_data_update( &flightData );
 
@@ -277,6 +281,7 @@ static void prv_flight_controller_task(void * pvParams)
 //            DEBUG_LINE( "Flight Time: %d sec", seconds);
             last_time = (xTaskGetTickCount() - start_time);
 //            DEBUG_LINE("CURRENT_ALTITUDE = %f", event_detector_current_altitude())
+
         }
     }
 
@@ -314,6 +319,23 @@ static void get_sensor_data_update( DataContainer * data )
     }
 }
 
+void prvCheckRecoveryStatusAndNotifyIfChanged ( DataContainer * data )
+{
+    for ( RecoverySelect recovery = RecoverSelectDrogueParachute; recovery < RecoverySelectCount; recovery++ )
+    {
+        RecoveryContinuityStatus currentContinuityStatus = recoveryCheckContinuity  ( recovery );
+
+        if ( prvLastRecoverContinuityStatus [ recovery ] !=  currentContinuityStatus )
+        {
+            prvLastRecoverContinuityStatus [ recovery ] = currentContinuityStatus ;
+
+            data->cont.updated = true;
+            data->cont.data.values.timestamp = xTaskGetTickCount ( );
+            data->cont.data.values.status [ recovery ] = prvLastRecoverContinuityStatus [ recovery ];
+
+        }
+    }
+}
 
 
 
@@ -325,19 +347,19 @@ static void get_sensor_data_update( DataContainer * data )
 typedef struct
 {
     FlightState state;
-    int (*function)(FlightStateMachineTickParameters*);
+    int (*function)(DataContainer *);
 } state_machine_type;
 
 uint8_t isInitialized = 0;
 
-int sm_STATE_LAUNCHPAD   (FlightStateMachineTickParameters*);
-int sm_STATE_PRE_APOGEE  (FlightStateMachineTickParameters*);
-int sm_STATE_APOGEE      (FlightStateMachineTickParameters*);
-int sm_STATE_POST_APOGEE (FlightStateMachineTickParameters*);
-int sm_STATE_MAIN_CHUTE  (FlightStateMachineTickParameters*);
-int sm_STATE_POST_MAIN   (FlightStateMachineTickParameters*);
-int sm_STATE_LANDED      (FlightStateMachineTickParameters*);
-int sm_STATE_EXIT        (FlightStateMachineTickParameters*);
+int sm_STATE_LAUNCHPAD   (DataContainer*);
+int sm_STATE_PRE_APOGEE  (DataContainer*);
+int sm_STATE_APOGEE      (DataContainer*);
+int sm_STATE_POST_APOGEE (DataContainer*);
+int sm_STATE_MAIN_CHUTE  (DataContainer*);
+int sm_STATE_POST_MAIN   (DataContainer*);
+int sm_STATE_LANDED      (DataContainer*);
+int sm_STATE_EXIT        (DataContainer*);
 
 state_machine_type state_machine[] =
 {
@@ -364,24 +386,23 @@ FlightControllerStatus flight_state_machine_init ( FlightState state )
 
 
 
-FlightControllerStatus flight_state_machine_tick( FlightState state, FlightStateMachineTickParameters * parameters )
+FlightControllerStatus flight_state_machine_tick( FlightState state, DataContainer * data )
 {
-    if ( parameters == NULL )
+    if ( data == NULL )
     {
-        DISPLAY_LINE("CANNOT return flight state. Flight Controller has not been initialized.");
         return FLIGHT_CONTROLLER_ERR;
     }
 
     if ( !isInitialized )
     {
-        DISPLAY_LINE("Flight Controller has been already initialized.");
+        DISPLAY_LINE("Flight Controller has not been initialized.");
         return FLIGHT_CONTROLLER_ERR;
     }
 
     // Check to make sure that the state is being entered is valid
     if ( sm_state < FLIGHT_STATE_COUNT )
     {
-        return state_machine [ state ].function ( parameters );
+        return state_machine [ state ].function ( data );
     }
     else
     {
@@ -391,48 +412,60 @@ FlightControllerStatus flight_state_machine_tick( FlightState state, FlightState
 }
 
 
-int sm_STATE_LAUNCHPAD(FlightStateMachineTickParameters * parameters)
-{
-
-    return 0;
-}
-
-int sm_STATE_PRE_APOGEE(FlightStateMachineTickParameters * parameters)
+int sm_STATE_LAUNCHPAD ( DataContainer * data )
 {
     return 0;
 }
 
-int sm_STATE_APOGEE(FlightStateMachineTickParameters * parameters)
+int sm_STATE_PRE_APOGEE ( DataContainer * data )
 {
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
 
     return 0;
 }
 
-int sm_STATE_POST_APOGEE(FlightStateMachineTickParameters * parameters)
+int sm_STATE_APOGEE ( DataContainer * data )
 {
+    recoveryEnableMOSFET( RecoverSelectDrogueParachute );
+    recoveryActivateMOSFET( RecoverSelectDrogueParachute );
+
+
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
 
     return 0;
 }
 
-int sm_STATE_MAIN_CHUTE(FlightStateMachineTickParameters * parameters)
+int sm_STATE_POST_APOGEE ( DataContainer * data )
 {
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
+    return 0;
+}
+
+int sm_STATE_MAIN_CHUTE ( DataContainer * data )
+{
+    recoveryEnableMOSFET( RecoverySelectMainParachute );
+    recoveryActivateMOSFET( RecoverySelectMainParachute );
+
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
 
     return 0;
 }
 
-int sm_STATE_POST_MAIN(FlightStateMachineTickParameters * parameters)
+int sm_STATE_POST_MAIN ( DataContainer * data )
 {
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
 
     return 0;
 }
 
-int sm_STATE_LANDED(FlightStateMachineTickParameters * parameters)
+int sm_STATE_LANDED ( DataContainer * data )
 {
+    prvCheckRecoveryStatusAndNotifyIfChanged ( data ) ;
 
     return 0;
 }
 
-int sm_STATE_EXIT(FlightStateMachineTickParameters * parameters)
+int sm_STATE_EXIT ( DataContainer * data )
 {
 
     return 0;

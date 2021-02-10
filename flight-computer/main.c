@@ -159,17 +159,12 @@ void assert_failed(uint8_t *file, uint32_t line)
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 int main( void )
 {
-    int status;
-    BoardStatus board_status = board_init( );
-
-    if ( board_status != BOARD_OK )
+    if ( board_init( ) != BOARD_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     }
 
-    status = UART_Port6_init();
-
-    if ( status != UART_OK )
+    if ( UART_Port6_init() != UART_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -184,8 +179,7 @@ int main( void )
     recovery_init( );
     DEBUG_LINE( "Recovery GPIO pins have been set up.");
 
-    status = flash_init();
-    if ( status != 0 )
+    if ( flash_init() != FLASH_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -193,8 +187,7 @@ int main( void )
         DEBUG_LINE( "Flash ID read successful");
     }
 
-    status = memory_manager_init( );
-    if ( status != MEM_OK )
+    if ( memory_manager_init( ) != MEM_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -202,8 +195,7 @@ int main( void )
         DEBUG_LINE( "Memory Manager has been set");
     }
 
-    status = memory_manager_configure( );
-    if ( status != MEM_OK )
+    if ( memory_manager_configure( ) != MEM_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -211,8 +203,7 @@ int main( void )
         DEBUG_LINE( "Memory Manager has been configured");
     }
 
-    status = pressure_sensor_init( NULL );
-    if ( status != PRESS_SENSOR_OK )
+    if ( pressure_sensor_init( NULL ) != PRESS_SENSOR_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -220,8 +211,7 @@ int main( void )
         DEBUG_LINE( "Pressure sensor has been set up.");
     }
 
-    status = imu_sensor_init( NULL );
-    if (status  != IMU_OK )
+    if (imu_sensor_init( NULL )  != IMU_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -229,8 +219,7 @@ int main( void )
         DEBUG_LINE( "IMU sensor has been set up.");
     }
 
-    status = flight_controller_init(NULL);
-    if (status  != FLIGHT_CONTROLLER_OK )
+    if ( flight_controller_init(NULL)  != FLIGHT_CONTROLLER_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -238,8 +227,7 @@ int main( void )
         DEBUG_LINE( "Flight controller has been set up.");
     }
 
-    status = memory_manager_start( NULL );
-    if ( status != MEM_OK )
+    if ( memory_manager_start( NULL ) != MEM_OK )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else

@@ -2,6 +2,7 @@
 #define MEMORY_MANAGER_MEMORY_MANAGER_H
 
 #include <inttypes.h>
+#include <board/components/recovery.h>
 #include "core/system_configuration.h"
 
 typedef enum
@@ -266,8 +267,9 @@ typedef struct
 typedef union
 {
     struct continuity_values {
+        uint32_t _ [50];
         uint32_t timestamp;
-        uint8_t status;
+        uint8_t status [ RecoverySelectCount ] ;
     } values;
 
     uint8_t bytes [ sizeof ( struct continuity_values ) ];
@@ -285,6 +287,7 @@ typedef struct
 typedef union
 {
     struct flight_event_values {
+        uint32_t _ [50];
         uint32_t timestamp;
         uint8_t  status;
     } values;

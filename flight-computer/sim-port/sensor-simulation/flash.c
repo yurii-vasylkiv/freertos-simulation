@@ -29,8 +29,8 @@ typedef enum flash_command_t
 
 
 
-#define PAGE_SIZE   256 // 256 bytes per page
-#define FLASH_SIZE 1024*1024*65 // 65 MB
+#define PAGE_SIZE   256       // 256 bytes per page
+#define FLASH_SIZE  0X1FFFFFF // 65 MB
 
 const char FILE_NAME[] = "myFlash.bin"; // The file that will represent the flash
 
@@ -110,7 +110,7 @@ static inline uint32_t read_page( uint32_t address, uint8_t * data_buffer, uint1
     perror("read");
 
     // Return operation flag
-    return bytesRead;
+    return bytesRead == num_bytes;
 }
 
 

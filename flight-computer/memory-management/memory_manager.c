@@ -764,7 +764,7 @@ MemoryManagerStatus prvMemoryWritePageNow ( MemorySector sector, uint8_t * data 
 
         // reset the read RAM buffer cursor
         // flagging to the other components that this piece of data has been already processed and emptied
-        memset(prvCurrentUserDataMemorySectorRAMBuffers [ sector ].read, 0 , PAGE_SIZE);
+        memset(prvCurrentUserDataMemorySectorRAMBuffers [ userDataSector ].read, 0 , PAGE_SIZE);
     }
 
     return MEM_OK;
@@ -823,27 +823,11 @@ static MemoryManagerStatus prvMemoryAccessPage ( MemorySector sector, int64_t pa
     }
 
 
-#if (userconf_FREE_RTOS_SIMULATOR_MODE_ON == 0)
-
     if( FLASH_OK != flash_read ( OFFSET, dest, PAGE_SIZE ) )
     {
         return MEM_ERR;
     }
-    
-#else
-    int32_t bytesRead = flash_read ( OFFSET, dest, PAGE_SIZE );
 
-    if(bytesRead == 0)
-    {
-        return MEM_OK;
-    }
-
-    if ( bytesRead != PAGE_SIZE )
-    {
-        return MEM_ERR;
-    }
-#endif
-    
     return MEM_OK;
 }
 
@@ -902,8 +886,9 @@ static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, v
 
     else
     {
-        uint32_t lastAddress = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].bytesWritten
-                               - prvMemorySectorGetDataStructSize ( sector ) ;
+        uint32_t lastAddress = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].startAddress
+                               + prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].bytesWritten
+                               - PAGE_SIZE + ( ( prvMemorySectorGetDataEntriesPerPage ( sector ) - 1 ) * prvMemorySectorGetDataStructSize ( sector ) );
 
         if( FLASH_OK != flash_read ( lastAddress, dst, prvMemorySectorGetDataStructSize ( sector ) ) )
         {
@@ -972,16 +957,16 @@ void prvQueueMonitorTask( void * arg )
                     // uart6_transmit_line( "Monitor: Mag was flushed!" );
                     break;
                 case MemoryUserDataSectorPressure:
-                     uart6_transmit_line( "Monitor: Pressure was flushed!" );
+//                     uart6_transmit_line( "Monitor: Pressure was flushed!" );
                     break;
                 case MemoryUserDataSectorTemperature:
-                     uart6_transmit_line( "Monitor: Temperature was flushed!" );
+//                     uart6_transmit_line( "Monitor: Temperature was flushed!" );
                     break;
                 case MemoryUserDataSectorContinuity:
-                    // uart6_transmit_line( "Monitor: Cont was flushed!" );
+                     uart6_transmit_line( "Monitor: Cont was flushed!" );
                     break;
                 case MemoryUserDataSectorFlightEvent:
-                    // uart6_transmit_line( "Monitor: Event was flushed!" );
+                     uart6_transmit_line( "Monitor: Event was flushed!" );
                     break;
                 case MemorySectorCount:
                 default:

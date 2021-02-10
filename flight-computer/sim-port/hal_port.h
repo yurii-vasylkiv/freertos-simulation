@@ -2025,7 +2025,7 @@ static inline HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi)
 
 static inline GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
-	return GPIO_PIN_RESET;
+	return GPIO_PIN_SET;
 }
 
 static inline HAL_StatusTypeDef HAL_UART_Init(UART_HandleTypeDef *huart)
