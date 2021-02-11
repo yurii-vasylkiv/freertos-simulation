@@ -18,7 +18,7 @@
 #define MAIN_CHUTE_ALTITUDE             381 // [m] (converted from 1,250ft)
 #define LANDING_ROTATION_SPEED          5   // [deg / s]
 
-#define ALTITUDE_SENSITIVITY_THRESHOLD  5
+#define ALTITUDE_SENSITIVITY_THRESHOLD  25
 
 static FlightState prvFlightState;
 
@@ -157,7 +157,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
             {
                 if ( prvDetectLaunch ( data->acc.data.values.data[ 0 ] ) )
                 {
-                    DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch at %fm", CURRENT_ALTITUDE );
+                    DEBUG_LINE( "FLIGHT_STATE_LAUNCHPAD: Detected Launch!");
                     prvFlightState = FLIGHT_STATE_PRE_APOGEE;
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
@@ -187,7 +187,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
                 if ( ( difference < 0 ) && absolute_difference < 5 && absolute_difference > 0.2 )
                 {
-                    DEBUG_LINE( "FLIGHT_STATE_PRE_APOGEE: Detected APOGEE at %fm", CURRENT_ALTITUDE );
+                    DEBUG_LINE( "FLIGHT_STATE_PRE_APOGEE: Detected APOGEE!" );
                     prvFlightState = FLIGHT_STATE_APOGEE;
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
@@ -210,7 +210,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         }
         case FLIGHT_STATE_APOGEE:
         {
-            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit drogue" );
+            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit, OPENING DROGUE PARACHUTE!" );
 
             prvFlightState = FLIGHT_STATE_POST_APOGEE;
             *flightState = prvFlightState;
@@ -225,7 +225,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
             {
                 if ( prvDetectAltitude ( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
-                    DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute at %fm", CURRENT_ALTITUDE );
+//                    DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute!");
 
                     prvFlightState = FLIGHT_STATE_MAIN_CHUTE;
                     *flightState = prvFlightState;
@@ -239,7 +239,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
         case FLIGHT_STATE_MAIN_CHUTE:
         {
-            DEBUG_LINE( "FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit for the main chute" );
+            DEBUG_LINE( "FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit, OPENING MAIN PARACHUTE!" );
 
             prvFlightState = FLIGHT_STATE_POST_MAIN;
             *flightState = prvFlightState;
@@ -254,7 +254,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
             {
                 if ( prvDetectLanding ( data->gyro.data.values.data[ 0 ], data->gyro.data.values.data[ 1 ], data->gyro.data.values.data[ 2 ] ) )
                 {
-                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE );
+                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing!" );
 
                     prvFlightState = FLIGHT_STATE_LANDED;
                     *flightState = prvFlightState;
@@ -270,7 +270,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
             {
                 if ( prvDetectAltitude ( 0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
                 {
-                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing at %fm", CURRENT_ALTITUDE );
+                    DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing!" );
 
                     prvFlightState = FLIGHT_STATE_LANDED;
                     *flightState = prvFlightState;
@@ -284,7 +284,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         }
         case FLIGHT_STATE_LANDED:
         {
-            DEBUG_LINE( "FLIGHT_STATE_LANDED: Rocket landed!" );
+            DEBUG_LINE( "FLIGHT_STATE_LANDED: Rocket landed! Exiting the mission..." );
 
             prvFlightState = FLIGHT_STATE_EXIT;
             *flightState = prvFlightState;

@@ -908,29 +908,29 @@ void prvQueueMonitorTask ( void * arg )
             switch ( ( MemorySector ) item.type )
             {
                 case MemorySystemSectorGlobalConfigurationData:
-                    uart6_transmit_line ( "Monitor: Configuration was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Configuration was flushed!" );
                     break;
                 case MemorySystemSectorUserDataSectorMetaData:
-                    uart6_transmit_line ( "Monitor: MetaData was flushed!" );
+//                    uart6_transmit_line ( "Monitor: MetaData was flushed!" );
                     break;
                 case MemoryUserDataSectorGyro:
-                    uart6_transmit_line ( "Monitor: Gyro was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Gyro was flushed!" );
                 case MemoryUserDataSectorAccel:
-                    uart6_transmit_line ( "Monitor: Accel was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Accel was flushed!" );
                 case MemoryUserDataSectorMag:
-                    uart6_transmit_line ( "Monitor: Mag was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Mag was flushed!" );
                     break;
                 case MemoryUserDataSectorPressure:
-                    uart6_transmit_line ( "Monitor: Pressure was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Pressure was flushed!" );
                     break;
                 case MemoryUserDataSectorTemperature:
-                    uart6_transmit_line ( "Monitor: Temperature was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Temperature was flushed!" );
                     break;
                 case MemoryUserDataSectorContinuity:
-                    uart6_transmit_line ( "Monitor: Cont was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Cont was flushed!" );
                     break;
                 case MemoryUserDataSectorFlightEvent:
-                    uart6_transmit_line ( "Monitor: Event was flushed!" );
+//                    uart6_transmit_line ( "Monitor: Event was flushed!" );
                     break;
                 case MemorySectorCount:
                 default:
