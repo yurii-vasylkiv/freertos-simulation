@@ -196,7 +196,9 @@ static uint32_t prvMemorySectorGetDataStructSize ( MemorySector sector );
 
 static uint32_t prvMemorySectorGetAlignedDataStructSize ( MemorySector sector );
 
-static MemoryManagerStatus prvMemorySectorFindLastWrittenPageIndex ( MemorySector sector, uint32_t * result );
+static MemoryManagerStatus prvMemorySectorLinearSearchForLastWrittenPageIndex ( MemorySector sector, uint32_t * result );
+
+static MemoryManagerStatus prvMemorySectorBinarySearchForLastWrittenPageIndex ( MemorySector sector, uint32_t * result );
 
 static MemoryManagerStatus prvMemoryAddNewUserDataSectorEntry ( UserDataSector sector, uint8_t * buffer );
 
@@ -755,7 +757,7 @@ static MemoryManagerStatus prvMemoryAccessPage ( MemorySector sector, int64_t pa
 
     if ( pageIndex == -1 )
     {
-        prvMemorySectorFindLastWrittenPageIndex ( sector, &PAGE_INDEX );
+        prvMemorySectorBinarySearchForLastWrittenPageIndex ( sector, &PAGE_INDEX );
         prvMemorySectorFindLastWrittenPageIndexResults[ sector ] = PAGE_INDEX;
     }
     else
@@ -845,7 +847,7 @@ static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, v
     if ( toSystemSector ( sector ) < SystemSectorCount )
     {
         uint32_t lastPageIndex = 0;
-        if ( MEM_OK != prvMemorySectorFindLastWrittenPageIndex ( sector, &lastPageIndex ) )
+        if ( MEM_OK != prvMemorySectorLinearSearchForLastWrittenPageIndex ( sector, &lastPageIndex ) )
         {
             return MEM_ERR;
         }
@@ -1083,8 +1085,51 @@ static uint32_t prvMemorySectorGetSize ( MemorySector sector )
     }
 }
 
+static MemoryManagerStatus prvMemorySectorBinarySearchForLastWrittenPageIndex ( MemorySector sector, uint32_t * result )
+{
+    if ( result == NULL )
+    {
+        return MEM_ERR;
+    }
 
-static MemoryManagerStatus prvMemorySectorFindLastWrittenPageIndex ( MemorySector sector, uint32_t * result )
+    int sectorPageCount = prvMemorySectorGetPageCount ( sector );
+    // need to search the sector and find the latest record
+
+    MemoryBuffer data = { 0 };
+
+    // set the middle
+    int firstPage = 0 ;
+    int lastPage  = sectorPageCount - 1;
+    int middlePage = ( firstPage + lastPage ) / 2;
+
+    while ( firstPage <= lastPage )
+    {
+        memset ( data.data, 0, PAGE_SIZE );
+
+        if ( prvMemoryAccessPage ( sector, middlePage, data.data ) == MEM_ERR )
+        {
+            return MEM_ERR;
+        }
+
+        if ( common_is_mem_empty ( data.data, PAGE_SIZE ) )
+        {
+            lastPage = middlePage - 1;
+        }
+        else
+        {
+            firstPage = middlePage + 1;
+        }
+
+        middlePage = ( firstPage + lastPage ) / 2;
+    }
+
+    ( *result ) = middlePage ;
+
+    return MEM_OK;
+}
+
+
+static MemoryManagerStatus prvMemorySectorLinearSearchForLastWrittenPageIndex ( MemorySector sector, uint32_t * result )
 {
     if ( result == NULL )
     {
@@ -1096,20 +1141,18 @@ static MemoryManagerStatus prvMemorySectorFindLastWrittenPageIndex ( MemorySecto
     int sectorPageCount = prvMemorySectorGetPageCount ( sector );
     // need to search the sector and find the latest record
 
-    uint8_t dataRX[256];
-
-    int j;
+    MemoryBuffer data = { 0 };
 
     while ( pageIndex < sectorPageCount )
     {
-        memset ( dataRX, 0, PAGE_SIZE );
+        memset ( data.data, 0, PAGE_SIZE );
 
-        if ( prvMemoryAccessPage ( sector, pageIndex, dataRX ) == MEM_ERR )
+        if ( prvMemoryAccessPage ( sector, pageIndex, data.data ) == MEM_ERR )
         {
             return MEM_ERR;
         }
 
-        if ( common_is_mem_empty ( dataRX, PAGE_SIZE ) )
+        if ( common_is_mem_empty ( data.data, PAGE_SIZE ) )
         {
             if ( pageIndex != 0 )
             {

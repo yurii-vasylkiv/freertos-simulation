@@ -277,7 +277,7 @@ static bool cli_tools_mem_read_press_index ( char * pcWriteBuffer, size_t xWrite
     PressureDataU dst = { };
     if ( MEM_OK == memory_manager_get_single_press_entry ( &dst, value ) )
     {
-        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.pressure );
+        sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.data );
         return true;
     }
 
