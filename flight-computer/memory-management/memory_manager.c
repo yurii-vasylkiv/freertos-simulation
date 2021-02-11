@@ -847,7 +847,7 @@ static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, v
     if ( toSystemSector ( sector ) < SystemSectorCount )
     {
         uint32_t lastPageIndex = 0;
-        if ( MEM_OK != prvMemorySectorLinearSearchForLastWrittenPageIndex ( sector, &lastPageIndex ) )
+        if ( MEM_OK != prvMemorySectorBinarySearchForLastWrittenPageIndex ( sector, &lastPageIndex ) )
         {
             return MEM_ERR;
         }
@@ -860,8 +860,8 @@ static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, v
 
     else
     {
-        uint32_t lastAddress = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors[ toUserDataSector ( sector ) ].startAddress +
-                               prvMemoryMetaDataFlashSnapshot.data.values.user_sectors[ toUserDataSector ( sector ) ].bytesWritten - PAGE_SIZE +
+        uint32_t lastAddress = prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].startAddress +
+                               prvMemoryMetaDataFlashSnapshot.data.values.user_sectors [ toUserDataSector ( sector ) ].bytesWritten - PAGE_SIZE +
                                ( ( prvMemorySectorGetDataEntriesPerPage ( sector ) - 1 ) * prvMemorySectorGetDataStructSize ( sector ) );
 
         if ( FLASH_OK != flash_read ( lastAddress, dst, prvMemorySectorGetDataStructSize ( sector ) ) )
