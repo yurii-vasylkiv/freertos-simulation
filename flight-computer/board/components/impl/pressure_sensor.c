@@ -34,6 +34,8 @@
 #define PRES_TYPE           0x200000
 #define TEMP_TYPE           0x100000
 
+#define TIMEOUT             100 // milliseconds
+
 #define GND_ALT             0
 #define GND_PRES            101325
 

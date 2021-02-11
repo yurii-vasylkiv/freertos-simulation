@@ -92,7 +92,6 @@
 
 #define IMU_ENTRIES_PER_PAGE                            ( (int) ( PAGE_SIZE / sizeof ( IMUDataU  ) ) )
 #define PRESSURE_ENTRIES_PER_PAGE                       ( (int) ( PAGE_SIZE / sizeof ( PressureDataU ) ) )
-#define TEMPERATURE_ENTRIES_PER_PAGE                    ( (int) ( PAGE_SIZE / sizeof ( TemperatureDataU ) ) )
 
 #define CONTINUITY_ENTRIES_PER_PAGE                     ( (int) ( PAGE_SIZE / sizeof ( ContinuityU ) ) )
 #define FLIGHT_EVENT_ENTRIES_PER_PAGE                   ( (int) ( PAGE_SIZE / sizeof ( FlightEventU ) ) )
@@ -956,9 +955,8 @@ static uint32_t prvMemorySectorGetDataEntriesPerPage ( MemorySector sector )
         case MemoryUserDataSectorMag:
             return IMU_ENTRIES_PER_PAGE;
         case MemoryUserDataSectorPressure:
-            return PRESSURE_ENTRIES_PER_PAGE;
         case MemoryUserDataSectorTemperature:
-            return TEMPERATURE_ENTRIES_PER_PAGE;
+            return PRESSURE_ENTRIES_PER_PAGE;
         case MemoryUserDataSectorContinuity:
             return CONTINUITY_ENTRIES_PER_PAGE;
         case MemoryUserDataSectorFlightEvent:
@@ -982,9 +980,8 @@ static uint32_t prvMemorySectorGetDataStructSize ( MemorySector sector )
         case MemoryUserDataSectorMag:
             return sizeof ( IMUDataU );
         case MemoryUserDataSectorPressure:
-            return sizeof ( PressureDataU );
         case MemoryUserDataSectorTemperature:
-            return sizeof ( TemperatureDataU );
+            return sizeof ( PressureDataU );
         case MemoryUserDataSectorContinuity:
             return sizeof ( ContinuityU );
         case MemoryUserDataSectorFlightEvent:
@@ -1008,9 +1005,8 @@ static uint32_t prvMemorySectorGetAlignedDataStructSize ( MemorySector sector )
         case MemoryUserDataSectorMag:
             return trunc ( ( PAGE_SIZE / sizeof ( IMUDataU ) ) ) * sizeof ( IMUDataU );
         case MemoryUserDataSectorPressure:
-            return trunc ( ( PAGE_SIZE / sizeof ( PressureDataU ) ) ) * sizeof ( PressureDataU );
         case MemoryUserDataSectorTemperature:
-            return trunc ( ( PAGE_SIZE / sizeof ( TemperatureDataU ) ) ) * sizeof ( TemperatureDataU );
+            return trunc ( ( PAGE_SIZE / sizeof ( PressureDataU ) ) ) * sizeof ( PressureDataU );
         case MemoryUserDataSectorContinuity:
             return trunc ( ( PAGE_SIZE / sizeof ( ContinuityU ) ) ) * sizeof ( ContinuityU );
         case MemoryUserDataSectorFlightEvent:
@@ -1152,7 +1148,7 @@ MemoryManagerStatus memory_manager_add_pressure_update ( PressureDataU * _contai
     return prvMemoryAddNewUserDataSectorEntry ( UserDataSectorPressure, _container->bytes );
 }
 
-MemoryManagerStatus memory_manager_add_temp_update ( TemperatureDataU * _container )
+MemoryManagerStatus memory_manager_add_temp_update ( PressureDataU * _container )
 {
     return prvMemoryAddNewUserDataSectorEntry ( UserDataSectorTemperature, _container->bytes );
 }
@@ -1178,7 +1174,7 @@ MemoryManagerStatus memory_manager_get_single_press_entry ( PressureDataU * dst,
     return prvMemoryAccessSectorSingleDataEntry ( MemoryUserDataSectorPressure, entry_index, dst );
 }
 
-MemoryManagerStatus memory_manager_get_single_temp_entry ( TemperatureDataU * dst, uint32_t entry_index )
+MemoryManagerStatus memory_manager_get_single_temp_entry ( PressureDataU * dst, uint32_t entry_index )
 {
     if ( dst == NULL || !prvIsConfigured || !prvIsInitialized )
     {
@@ -1269,7 +1265,7 @@ MemoryManagerStatus memory_manager_get_last_press_entry ( PressureDataU * dst )
     return prvMemoryAccessLastDataEntry ( MemoryUserDataSectorPressure, dst );
 }
 
-MemoryManagerStatus memory_manager_get_last_temp_entry ( TemperatureDataU * dst )
+MemoryManagerStatus memory_manager_get_last_temp_entry ( PressureDataU * dst )
 {
     if ( dst == NULL || !prvIsConfigured || !prvIsInitialized )
     {

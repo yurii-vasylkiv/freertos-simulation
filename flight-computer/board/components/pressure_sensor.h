@@ -11,13 +11,6 @@ extern "C" {
 #include "protocols/UART.h"
 
 
-#define PRES_LENGTH         3   // Length of a pressure measurement in bytes.
-#define TEMP_LENGTH         3   // Length of a temperature measurement in bytes.
-#define ALT_LENGTH          4
-#define TIMEOUT             100 // milliseconds
-
-
-
 typedef struct pressure_sensor_configuration
 {
 

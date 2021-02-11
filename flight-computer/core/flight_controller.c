@@ -308,11 +308,11 @@ static void get_sensor_data_update ( DataContainer * data )
     if ( pressure_sensor_read ( &pressure_data ) )
     {
         data->press.data.values.timestamp = pressure_data.timestamp;
-        data->press.data.values.pressure  = pressure_data.pressure;
+        data->press.data.values.data      = pressure_data.pressure;
         data->press.updated               = true;
 
         data->temp.data.values.timestamp   = pressure_data.timestamp;
-        data->temp.data.values.temperature = pressure_data.temperature;
+        data->temp.data.values.data        = pressure_data.temperature;
         data->temp.updated                 = true;
     }
 }

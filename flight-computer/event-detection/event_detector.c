@@ -143,7 +143,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
     if ( data->press.updated )
     {
-        CURRENT_ALTITUDE = prvCalculateAltitude ( data->press.data.values.pressure ) - GROUND_ALTITUDE;
+        CURRENT_ALTITUDE = prvCalculateAltitude ( data->press.data.values.data ) - GROUND_ALTITUDE;
 #if ( userconf_EVENT_DETECTION_AVERAGING_SUPPORT_ON == 1 )
         data_window_insert ( &altitude_data_window, &CURRENT_ALTITUDE );
 #endif
@@ -223,7 +223,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         {
             if ( data->press.updated )
             {
-                if ( prvDetectAltitude ( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.pressure ) )
+                if ( prvDetectAltitude ( MAIN_CHUTE_ALTITUDE, GROUND_ALTITUDE, data->press.data.values.data ) )
                 {
 //                    DEBUG_LINE( "FLIGHT_STATE_POST_APOGEE: Detected Main Chute!");
 
@@ -268,7 +268,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
             if ( data->press.updated )
             {
-                if ( prvDetectAltitude ( 0, GROUND_ALTITUDE, data->press.data.values.pressure ) )
+                if ( prvDetectAltitude ( 0, GROUND_ALTITUDE, data->press.data.values.data ) )
                 {
                     DEBUG_LINE( "FLIGHT_STATE_POST_MAIN: Detected landing!" );
 

@@ -232,9 +232,9 @@ typedef union
 {
     struct pressure_values {
         uint32_t timestamp;
-        float pressure;
+        float    data;
     } values;
-    uint8_t bytes[ sizeof ( struct pressure_values ) ];
+    uint8_t bytes [ sizeof ( struct pressure_values ) ];
 
 } PressureDataU;
 
@@ -243,23 +243,6 @@ typedef struct
     uint8_t         updated;
     PressureDataU   data;
 } PressureDataContainer;
-
-
-typedef union
-{
-    struct temp_values {
-        uint32_t timestamp;
-        float temperature;
-    } values;
-    uint8_t bytes[ sizeof ( struct temp_values ) ];
-
-} TemperatureDataU;
-
-typedef struct
-{
-    uint8_t            updated;
-    TemperatureDataU   data;
-} TemperatureDataContainer;
 
 /*-----------------------------------------------------------*/
 
@@ -315,7 +298,7 @@ typedef struct
     IMUDataContainer            acc;
     IMUDataContainer            mag;
     PressureDataContainer       press;
-    TemperatureDataContainer    temp;
+    PressureDataContainer       temp;
     ContinuityDataContainer     cont;
     FlightEventDataContainer    event;
 } DataContainer;
@@ -335,7 +318,7 @@ MemoryManagerStatus memory_manager_add_gyro_update ( IMUDataU * _container );
 MemoryManagerStatus memory_manager_add_accel_update ( IMUDataU * _container );
 MemoryManagerStatus memory_manager_add_mag_update ( IMUDataU * _container );
 MemoryManagerStatus memory_manager_add_pressure_update ( PressureDataU * _container );
-MemoryManagerStatus memory_manager_add_temp_update ( TemperatureDataU * _container );
+MemoryManagerStatus memory_manager_add_temp_update ( PressureDataU * _container );
 MemoryManagerStatus memory_manager_add_continuity_update ( ContinuityU * _container );
 MemoryManagerStatus memory_manager_add_flight_event_update ( FlightEventU * _container );
 MemoryManagerStatus memory_manager_start ( );
@@ -349,7 +332,7 @@ void memory_manager_set_metadata_update_mode ( MetaDataUpdateFrequencyMode mode 
 
 
 MemoryManagerStatus memory_manager_get_single_press_entry ( PressureDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_temp_entry ( TemperatureDataU * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_single_temp_entry ( PressureDataU * dst, uint32_t entry_index );
 MemoryManagerStatus memory_manager_get_single_gyro_entry ( IMUDataU * dst, uint32_t entry_index );
 MemoryManagerStatus memory_manager_get_single_acc_entry ( IMUDataU * dst, uint32_t entry_index );
 MemoryManagerStatus memory_manager_get_single_mag_entry ( IMUDataU * dst, uint32_t entry_index );
@@ -359,7 +342,7 @@ MemoryManagerStatus memory_manager_get_single_configuration_entry ( GlobalConfig
 MemoryManagerStatus memory_manager_get_single_metadata_entry ( MemoryLayoutMetaDataU * dst, uint32_t entry_index );
 
 MemoryManagerStatus memory_manager_get_last_press_entry ( PressureDataU * dst );
-MemoryManagerStatus memory_manager_get_last_temp_entry ( TemperatureDataU * dst );
+MemoryManagerStatus memory_manager_get_last_temp_entry ( PressureDataU * dst );
 MemoryManagerStatus memory_manager_get_last_gyro_entry ( IMUDataU * dst );
 MemoryManagerStatus memory_manager_get_last_acc_entry ( IMUDataU * dst );
 MemoryManagerStatus memory_manager_get_last_mag_entry ( IMUDataU * dst );

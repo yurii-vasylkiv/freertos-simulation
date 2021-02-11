@@ -128,7 +128,7 @@ void * worker_function( void * arg )
     DEBUG_LINE("C++ DataFeeder has successfully started.");
     isRunning = 1;
 
-    while (isRunning && reader.read_row(timestamp, acc.x, acc.y, acc.z, gyro.x, gyro.y, gyro.z, press.pressure, press.temperature))
+    while (isRunning && reader.read_row(timestamp, acc.x, acc.y, acc.z, gyro.x, gyro.y, gyro.z, press.data, press.temperature))
     {
         timestamp_uint += 50;
         acc.timestamp   = timestamp_uint;
