@@ -10,7 +10,7 @@ else()
 endif()
 
 
-OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
 
 ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 
@@ -55,6 +55,7 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
 
     ADD_DEFINITIONS(-DSRAD_CSV_FILE_PATH=${SRAD_CSV_FILE_PATH})
     ADD_DEFINITIONS(-DCOTS_CSV_FILE_PATH=${COTS_CSV_FILE_PATH})
+    ADD_DEFINITIONS("-D__packed=__attribute__((__packed__))")
 
     INCLUDE_DIRECTORIES         (../flight-computer/sim-port/os-kernel/FreeRTOS/Source/include)
     INCLUDE_DIRECTORIES         (../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW)
@@ -67,10 +68,10 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
             ../flight-computer/sim-port/sensor-simulation/flash.c
             ../flight-computer/sim-port/sensor-simulation/datafeeder.cpp
 
-        # Communication/Transmission protocols
+            # Communication/Transmission protocols
             ../flight-computer/sim-port/transmission-protocols/SPI.c
             ../flight-computer/sim-port/transmission-protocols/UART.c
-        )
+            )
 
     ADD_LIBRARY(RTOS_LIB
             ../flight-computer/sim-port/os-kernel/FreeRTOS/Source/portable/MSVC-MingW/port.c
@@ -164,10 +165,12 @@ ELSE()
             ../flight-computer/protocols/impl/UART.c
             ../flight-computer/protocols/impl/SPI.c
 
-        # sensors
+            # sensors
             ../flight-computer/board/components/impl/imu_sensor.c
             ../flight-computer/board/components/impl/pressure_sensor.c
-            ../flight-computer/board/components/impl/buzzer.c)
+            ../flight-computer/board/components/impl/buzzer.c
+            ../flight-computer/board/components/flash.c
+            )
 ENDIF()
 
 
@@ -177,11 +180,10 @@ ENDIF() # BUILD_FOR_SIM_ON_WIN_OS
 
 INCLUDE_DIRECTORIES (../flight-computer)
 INCLUDE_DIRECTORIES (../configurations)
-INCLUDE_DIRECTORIES (..)
+INCLUDE_DIRECTORIES (../.)
 
 SET(USER_SRC                # Board
         ../flight-computer/board/board.c
-        ../flight-computer/board/components/flash.c
         ../flight-computer/board/components/recovery.c
         ../flight-computer/board/interrupt_handlers.c
 
@@ -190,7 +192,6 @@ SET(USER_SRC                # Board
 
         # Memory Management
         ../flight-computer/memory-management/memory_manager.c
-        ../flight-computer/memory-management/queue.c
 
         # Event Detection
         ../flight-computer/event-detection/event_detector.c
@@ -202,17 +203,17 @@ SET(USER_SRC                # Board
         ../flight-computer/command-line-interface/tools/mem.c
         ../flight-computer/command-line-interface/tools/sysctl.c
 
-        )
+        ../flight-computer/core/system_configuration.c)
 
 
 
 
 IF(BUILD_FOR_SIM_ON_WIN_OS)
-	SET(EXECUTABLE_EXTENSION exe)
+    SET(EXECUTABLE_EXTENSION exe)
     ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} ../flight-computer/main.c ${USER_SRC} ${SIM_PORT_SRC})
     TARGET_LINK_LIBRARIES(RTOS_LIB pthread winmm ws2_32)
 ELSE()
-	SET(EXECUTABLE_EXTENSION elf)
+    SET(EXECUTABLE_EXTENSION elf)
     ADD_EXECUTABLE(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} ../flight-computer/main.c ${USER_SRC} ${HAL_SRC} ${BOSCH_API_SRC} ${SYS_CALLS_SRC} ${IMPL_FOLDERS_SRC} ${LINKER_SCRIPT})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}.${EXECUTABLE_EXTENSION} CMSIS_LIB -lm)
 ENDIF()
