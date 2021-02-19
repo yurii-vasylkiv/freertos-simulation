@@ -250,10 +250,10 @@ DOWNLOAD:
 INSTALLATION:
 -----------------
 
-1. Create a folder C:\dev
+1. Create a folder C:\root
 2. Create a folder C:\root\opt
 3. Create a folder C:\root\env
-4. Install MinGW into C:dev\env
+4. Install MinGW into C:\root\env
    - install basic build tools (gcc, g++, etc.) using mingw-get.exe
 5. Install CLion into C:\root\opt\clion
 6. Install Atollic into C:\root\opt\atollic (you will have to rename Atollic folder as it does not allow to rename it during the installation)
@@ -271,13 +271,13 @@ Recall what I have mentioned about system-wide Path and User-wide Path. For our 
     - MinGW             C:\root\env
     - CLion             C:\root\opt\clion
     - CLion's CMake     C:\root\opt\clion\cmake\win\bin
-    - Open OCD          C:dev\opt\openocd\bin
+    - Open OCD          C:\root\opt\openocd\bin
     - Python            C:\<ProgramFiles>\Python\Python<VERSION>
     - Python scripts    C:\<ProgramFiles>\Python\Python<VERSION>\Scripts
     - Atollic ARMTools: C:\root\opt\atollic\ARMTools\bin
 
 Your ARM_DEV_ENV in the end should look something like this:
-C:\root\env;C:\root\opt\clion;C:\root\opt\clion\cmake\win\bin;C:dev\opt\openocd\bin;C:\<ProgramFiles>\Python\Python<VERSION>;C:\<ProgramFiles>\Python\Python<VERSION>\Scripts;C:\root\opt\atollic\ARMTools\bin
+C:\root\env;C:\root\opt\clion;C:\root\opt\clion\cmake\win\bin;C:\root\opt\openocd\bin;C:\<ProgramFiles>\Python\Python<VERSION>;C:\<ProgramFiles>\Python\Python<VERSION>\Scripts;C:\root\opt\atollic\ARMTools\bin
 Then add new entry %ARM_DEV_ENV% to the "Path" variable and apply changes press OK.
 
 COMMAND TERMINAL:
@@ -339,7 +339,7 @@ Debugging with OpenOCD:
 In order to debug the program in CLion we're gonig to use OpenOCD. OpenOCD is an open-source tool that allows debugging various ARM devices with GDB using a wide
 variety of JTAG programmers. 
 
-To set up the debugger with OpenOCD in CLion, go to File -> Settings -> Embedded Development -> and paste C:dev\opt\openocd\bin into the field: OpenOCD Location
+To set up the debugger with OpenOCD in CLion, go to File -> Settings -> Embedded Development -> and paste C:\root\opt\openocd\bin into the field: OpenOCD Location
 
 Then, save changes and go to Run -> Debug... -> Edit Configurations... Then expand the available Templates and find OpenOCD Download & Run 
 
