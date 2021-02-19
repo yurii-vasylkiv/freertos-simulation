@@ -21,6 +21,8 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+#include <inttypes.h>
+
 
 #define EMATCH_ON_TIME                50
 
@@ -34,7 +36,7 @@ typedef enum
     RecoverySelectCount
 } RecoverySelect;
 
-typedef enum
+typedef enum RecoveryContinuityStatus
 {
     RecoveryContinuityStatusOpenCircuit,
     RecoveryContinuityStatusShortCircuit,

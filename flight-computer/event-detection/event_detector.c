@@ -3,12 +3,12 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-
 #include <math.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include "utilities/common.h"
 #include "configurations/UserConfig.h"
+#include "memory-management/memory_manager.h"
 
 #include "protocols/UART.h"
 #include "data_window.h"
@@ -29,6 +29,9 @@ static int   INITIALIZED               = 0;
 
 static int   AVERAGE_PRESSURE_SAMPLING_RATE = 0;
 static int   AVERAGE_IMU_SAMPLING_RATE      = 0;
+
+static int prvEventDelayCounter             = 0;
+static int prvDELAY_MS                      = 1000;
 
 typedef struct
 {
@@ -87,7 +90,7 @@ EventDetectorStatus event_detector_init ( FlightSystemConfiguration * configurat
     // in case of reboot during the flight if memory is not corrupted this flag should change to the
     // appropriate current flight stage that != FLIGHT_STATE_LAUNCHPAD
     FlightEventU lastFlightEventEntry = { 0 };
-    if ( MEM_OK != memory_manager_get_last_flight_event_entry ( &lastFlightEventEntry ) )
+    if ( MEM_OK != memory_manager_get_last_data_entry ( MemoryUserDataSectorFlightEvent, lastFlightEventEntry.bytes ) )
     {
         return EVENT_DETECTOR_ERR;
     }
@@ -133,7 +136,7 @@ EventDetectorStatus event_detector_update_configurations ( FlightSystemConfigura
 }
 
 
-EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * flightState )
+EventDetectorStatus event_detector_feed ( struct DataContainer * data, FlightState * flightState )
 {
     if ( INITIALIZED == 0 )
     {
@@ -191,6 +194,8 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
                     prvFlightState = FLIGHT_STATE_APOGEE;
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
+
+                    prvEventDelayCounter = xTaskGetTickCount ();
                 }
 #else
                 if ( prvDetectApogee( data->acc.data.values.data[ 0 ], data->acc.data.values.data[ 1 ],
@@ -210,11 +215,15 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         }
         case FLIGHT_STATE_APOGEE:
         {
-            DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit, OPENING DROGUE PARACHUTE!" );
+            if ( xTaskGetTickCount () - prvEventDelayCounter >= pdMS_TO_TICKS ( prvDELAY_MS ))
+            {
+                DEBUG_LINE( "FLIGHT_STATE_APOGEE: Igniting recovery circuit, OPENING DROGUE PARACHUTE!" );
 
-            prvFlightState = FLIGHT_STATE_POST_APOGEE;
-            *flightState = prvFlightState;
-            prvMarkNewEvent ( data );
+                prvFlightState = FLIGHT_STATE_POST_APOGEE;
+                *flightState = prvFlightState;
+                prvMarkNewEvent ( data );
+            }
+
 
             return EVENT_DETECTOR_OK;
         }
@@ -231,6 +240,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
 
+                    prvEventDelayCounter = xTaskGetTickCount ();
                 }
             }
 
@@ -239,11 +249,14 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
 
         case FLIGHT_STATE_MAIN_CHUTE:
         {
-            DEBUG_LINE( "FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit, OPENING MAIN PARACHUTE!" );
+            if ( xTaskGetTickCount () - prvEventDelayCounter >= pdMS_TO_TICKS ( prvDELAY_MS ))
+            {
+                DEBUG_LINE( "FLIGHT_STATE_MAIN_CHUTE: Igniting recovery circuit, OPENING MAIN PARACHUTE!" );
 
-            prvFlightState = FLIGHT_STATE_POST_MAIN;
-            *flightState = prvFlightState;
-            prvMarkNewEvent ( data );
+                prvFlightState = FLIGHT_STATE_POST_MAIN;
+                *flightState = prvFlightState;
+                prvMarkNewEvent ( data );
+            }
 
             return EVENT_DETECTOR_OK;
         }
@@ -260,6 +273,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
 
+                    prvEventDelayCounter = xTaskGetTickCount ();
                     return EVENT_DETECTOR_OK;
                 }
             }
@@ -276,6 +290,7 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
                     *flightState = prvFlightState;
                     prvMarkNewEvent ( data );
 
+                    prvEventDelayCounter = xTaskGetTickCount ();
                     return EVENT_DETECTOR_OK;
                 }
             }
@@ -284,22 +299,31 @@ EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * fl
         }
         case FLIGHT_STATE_LANDED:
         {
-            DEBUG_LINE( "FLIGHT_STATE_LANDED: Rocket landed! Exiting the mission..." );
+            if ( xTaskGetTickCount () - prvEventDelayCounter >= pdMS_TO_TICKS ( prvDELAY_MS ))
+            {
+                DEBUG_LINE( "FLIGHT_STATE_LANDED: Rocket landed! Exiting the mission..." );
 
-            prvFlightState = FLIGHT_STATE_EXIT;
-            *flightState = prvFlightState;
-            prvMarkNewEvent ( data );
+                prvFlightState = FLIGHT_STATE_EXIT;
+                *flightState = prvFlightState;
+                prvMarkNewEvent ( data );
+
+                prvEventDelayCounter = xTaskGetTickCount ();
+            }
 
             return EVENT_DETECTOR_OK;
         }
 
         case FLIGHT_STATE_EXIT:
         {
-            DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!" );
 
-            prvFlightState = FLIGHT_STATE_COUNT;
-            *flightState = prvFlightState;
-            prvMarkNewEvent ( data );
+            if ( xTaskGetTickCount () - prvEventDelayCounter >= pdMS_TO_TICKS ( prvDELAY_MS ))
+            {
+                DEBUG_LINE( "FLIGHT_STATE_EXIT: Exit!" );
+
+                prvFlightState = FLIGHT_STATE_COUNT;
+                *flightState = prvFlightState;
+                prvMarkNewEvent ( data );
+            }
 
             return EVENT_DETECTOR_OK;
         }

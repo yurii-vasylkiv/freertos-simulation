@@ -71,7 +71,7 @@ static inline uint32_t program_page( uint32_t address, uint8_t * data_buffer, ui
 
     if ( address > FLASH_SIZE )
     {
-        return 0;
+        return FLASH_ERR;
     }
 
 
@@ -79,12 +79,12 @@ static inline uint32_t program_page( uint32_t address, uint8_t * data_buffer, ui
     fseek( writePrt, address, SEEK_SET );
 
     // Overwrite the block of memory with given contents
-    bytesWritten = fwrite( data_buffer, sizeof( uint8_t ), PAGE_SIZE, writePrt );
+    bytesWritten = fwrite( data_buffer, sizeof( uint8_t ), num_bytes, writePrt );
 
     fclose( writePrt );
 
     // Return operation flag
-    return bytesWritten;
+    return bytesWritten == num_bytes ? FLASH_OK : FLASH_ERR;
 }
 
 
@@ -95,7 +95,7 @@ static inline uint32_t read_page( uint32_t address, uint8_t * data_buffer, uint1
 
     if ( address > FLASH_SIZE )
     {
-        return 0;
+        return FLASH_ERR;
     }
     int32_t bytesRead = 0;
 
@@ -110,7 +110,7 @@ static inline uint32_t read_page( uint32_t address, uint8_t * data_buffer, uint1
     perror("read");
 
     // Return operation flag
-    return bytesRead == num_bytes;
+    return bytesRead == num_bytes ? FLASH_OK : FLASH_ERR;
 }
 
 
@@ -125,7 +125,7 @@ static FlashReturnType prvExecuteCommand ( uint32_t address, FlashCommand comman
         return read_page( address, data_buffer, num_bytes );
     }
 
-    return 0;
+    return FLASH_OK;
 }
 
 

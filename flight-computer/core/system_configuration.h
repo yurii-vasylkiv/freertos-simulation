@@ -30,7 +30,7 @@
 #define GND_PRES                                    101325
 
 
-typedef struct
+typedef struct FlightSystemConfiguration
 {
     // 4 bytes
     uint32_t landing_rotation_speed_deg_per_sec;      // -
@@ -54,7 +54,7 @@ typedef struct
 
 } FlightSystemConfiguration;
 
-typedef union
+typedef union FlightSystemConfigurationU
 {
     struct
     {
@@ -81,7 +81,7 @@ typedef struct
     float       ref_pres;
 
     uint8_t     state;
-}configuration_data_values;
+} configuration_data_values;
 
 FlightSystemConfiguration get_default_system_configuration ( ) ;
 

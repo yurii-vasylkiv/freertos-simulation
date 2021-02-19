@@ -161,11 +161,12 @@ int imu_sensor_configure (IMUSensorConfiguration * parameters )
     if(parameters == NULL)
     {
         s_current_configuration = s_default_configuration;
-        return 0;
+        return IMU_OK;
     }
 
     s_current_configuration = *parameters;
-    return 0;
+
+    return IMU_OK;
 }
 
 
@@ -216,7 +217,7 @@ void prv_imu_thread_start( void * param )
         dataStruct.gyro_z = cxx_data.z;
 
 
-        dataStruct.timestamp   = cxx_data.timestamp;
+        dataStruct.timestamp   = xTaskGetTickCount ( );
 
 //        dataStruct.time_ticks   = time_start - xTaskGetTickCount();
 //        DISPLAY( "NEW IMU data: %d\n", dataStruct.time_ticks);

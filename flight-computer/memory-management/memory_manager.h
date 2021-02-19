@@ -2,17 +2,18 @@
 #define MEMORY_MANAGER_MEMORY_MANAGER_H
 
 #include <inttypes.h>
-#include <board/components/recovery.h>
+#include "board/components/recovery.h"
 #include "core/system_configuration.h"
+#include "event-detection/event_detector.h"
 
-typedef enum
+typedef enum MemoryManagerStatus
 {
     MEM_ERR                             = 0,
     MEM_OK                              = 1
 
 } MemoryManagerStatus;
 
-typedef enum
+typedef enum MetaDataUpdateFrequencyMode
 {
 
     MetaDataUpdateDataBasedFrequencyMode       = 0,
@@ -22,7 +23,7 @@ typedef enum
 } MetaDataUpdateFrequencyMode;
 
 // sectors that can be modified only before the flight
-typedef enum
+typedef enum SystemSector
 {
 
     SystemSectorGlobalConfigurationData       = 0,
@@ -32,7 +33,7 @@ typedef enum
 } SystemSector;
 
 // sectors that can be modified at any time
-typedef enum
+typedef enum UserDataSector
 {
 
     UserDataSectorGyro                        = 0,
@@ -46,7 +47,7 @@ typedef enum
 
 } UserDataSector;
 
-typedef enum
+typedef enum MemorySector
 {
     
     MemorySystemSectorGlobalConfigurationData = 0,
@@ -62,7 +63,7 @@ typedef enum
 
 } MemorySector;
 
-typedef struct
+typedef struct MemorySectorInfo
 {
     uint32_t size;
     uint32_t startAddress;
@@ -71,7 +72,7 @@ typedef struct
 
 } MemorySectorInfo;
 
-typedef struct
+typedef struct BufferInfo
 {
     uint32_t startAddress;
     uint32_t endAddress;
@@ -79,14 +80,14 @@ typedef struct
 
 } BufferInfo;
 
-typedef struct
+typedef struct MemoryBuffer
 {
     BufferInfo info;
     uint8_t data[256];
 
 } MemoryBuffer;
 
-typedef struct
+typedef struct MemorySectorBuffer
 {
     MemoryBuffer buffers [2];
     MemoryBuffer * read;
@@ -96,7 +97,7 @@ typedef struct
 
 
 // frequency multipliers to modify the frequency for different sensors at different stages
-typedef struct memory_manager_configuration
+typedef struct MemoryManagerConfiguration
 {
     // to keep memory alignment right using 4 of 8-bits integers
     // counted as one 32-bit integer
@@ -124,7 +125,7 @@ typedef struct memory_manager_configuration
 
 } MemoryManagerConfiguration;
 
-typedef union
+typedef union MemoryManagerConfigurationU
 {
     MemoryManagerConfiguration values;
     uint8_t bytes [ sizeof ( MemoryManagerConfiguration ) ];
@@ -132,7 +133,7 @@ typedef union
 } MemoryManagerConfigurationU;
 
 
-typedef union
+typedef union MemoryManagerConfigurationContainer
 {
     // can only be reset before the flight
     uint8_t updated;
@@ -142,18 +143,18 @@ typedef union
 
 // memory layout metadata entry: describes the sectors locations, sizes, current address for the last known write operation , etc.
 // can be used for both UserDataSector and SystemSector
-typedef union
+typedef union MemoryLayoutMetaDataU
 {
     struct memory_layout_meta_data_values {
         uint8_t signature              [ 12 ]; // for extra validation (security precaution)
         MemorySectorInfo user_sectors  [ UserDataSectorCount ];
-    } values;
+    } __attribute__((packed)) values;
 
     uint8_t bytes [ sizeof ( struct memory_layout_meta_data_values ) ];
 
 } MemoryLayoutMetaDataU;
 
-typedef struct
+typedef struct MemoryLayoutMetaDataContainer
 {
     uint8_t                updated;
     MemoryLayoutMetaDataU  data;
@@ -161,20 +162,20 @@ typedef struct
 } MemoryLayoutMetaDataContainer;
 
 
-typedef union
+typedef union GlobalConfigurationU
 {
     struct configuration_values {
         uint8_t signature [ 12 ]; // for extra validation (security precaution)
         MemoryManagerConfiguration memory;
         FlightSystemConfiguration  system;
-    } values;
+    } __attribute__((packed)) values;
 
     uint8_t bytes[ sizeof ( struct configuration_values ) ];
 
 } GlobalConfigurationU;
 
 // can be modified only before the flight
-typedef struct
+typedef struct GlobalConfigurationContainer
 {
     uint8_t               updated;
     GlobalConfigurationU  data;
@@ -187,58 +188,39 @@ typedef struct
 
 
 /*-------------------------- IMU -----------------------------*/
-typedef union
+typedef union IMUDataU
 {
     struct imu_values {
         uint32_t timestamp;
         float data [ 3 ];
-    } values;
+    } __attribute__((packed)) values;
 
     uint8_t bytes [ sizeof ( struct imu_values ) ];
 
 } IMUDataU;
 
-typedef struct
+typedef struct IMUDataContainer
 {
     uint8_t     updated;
     IMUDataU    data;
 
 } IMUDataContainer;
 
-//typedef union
-//{
-//    struct imu_values {
-//        uint32_t timestamp;
-//        float accelerometer [ 3 ];
-//        float gyroscope     [ 3 ];
-//    } values;
-//
-//    uint8_t bytes[ sizeof ( struct imu_values ) ];
-//
-//} IMUDataU;
-//
-//
-//typedef struct
-//{
-//    uint8_t     updated;
-//    IMUDataU    data;
-//
-//} IMUDataContainer;
 /*-----------------------------------------------------------*/
 
 /*-------------------------- Pressure Sensor ----------------*/
 
-typedef union
+typedef union PressureDataU
 {
     struct pressure_values {
         uint32_t timestamp;
         float    data;
-    } values;
+    } __attribute__((packed)) values;
     uint8_t bytes [ sizeof ( struct pressure_values ) ];
 
 } PressureDataU;
 
-typedef struct
+typedef struct PressureDataContainer
 {
     uint8_t         updated;
     PressureDataU   data;
@@ -247,19 +229,19 @@ typedef struct
 /*-----------------------------------------------------------*/
 
 /*-------------------------- Continuity Status --------------*/
-typedef union
+typedef union ContinuityU
 {
     struct continuity_values {
-        uint32_t _ [50];
         uint32_t timestamp;
-        uint8_t status [ RecoverySelectCount ] ;
-    } values;
+        RecoveryContinuityStatus status [ RecoverySelectCount ] ;
+        uint8_t _ [244];
+    } __attribute__((packed)) values;
 
     uint8_t bytes [ sizeof ( struct continuity_values ) ];
 
 } ContinuityU;
 
-typedef struct
+typedef struct ContinuityDataContainer
 {
     uint8_t     updated;
     ContinuityU data;
@@ -267,20 +249,20 @@ typedef struct
 /*-----------------------------------------------------------*/
 
 /*-------------------------- Flight Event ------------------*/
-typedef union
+typedef union FlightEventU
 {
     struct flight_event_values {
-        uint32_t _ [50];
         uint32_t timestamp;
-        uint8_t  status;
-    } values;
+        FlightState status;
+        uint8_t _ [248];
+    } __attribute__((packed)) values;
 
     uint8_t bytes [ sizeof ( struct flight_event_values ) ];
 
-} FlightEventU;
+} __attribute__((packed)) FlightEventU ;
 
 
-typedef struct
+typedef struct FlightEventDataContainer
 {
     uint8_t         updated;
     FlightEventU    data;
@@ -291,7 +273,7 @@ typedef struct
 
 
 
-typedef struct
+typedef struct DataContainer
 {
     uint32_t                    tmstp;
     IMUDataContainer            gyro;
@@ -312,15 +294,7 @@ typedef union
 
 
 MemoryManagerStatus memory_manager_init ( );
-MemoryManagerStatus memory_manager_configure ( );
 MemoryManagerStatus memory_manager_user_data_update ( DataContainer * _container );
-MemoryManagerStatus memory_manager_add_gyro_update ( IMUDataU * _container );
-MemoryManagerStatus memory_manager_add_accel_update ( IMUDataU * _container );
-MemoryManagerStatus memory_manager_add_mag_update ( IMUDataU * _container );
-MemoryManagerStatus memory_manager_add_pressure_update ( PressureDataU * _container );
-MemoryManagerStatus memory_manager_add_temp_update ( PressureDataU * _container );
-MemoryManagerStatus memory_manager_add_continuity_update ( ContinuityU * _container );
-MemoryManagerStatus memory_manager_add_flight_event_update ( FlightEventU * _container );
 MemoryManagerStatus memory_manager_start ( );
 MemoryManagerStatus memory_manager_stop ( );
 MemoryManagerStatus memory_manager_get_system_configurations ( FlightSystemConfiguration * systemConfiguration );
@@ -331,25 +305,8 @@ MemoryManagerConfiguration memory_manager_get_default_memory_configurations ( );
 void memory_manager_set_metadata_update_mode ( MetaDataUpdateFrequencyMode mode );
 
 
-MemoryManagerStatus memory_manager_get_single_press_entry ( PressureDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_temp_entry ( PressureDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_gyro_entry ( IMUDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_acc_entry ( IMUDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_mag_entry ( IMUDataU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_cont_entry ( ContinuityU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_flight_event_entry ( FlightEventU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_configuration_entry ( GlobalConfigurationU * dst, uint32_t entry_index );
-MemoryManagerStatus memory_manager_get_single_metadata_entry ( MemoryLayoutMetaDataU * dst, uint32_t entry_index );
-
-MemoryManagerStatus memory_manager_get_last_press_entry ( PressureDataU * dst );
-MemoryManagerStatus memory_manager_get_last_temp_entry ( PressureDataU * dst );
-MemoryManagerStatus memory_manager_get_last_gyro_entry ( IMUDataU * dst );
-MemoryManagerStatus memory_manager_get_last_acc_entry ( IMUDataU * dst );
-MemoryManagerStatus memory_manager_get_last_mag_entry ( IMUDataU * dst );
-MemoryManagerStatus memory_manager_get_last_cont_entry ( ContinuityU * dst );
-MemoryManagerStatus memory_manager_get_last_flight_event_entry ( FlightEventU * dst );
-MemoryManagerStatus memory_manager_get_last_configuration_entry ( GlobalConfigurationU * dst );
-MemoryManagerStatus memory_manager_get_last_metadata_entry ( MemoryLayoutMetaDataU * dst );
+MemoryManagerStatus memory_manager_get_single_data_entry ( MemorySector sector, void * dst, uint32_t entry_index );
+MemoryManagerStatus memory_manager_get_last_data_entry ( MemorySector sector, void * dst );
 
 
 MemoryManagerStatus memory_manager_get_stats ( char * buffer, size_t xBufferLen );

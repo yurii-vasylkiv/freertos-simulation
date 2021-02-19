@@ -1,11 +1,8 @@
 #ifndef DATA_LOGGING_H
 #define DATA_LOGGING_H
 
-#include <math.h>
-#include "board/components/flash.h"
-#include "protocols/UART.h"
-#include "core/system_configuration.h"
-#include "event-detection/event_detector.h"
+typedef enum FlightState FlightState;
+typedef struct DataContainer DataContainer;
 
 typedef enum { FLIGHT_CONTROLLER_ERR   = 0, FLIGHT_CONTROLLER_OK    = 1 } FlightControllerStatus;
 

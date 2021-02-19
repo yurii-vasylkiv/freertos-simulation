@@ -22,6 +22,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 
+#include <FreeRTOS.h>
+#include <task.h>
 
 #define TIMEOUT_MAX 0xFFFF
 #define BUFFER_SIZE 2048
@@ -32,21 +34,37 @@ typedef enum
 } UARTStatus;
 
 char PRINT_BUFFER[BUFFER_SIZE];
-#define DISPLAY( format, ... )                                                                \
-            sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart6_transmit(PRINT_BUFFER);                                                     \
+#define DISPLAY( format, ... )                                                               \
+            taskENTER_CRITICAL( );                                                           \
+            {                                                                                \
+                sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                \
+                uart6_transmit(PRINT_BUFFER);                                                \
+            }                                                                                \
+            taskEXIT_CRITICAL( );                                                            \
 
-#define DEBUG( format, ... )                                                                  \
-            sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart6_transmit_debug(PRINT_BUFFER);                                               \
+#define DEBUG( format, ... )                                                                 \
+            taskENTER_CRITICAL( );                                                           \
+            {                                                                                \
+                sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                \
+                uart6_transmit_debug(PRINT_BUFFER);                                          \
+            }                                                                                \
+            taskEXIT_CRITICAL( );                                                            \
 
-#define DEBUG_LINE( format, ... )                                                             \
-            sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart6_transmit_line_debug(PRINT_BUFFER);                                          \
+#define DEBUG_LINE( format, ... )                                                            \
+            taskENTER_CRITICAL( );                                                           \
+            {                                                                                \
+                sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                \
+                uart6_transmit_line_debug(PRINT_BUFFER);                                     \
+            }                                                                                \
+            taskEXIT_CRITICAL( );                                                            \
 
-#define DISPLAY_LINE( format, ... )                                                           \
-            sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                     \
-            uart6_transmit_line(PRINT_BUFFER)                                                 \
+#define DISPLAY_LINE( format, ... )                                                          \
+            taskENTER_CRITICAL( );                                                           \
+            {                                                                                \
+                sprintf(PRINT_BUFFER, format, ##__VA_ARGS__);                                \
+                uart6_transmit_line(PRINT_BUFFER);                                           \
+            }                                                                                \
+            taskEXIT_CRITICAL( );                                                            \
 
 
 #define INPUT( x ) const char * t = uart6_receive_command(); memcpy(x, t, strlen(t))

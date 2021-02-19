@@ -164,7 +164,7 @@ int main( void )
         board_error_handler( __FILE__, __LINE__ );
     }
 
-    if ( UART_Port6_init() != UART_OK )
+    if ( ! UART_Port6_init() )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -179,7 +179,7 @@ int main( void )
     recovery_init( );
     DEBUG_LINE( "Recovery GPIO pins have been set up.");
 
-    if ( flash_init() != FLASH_OK )
+    if ( ! flash_init() )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -187,23 +187,15 @@ int main( void )
         DEBUG_LINE( "Flash ID read successful");
     }
 
-    if ( memory_manager_init( ) != MEM_OK )
+    if ( ! memory_manager_init( ) )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
     {
-        DEBUG_LINE( "Memory Manager has been set");
+        DEBUG_LINE( "Memory Manager has been initialized and configured!");
     }
 
-    if ( memory_manager_configure( ) != MEM_OK )
-    {
-        board_error_handler( __FILE__, __LINE__ );
-    } else
-    {
-        DEBUG_LINE( "Memory Manager has been configured");
-    }
-
-    if ( pressure_sensor_init( NULL ) != PRESS_SENSOR_OK )
+    if ( ! pressure_sensor_init( NULL ) )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -211,7 +203,7 @@ int main( void )
         DEBUG_LINE( "Pressure sensor has been set up.");
     }
 
-    if (imu_sensor_init( NULL )  != IMU_OK )
+    if ( ! imu_sensor_init( NULL ) )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -219,7 +211,7 @@ int main( void )
         DEBUG_LINE( "IMU sensor has been set up.");
     }
 
-    if ( flight_controller_init(NULL)  != FLIGHT_CONTROLLER_OK )
+    if ( ! flight_controller_init(NULL) )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -227,7 +219,7 @@ int main( void )
         DEBUG_LINE( "Flight controller has been set up.");
     }
 
-    if ( memory_manager_start( NULL ) != MEM_OK )
+    if ( ! memory_manager_start ( NULL ) )
     {
         board_error_handler( __FILE__, __LINE__ );
     } else
@@ -235,7 +227,7 @@ int main( void )
         DEBUG_LINE( "Memory Manager has been started.");
     }
 
-    command_line_interface_start( NULL );
+    command_line_interface_start ( NULL );
     flight_controller_start ( NULL );
 
     vTaskStartScheduler ( );

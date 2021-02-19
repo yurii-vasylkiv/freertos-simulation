@@ -157,7 +157,7 @@ static void prv_flight_controller_task(void * pvParams)
         pressure_sensor_start ( &system_configurations );
 
     #else
-        if ( IMU_OK != imu_sensor_configure ( &system_configurations.imu_sensor_configuration ) )
+        if ( ! imu_sensor_configure ( &system_configurations.imu_sensor_configuration ) )
         {
             board_error_handler( __FILE__, __LINE__ );
         } else
@@ -165,7 +165,7 @@ static void prv_flight_controller_task(void * pvParams)
             DEBUG_LINE( "IMU sensor has been configured.");
         }
 
-        if ( PRESS_SENSOR_OK != pressure_sensor_configure ( &system_configurations.pressure_sensor_configuration ) )
+        if ( ! pressure_sensor_configure ( &system_configurations.pressure_sensor_configuration ) )
         {
             board_error_handler( __FILE__, __LINE__ );
         } else
