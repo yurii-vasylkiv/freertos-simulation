@@ -251,13 +251,13 @@ INSTALLATION:
 -----------------
 
 1. Create a folder C:\dev
-2. Create a folder C:\dev\opt
-3. Create a folder C:\dev\env
+2. Create a folder C:\root\opt
+3. Create a folder C:\root\env
 4. Install MinGW into C:dev\env
    - install basic build tools (gcc, g++, etc.) using mingw-get.exe
-5. Install CLion into C:\dev\opt\clion
-6. Install Atollic into C:\dev\opt\atollic (you will have to rename Atollic folder as it does not allow to rename it during the installation)
-7. Install Open OCD into C:dev\opt\openocd
+5. Install CLion into C:\root\opt\clion
+6. Install Atollic into C:\root\opt\atollic (you will have to rename Atollic folder as it does not allow to rename it during the installation)
+7. Install Open OCD into C:\root\opt\openocd
 8. Install Python to C:\Program Files
 
 NOTE: while installing CLion and Python do not check on ADD TO SYSTEM PATH
@@ -268,16 +268,16 @@ ENVIRONMENT VARIABLES:
 Recall what I have mentioned about system-wide Path and User-wide Path. For our purpose we will use User-Wide Path variable
 1. Create a variable named "ARM_DEV_ENV"
 2. Add 6 entries separated by semicolon for:
-    - MinGW             C:\dev\env
-    - CLion             C:\dev\opt\clion
-    - CLion's CMake     C:\dev\opt\clion\cmake\win\bin
+    - MinGW             C:\root\env
+    - CLion             C:\root\opt\clion
+    - CLion's CMake     C:\root\opt\clion\cmake\win\bin
     - Open OCD          C:dev\opt\openocd\bin
     - Python            C:\<ProgramFiles>\Python\Python<VERSION>
     - Python scripts    C:\<ProgramFiles>\Python\Python<VERSION>\Scripts
-    - Atollic ARMTools: C:\dev\opt\atollic\ARMTools\bin
+    - Atollic ARMTools: C:\root\opt\atollic\ARMTools\bin
 
 Your ARM_DEV_ENV in the end should look something like this:
-C:\dev\env;C:\dev\opt\clion;C:\dev\opt\clion\cmake\win\bin;C:dev\opt\openocd\bin;C:\<ProgramFiles>\Python\Python<VERSION>;C:\<ProgramFiles>\Python\Python<VERSION>\Scripts;C:\dev\opt\atollic\ARMTools\bin
+C:\root\env;C:\root\opt\clion;C:\root\opt\clion\cmake\win\bin;C:dev\opt\openocd\bin;C:\<ProgramFiles>\Python\Python<VERSION>;C:\<ProgramFiles>\Python\Python<VERSION>\Scripts;C:\root\opt\atollic\ARMTools\bin
 Then add new entry %ARM_DEV_ENV% to the "Path" variable and apply changes press OK.
 
 COMMAND TERMINAL:
@@ -306,22 +306,22 @@ open CLion, then go to View -> Tool Windows -> Terminal and type all the command
 and if they work it means CLion sees your ARM_DEV_ENV.
 
 Now, go to CLion: File -> Settings -> Build, Execution, Deployment -> Toolchains. Add new Toolchain by pressing '+'.
-Specify your MingGw location (C:\dev\env), then let CLion automatically detect the rest. Then change the values of
-C Compiler to C:\dev\opt\atollic\ARMTools\bin\arm-atollic-eabi-gcc.exe
-C++ Compiler to C:\dev\opt\atollic\ARMTools\bin\arm-atollic-eabi-g++.exe
+Specify your MingGw location (C:\root\env), then let CLion automatically detect the rest. Then change the values of
+C Compiler to C:\root\opt\atollic\ARMTools\bin\arm-atollic-eabi-gcc.exe
+C++ Compiler to C:\root\opt\atollic\ARMTools\bin\arm-atollic-eabi-g++.exe
 
 This will be your environment for the ARM compilation. You can call it "ARM_ENV"
 
 (!IMPORTANT!): In order to compile a simulator version you need to create one more environment entry SIM_ENV if you are using Windows OS.
-Select the path C:\dev\env but this time you will select the C and C++ compilers:
-C Compiler to C:\dev\usr\bin\gcc.exe
-C++ Compiler to C:\dev\usr\bin\g++.exe
+Select the path C:\root\env but this time you will select the C and C++ compilers:
+C Compiler to C:\root\usr\bin\gcc.exe
+C++ Compiler to C:\root\usr\bin\g++.exe
 
 For UNIX OS the environment will be set by default for the simulated compilation. For ARM compilation you will need to change the C and C++
 compilers the same you changed it on Windows machine.
 
-NOTE: Recall what I said about differences in processor instruction sets. You will not be able to compile with gcc.exe or g++.exe shipped with MinGW (C:\dev\env\bin)
-NOTE: You may leave the default debugger, it will be able to understand STM32 ARM debug symbols, but if you use C:\dev\env\bin\gdb.exe, then debugger will not work.
+NOTE: Recall what I said about differences in processor instruction sets. You will not be able to compile with gcc.exe or g++.exe shipped with MinGW (C:\root\env\bin)
+NOTE: You may leave the default debugger, it will be able to understand STM32 ARM debug symbols, but if you use C:\root\env\bin\gdb.exe, then debugger will not work.
       Debuggers have certain protocols of communication, just like ABI, they need to match.
 NOTE: Leave detected by CLion ming32-make.exe as it is. Do not use any other make.exe because again different Make tools have different protocols, so they need to match
 
@@ -373,7 +373,7 @@ reg add "HKCU\Software\Microsoft\Command Processor" /v AutoRun /t REG_EXPAND_SZ 
 PowerShell:
 New-Item -ItemType File $profile -Force
 Clear-Content -Path $profile
-"New-Alias make C:\dev\env\bin\mingw32-make.exe" | Add-Content  $profile
+"New-Alias make C:\root\env\bin\mingw32-make.exe" | Add-Content  $profile
 "function go_to_avionics {set-location $SOURCE_PATH}" | Add-Content  $profile
 "function _avionics_build {$BUILD_FILE}" | Add-Content  $profile
 "New-Alias avionics go_to_avionics" | Add-Content  $profil
