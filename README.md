@@ -254,6 +254,7 @@ INSTALLATION:
 2. Create a folder C:\dev\opt
 3. Create a folder C:\dev\env
 4. Install MinGW into C:dev\env
+   - install basic build tools (gcc, g++, etc.) using mingw-get.exe
 5. Install CLion into C:\dev\opt\clion
 6. Install Atollic into C:\dev\opt\atollic (you will have to rename Atollic folder as it does not allow to rename it during the installation)
 7. Install Open OCD into C:dev\opt\openocd
@@ -309,23 +310,54 @@ Specify your MingGw location (C:\dev\env), then let CLion automatically detect t
 C Compiler to C:\dev\opt\atollic\ARMTools\bin\arm-atollic-eabi-gcc.exe
 C++ Compiler to C:\dev\opt\atollic\ARMTools\bin\arm-atollic-eabi-g++.exe
 
+This will be your environment for the ARM compilation. You can call it "ARM_ENV"
+
+(!IMPORTANT!): In order to compile a simulator version you need to create one more environment entry SIM_ENV if you are using Windows OS.
+Select the path C:\dev\env but this time you will select the C and C++ compilers:
+C Compiler to C:\dev\usr\bin\gcc.exe
+C++ Compiler to C:\dev\usr\bin\g++.exe
+
+For UNIX OS the environment will be set by default for the simulated compilation. For ARM compilation you will need to change the C and C++
+compilers the same you changed it on Windows machine.
+
 NOTE: Recall what I said about differences in processor instruction sets. You will not be able to compile with gcc.exe or g++.exe shipped with MinGW (C:\dev\env\bin)
 NOTE: You may leave the default debugger, it will be able to understand STM32 ARM debug symbols, but if you use C:\dev\env\bin\gdb.exe, then debugger will not work.
       Debuggers have certain protocols of communication, just like ABI, they need to match.
 NOTE: Leave detected by CLion ming32-make.exe as it is. Do not use any other make.exe because again different Make tools have different protocols, so they need to match
 
-The final step is to tell the CMakeLists.txt where to find the ARMTools that will be used to compile the source code for the targeted platform (ARM Cortex-M4).
-Open the CMakeLists.txt found in the AvionicsSoftware-AtollicProject folder and edit the line that says "set(ARM_TOOLS_DIR    [YOUR PATH HERE])" to contain
-the path for Atollic ARMTools mentioned earlier.
+NOTE: If you have done everything as described then your configurations.yaml should stay the same, otherwise you will need to edit it with your corresponding paths.
 
-NOTE: You must change the "\" in the path to "/".
+NOTE: if compiling on UNIX you will need to edit configurations.yaml for ARM compilation, where normally you would put <ATTOLIC-PATH>/ARMTools/bin
+
+Now just open a new project via File -> Open... -> go to project folder -> build-on-<windows or linux> and select the CMakeLists.txt. 
+Then go to Tools -> Cmake -> Change Project Root -> select the root folder of the project
 
 COMPILE AND ENJOY CLION!Now it should work!
 
+Debugging with OpenOCD:
+-----------------
+In order to debug the program in CLion we're gonig to use OpenOCD. OpenOCD is an open-source tool that allows debugging various ARM devices with GDB using a wide
+variety of JTAG programmers. 
+
+To set up the debugger with OpenOCD in CLion, go to File -> Settings -> Embedded Development -> and paste C:dev\opt\openocd\bin into the field: OpenOCD Location
+
+Then, save changes and go to Run -> Debug... -> Edit Configurations... Then expand the available Templates and find OpenOCD Download & Run 
+
+1. Insert board/stm32f4discovery.cfg into the field "Board Config File"
+2. Set both Target and Executable as "avionics.elf"
+3. GDB Port as 3333
+4. Telnet Port as 4444
+5. Download: select Always
+6. Reset: select Init
+
+Press "OK" to save changes. Congratulations, now you can run the debugger for ARM compilation.
+
+In order to debug the simulation, go back to File -> Settings -> Build, Execution, Deployment -> Toolchains and switch the ARM_ENV to SIM_ENV
 
 
 
-WINDOWS Aliases:
+
+WINDOWS Aliases (Extra):
 -----------------
 
 It is good to be able to travel from one folder to another fast, without thinking. It is extremely comfortable.
@@ -344,174 +376,4 @@ Clear-Content -Path $profile
 "New-Alias make C:\dev\env\bin\mingw32-make.exe" | Add-Content  $profile
 "function go_to_avionics {set-location $SOURCE_PATH}" | Add-Content  $profile
 "function _avionics_build {$BUILD_FILE}" | Add-Content  $profile
-"New-Alias avionics go_to_avionics" | Add-Content  $profile
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-EXTRAS:
------------------
-Example of the file user-configurations.yaml:
-```
-MINGW_ENV_PATH:         C:/dev/env/bin
-CLION_CMAKE_PATH:       C:/dev/opt/clion/bin/cmake/win/bin
-ARM_TOOLS_DIR:          C:/dev/opt/cubeide/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-arm-embedded.7-2018-q2-update.win32_1.0.0.201904081647/tools/bin
-```
-
-
-FOR WINDOWS:
-```
-MAKE SURE to set up CLION properly.
-The configurations include: Toolchains such as MinGW make, gcc and g++.
-Install STM32CubeIDE or AtttolicTrue Studio to install ARM build toolchains
-
-If you use STM32CubeIDE:          {STM32CubeIDE_LOCATION}/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-arm-embedded.7-2018-q2-update.win32_{CHOOSE_LATEST_VERSION}/tools/bin
-If you use AttolicTrueStudio:     {AttolicTrueStudioIDE_LOCATION}/ARMTools/bin
-
-In order CLion to compile this project on Windows machine you need to:
-1. Setup your environment:
- a) install MinGW environment, either follow the link https://sourceforge.net/projects/mingw-w64 or just search for MinGW-w64 - for 32 and 64 bit Windows
- b) setup the packages you need in the mingw manager (usually they are already checked for you), you will need packages such as gcc, g++, gdb, make, cmake, etc.
-2. Setup the System and the System Environment Variables:
- a) Control Panel -> System And Security -> System -> Advanced System Settings -> Environment Variables [OR] My Computer -> Properties -> Advanced -> Environment Variables
- b) Add your ARM Build Toolchains binaries folder to your path (e.g. {AttolicTrueStudioIDE_LOCATION}/ARMTools/bin)
- c) Add CLion's CMake path to the system environment variables (e.g. C:/Program Files/JetBrains/CLion 2019.3.2/bin/cmake/win/bin)
- NOTE: You can either create your own variable where you would add all the development related pathes or just add it straight to the variable named \"PATH\"
- d) Create a \"make\" alias for Windows PowerShell. Search for PowerShell open it with administrator rights, then type the following:
-    >> Set-ExecutionPolicy RemoteSigned (if asking confirm with \"Y\")
-    >> echo $profile (hit Enter, you should receive a path e.g. C:/Users/xxxxxxx/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1)
-       Create the path and the file if it does not exist, then open it and type:
-       New-Alias make YOUR_PATH_TO_mingw32-make.exe (e.g. C:\\dev\\env\\bin\\mingw32-make.exe)
-       Save file and close it
- e) open PowerShell and go to the project directory and type:
-    ./build.ps1
- f) wait till it is finished, but make sure the build is successful
- g) Execute CLion from PowerShell!
-
-
-3. Setup CLion Toolchains:
- a) Go to File -> Settings -> Build, Execution, Deployment -> Toolchains, let CLion detect the existing environments. then make some modifications to it
-    Then for the first field \"Environment\" you specify mingw root folder (e.g. C:/Program Files/mingw-w64/x86_64-7.2.0-posix-seh-rt_v5-rev1/mingw64)
-    then CLion will try to find \"Make\", \"C Compiler\" and \"CXX Compiler\" for you automatically.
- b) Change CLion CMake Genration Path from default \"cmake-build-debug\" to \"build\":
-    File -> Settings -> Build, Execution, Deployment -> CMake -> \"Generation path\"
- c) Debugger. In order to enable CLion debugger we need to download \"OpenOCD\"
-    OpenOCD     - https://gnutoolchains.com/arm-eabi/openocd/
-
-    File -> Settings -> Build, Execution, Deployment -> Embedded Development.
-    Specify OpenOCD Location        : (e.g. C:\\dev\\opt\\openocd\\bin\\openocd.exe)
-
-    Lastly, do:
-    Run -> Debug... -> Edit Configurations -> Add -> OpenOCD Download & Run
-    Then press \"Assist\" and choose the configuration file that corresponds to the STM32 board that is used in the project
-```
-
-
-FOR LINUX
-
-```
-MAKE SURE to set up CLION Toolchains properly.
-Install STM32CubeIDE or AtttolicTrue Studio to install ARM build toolchains
-The location of the ARM Build Toolchains depends on the OS you are running CLion on:
-For Linux OS, if you use STM32CubeIDE:            {STM32CubeIDE_LOCATION}/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.linux64_{CHOOSE_LATEST_VERSION}/tools/bin
-For Linux OS, if you use AttolicTrueStudio:       {AttolicTrueStudioIDE_LOCATION}/ARMTools/bin
-Setup CLion Toolchains:
-a) Go to File -> Settings -> Build, Execution, Deployment -> Toolchains, let CLion detect the existing environments.
-b) Change the values of the \"C Compiler\" and \"CXX Compiler\" to the corresponding ARM Build Toolchains gcc and g++.
-c) Change CLion CMake Genration Path from default \"cmake-build-debug\" to \"build\":
-   File -> Settings -> Build, Execution, Deployment -> CMake -> \"Generation path\"
-
-d) Debugger. In order to enable CLion debugger we need to download \"OpenOCD\"
-   OpenOCD     - https://gnutoolchains.com/arm-eabi/openocd/
-
-   File -> Settings -> Build, Execution, Deployment -> Embedded Development.
-   Specify OpenOCD Location        : (e.g. \\openocd\\bin\\openocd.exe)
-
-   Lastly, do:
-   Run -> Debug... -> Edit Configurations -> Add -> OpenOCD Download & Run
-   Then press \"Assist\" and choose the configuration file that corresponds to the STM32 board that is used in the project
-```
-
-
-
-
-
-
-
-
-
-
-# Avionics
-Flight Computer Software for the 2019 Rocket.
-
-## Versions
-#### v2.0.0 - 2020 Spaceport America Cup Flight Software
-##### v2.1.0 - Major refactoring changes. File structure reorganized and encapsulation improved.
-
-#### v1.0.0 - 2019 Spaceport America Cup Flight Software
-- includes custom flight computer software
-- includes PC Tools interface for configuring, and downloading data from flight computer
-
-## How To Run Flight Computer Software
-
-The 'Avionics Software - Atollic' folder contains the main flight software project, created in Atollic TrueSTUDIO.
-The project runs on the STM32F401RE Nucleo development board.
-
-To run the project:
-
-  1. Open Attolic.
-  
-  2. Import the project by doing the following:
-      - Click File -> Import .
-      - Then click 'Existing Projects into Workspace' under general.
-      - Click 'Browse' and navigate to the 'Avionics Software - Atollic' then click 'OK'.
-      - Make sure the 'Avionics Software' project is selected then click 'Finish'.
-
-  3. Build the project by right clicking on the project in the Project Explorer on the left and clicking 'Build Project'.    
-      
-  4. Setup the debug configuration:
-      -Right-click on the project in the Project explorer on the left.
-      - Go to Debug As -> Debug Configurations...
-      - Double-click 'Embedded C/C++  Application'
-      - In the 'main' tab on the right section of the Debug Configurations window, click 'search project' and then select 'Avionics Software.elf'.
-      
-  5. Debug the project by clicking 'Debug'.      
-      
-# Operations
-
-The software in the AvionicsSoftware-AtollicProject folder is meant to be run on the UMSTAS student designed flight computer.
-Instructions for uploading the software to the flight computer can be found on google drive: 
-
-UMSATS/Rocket/2-Avionics/Avionics Setup and Use Guide
-
-
-UMSATS Flight Computer Prototype:
-
-<img src="https://i.imgur.com/smPBZTm.jpg" width="500">
-
-
-When powered on the flight computer will start a 1 hour countdown.  
-The user LED will toggle every 2 seconds until the halfway point, when it will start to toggle every second. When 3/4 of the time has passed, te LED will toggle every 0.5 seconds.
-
-This time can be changed in the configuration.h file.
-
-**After the time has elapsed, the flash memory will be erased** and the flight computer will start recording data at a rate of 10/20 Hz (BMP/IMU). 
-The data rate can be changed in the configuration file.
-The flight computer will record data until the flash memory is full or power is removed.
-
-To recover data from the flight computer, power it on while pressing the S2 button. This will start recovery mode.
-In recovery mode, an inteface will be provided over UART, allowing the data to be read.
-
----
-Information about UMSATS and our new rocketry division can be found at: http://www.umsats.ca/rocketry/
-
+"New-Alias avionics go_to_avionics" | Add-Content  $profil
