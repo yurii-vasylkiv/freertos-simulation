@@ -1,13 +1,15 @@
 #ifndef __EVENT_DETECTOR_H
 #define __EVENT_DETECTOR_H
 
-#include "memory-management/memory_manager.h"
-#include "core/system_configuration.h"
 #include <stdbool.h>
+#include <stdint-gcc.h>
+
 
 // Detection Parameters
+struct DataContainer;
+typedef struct FlightSystemConfiguration FlightSystemConfiguration;
 
-typedef enum
+typedef enum FlightState
 {
     FLIGHT_STATE_LAUNCHPAD   = 0,
     FLIGHT_STATE_PRE_APOGEE  = 1,
@@ -20,7 +22,7 @@ typedef enum
     FLIGHT_STATE_COUNT
 } FlightState;
 
-typedef enum
+typedef enum EventDetectorStatus
 {
     EVENT_DETECTOR_ERR = 0,
     EVENT_DETECTOR_OK = 1
@@ -31,7 +33,7 @@ EventDetectorStatus event_detector_init ( FlightSystemConfiguration * configurat
 
 EventDetectorStatus event_detector_update_configurations ( FlightSystemConfiguration * configurations );
 
-EventDetectorStatus event_detector_feed ( DataContainer * data, FlightState * state );
+EventDetectorStatus event_detector_feed ( struct DataContainer * data, FlightState * state );
 
 float event_detector_current_altitude ( );
 

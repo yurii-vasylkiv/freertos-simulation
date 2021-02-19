@@ -249,7 +249,7 @@ static bool cli_tools_mem_read_imu_index ( char * pcWriteBuffer, size_t xWriteBu
     uint32_t value = atoi ( str_option_arg );
 
     IMUDataU dst = { };
-    if ( MEM_OK == memory_manager_get_single_gyro_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemoryUserDataSectorGyro, &dst, value ) )
     {
         sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu: gyro=[%f, %f, %f]\n", cmd_option, dst.values.timestamp, dst.values.data[ 0 ], dst.values.data[ 1 ], dst.values.data[ 2 ] );
 
@@ -257,7 +257,7 @@ static bool cli_tools_mem_read_imu_index ( char * pcWriteBuffer, size_t xWriteBu
     }
 
     memset ( &dst, 0, sizeof ( IMUDataU ) );
-    if ( MEM_OK == memory_manager_get_single_acc_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemoryUserDataSectorAccel, &dst, value ) )
     {
         sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu: acc=[%f, %f, %f]\n", cmd_option, dst.values.timestamp, dst.values.data[ 0 ], dst.values.data[ 1 ], dst.values.data[ 2 ] );
 
@@ -275,7 +275,7 @@ static bool cli_tools_mem_read_press_index ( char * pcWriteBuffer, size_t xWrite
     uint32_t value = atoi ( str_option_arg );
 
     PressureDataU dst = { };
-    if ( MEM_OK == memory_manager_get_single_press_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemoryUserDataSectorPressure, &dst, value ) )
     {
         sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, pressure=%f\n", cmd_option, dst.values.timestamp, dst.values.data );
         return true;
@@ -292,7 +292,7 @@ static bool cli_tools_mem_read_cont_index ( char * pcWriteBuffer, size_t xWriteB
     uint32_t value = atoi ( str_option_arg );
 
     ContinuityU dst = { };
-    if ( MEM_OK == memory_manager_get_single_cont_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemoryUserDataSectorContinuity, &dst, value ) )
     {
         sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, status=%i,%i\n", cmd_option, dst.values.timestamp, dst.values.status[ 0 ], dst.values.status[ 1 ] );
         return true;
@@ -308,7 +308,7 @@ static bool cli_tools_mem_read_flight_event_index ( char * pcWriteBuffer, size_t
     uint32_t value = atoi ( str_option_arg );
 
     FlightEventU dst = { };
-    if ( MEM_OK == memory_manager_get_single_flight_event_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemoryUserDataSectorFlightEvent, &dst, value ) )
     {
         sprintf ( pcWriteBuffer, "[%s]: timestamp=%lu, status=%i\n", cmd_option, dst.values.timestamp, dst.values.status );
         return true;
@@ -324,7 +324,7 @@ static bool cli_tools_mem_read_configuration_index ( char * pcWriteBuffer, size_
     uint32_t value = atoi ( str_option_arg );
 
     GlobalConfigurationU dst = { };
-    if ( MEM_OK == memory_manager_get_single_configuration_entry ( &dst, value ) )
+    if ( MEM_OK == memory_manager_get_single_data_entry ( MemorySystemSectorGlobalConfigurationData, &dst, value ) )
     {
         snprintf(pcWriteBuffer, xWriteBufferLen,
         "[%s]:\r\n"

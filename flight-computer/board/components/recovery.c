@@ -88,7 +88,8 @@ void recoveryActivateMOSFET ( RecoverySelect recoverySelect )
         //Active high.
         HAL_GPIO_WritePin ( RECOV_MAIN_ACTIVATE_PORT, RECOV_MAIN_ACTIVATE_PIN, GPIO_PIN_SET );
 
-        vTaskDelay ( EMATCH_ON_TIME );
+        // TODO: what is this ????
+        // vTaskDelay ( EMATCH_ON_TIME );
 
         //De-activate.
         HAL_GPIO_WritePin ( RECOV_MAIN_ACTIVATE_PORT, RECOV_MAIN_ACTIVATE_PIN, GPIO_PIN_RESET );

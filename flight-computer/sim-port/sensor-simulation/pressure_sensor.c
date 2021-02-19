@@ -217,11 +217,11 @@ int pressure_sensor_configure (PressureSensorConfiguration * parameters )
     if(parameters == NULL)
     {
         s_current_configuration = s_default_configuration;
-        return 0;
+        return PRESS_SENSOR_OK;
     }
 
     s_current_configuration = *parameters;
-    return 0;
+    return PRESS_SENSOR_OK;
 }
 
 

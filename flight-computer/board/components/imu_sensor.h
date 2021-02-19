@@ -30,7 +30,7 @@ typedef union
 } IMUSensorConfigurationU;
 
 
-typedef enum { IMU_OK = 0, IMU_ERR = 1 } IMUStatus;
+typedef enum { IMU_ERR = 0, IMU_OK = 1 } IMUStatus;
 
 //Groups both sensor readings and a time stamp.
 typedef struct imu_sensor_data
