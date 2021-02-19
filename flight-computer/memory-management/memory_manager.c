@@ -215,7 +215,7 @@ static MemoryManagerStatus prvMemorySystemSectorWritePageNow ( SystemSector sect
 static MemoryManagerStatus prvMemoryWritePageNow ( MemorySectorInfo info, uint8_t * data );
 static MemoryManagerStatus prvMemoryAccessSectorSingleDataEntry ( MemorySector sector, MemorySectorInfo info, uint32_t index, void * dst );
 static MemoryManagerStatus prvMemoryAccessLastDataEntry ( MemorySector sector, MemorySectorInfo info, void * dst );
-
+static MemoryManagerStatus prvGetMemorySectorInfo ( MemorySector sector, MemorySectorInfo * info );
 
 MemoryManagerStatus memory_manager_init ( ) /* noexcept */
 {
@@ -862,6 +862,56 @@ void prvQueueMonitorTask ( void * arg )
 }
 
 
+MemoryManagerStatus prvGetMemorySectorInfo ( MemorySector sector, MemorySectorInfo * info)
+{
+    if ( info == NULL )
+    {
+        return MEM_ERR;
+    }
+
+    switch ( sector )
+    {
+
+        case MemorySystemSectorGlobalConfigurationData:
+
+            info->startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
+            info->endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
+            info->size         = GLOBAL_CONFIGURATION_SECTOR_SIZE;
+
+            break;
+
+        case MemorySystemSectorUserDataSectorMetaData:
+
+            info->startAddress = MEMORY_METADATA_SECTOR_BASE;
+            info->endAddress   = MEMORY_METADATA_SECTOR_OFFSET;
+            info->size         = MEMORY_METADATA_SECTOR_SIZE;
+
+            break;
+
+        case MemoryUserDataSectorGyro:
+        case MemoryUserDataSectorAccel:
+        case MemoryUserDataSectorMag:
+        case MemoryUserDataSectorPressure:
+        case MemoryUserDataSectorTemperature:
+        case MemoryUserDataSectorContinuity:
+        case MemoryUserDataSectorFlightEvent:
+
+            if ( ! prvIsInitialized )
+            {
+                return MEM_ERR;
+            }
+
+            *info = prvMemoryMetaDataFlashSnapshot.values.user_sectors [ toUserDataSector ( sector ) ];
+
+            break;
+        case MemorySectorCount:
+        default:
+            break;
+    }
+
+    return MEM_OK;
+}
+
 static uint32_t prvMemorySectorGetDataEntriesPerPage ( MemorySector sector )
 {
     switch ( sector )
@@ -1100,43 +1150,9 @@ MemoryManagerStatus memory_manager_get_single_data_entry ( MemorySector sector, 
 
     MemorySectorInfo info = { 0 };
 
-    switch ( sector )
+    if ( !prvGetMemorySectorInfo ( sector, &info ) )
     {
-
-        case MemorySystemSectorGlobalConfigurationData:
-
-            info.startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
-            info.endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
-            info.size         = GLOBAL_CONFIGURATION_SECTOR_SIZE;
-
-            break;
-
-        case MemorySystemSectorUserDataSectorMetaData:
-
-            info.startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
-            info.endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
-            info.size         = GLOBAL_CONFIGURATION_SECTOR_SIZE;
-
-            break;
-
-        case MemoryUserDataSectorGyro:
-        case MemoryUserDataSectorAccel:
-        case MemoryUserDataSectorMag:
-        case MemoryUserDataSectorPressure:
-        case MemoryUserDataSectorTemperature:
-        case MemoryUserDataSectorContinuity:
-        case MemoryUserDataSectorFlightEvent:
-
-            if ( ! prvIsInitialized )
-            {
-                return MEM_ERR;
-            }
-
-            info = prvMemoryMetaDataFlashSnapshot.values.user_sectors [ toUserDataSector ( sector ) ];
-
-            break;
-        case MemorySectorCount:
-            break;
+        return MEM_ERR;
     }
 
     return prvMemoryAccessSectorSingleDataEntry ( MemoryUserDataSectorFlightEvent, info, entry_index, dst );
@@ -1152,42 +1168,9 @@ MemoryManagerStatus memory_manager_get_last_data_entry ( MemorySector sector, vo
 
     MemorySectorInfo info = { 0 };
 
-    switch ( sector )
+    if ( !prvGetMemorySectorInfo ( sector, &info ) )
     {
-        case MemorySystemSectorGlobalConfigurationData:
-
-            info.startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
-            info.endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
-            info.size         = GLOBAL_CONFIGURATION_SECTOR_SIZE;
-
-            break;
-
-        case MemorySystemSectorUserDataSectorMetaData:
-
-            info.startAddress = GLOBAL_CONFIGURATION_SECTOR_BASE;
-            info.endAddress   = GLOBAL_CONFIGURATION_SECTOR_OFFSET;
-            info.size         = GLOBAL_CONFIGURATION_SECTOR_SIZE;
-
-            break;
-
-        case MemoryUserDataSectorGyro:
-        case MemoryUserDataSectorAccel:
-        case MemoryUserDataSectorMag:
-        case MemoryUserDataSectorPressure:
-        case MemoryUserDataSectorTemperature:
-        case MemoryUserDataSectorContinuity:
-        case MemoryUserDataSectorFlightEvent:
-
-            if ( ! prvIsInitialized )
-            {
-                return MEM_ERR;
-            }
-
-            info = prvMemoryMetaDataFlashSnapshot.values.user_sectors [ toUserDataSector ( sector ) ];
-
-            break;
-        case MemorySectorCount:
-            break;
+        return MEM_ERR;
     }
 
     return prvMemoryAccessLastDataEntry ( MemoryUserDataSectorFlightEvent, info, dst );
