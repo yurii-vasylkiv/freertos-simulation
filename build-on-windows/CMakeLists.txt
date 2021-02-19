@@ -187,6 +187,7 @@ SET(USER_SRC                # Board
 
         # Core
         ../flight-computer/core/flight_controller.c
+        ../flight-computer/core/system_configuration.c
 
         # Memory Management
         ../flight-computer/memory-management/memory_manager.c
