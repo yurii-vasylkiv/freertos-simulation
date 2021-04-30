@@ -3,6 +3,8 @@
 #include <memory>
 #include <cassert>
 #include <pthread.h>
+#include <thread>
+#include <mutex>
 #include <deque>
 #include <unistd.h>
 #include <stddef.h>

@@ -10,7 +10,7 @@ else()
 endif()
 
 
-OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" ON)
+OPTION(BUILD_FOR_SIM_ON_WIN_OS "Indicates whether the build needs to be built against WinOS or RTOS" OFF)
 
 ADD_DEFINITIONS(-DPRINT_DEBUG_LOG)
 
@@ -23,29 +23,15 @@ IF(BUILD_FOR_SIM_ON_WIN_OS)
         SET(CMAKE_C_FLAGS_DEBUG         "${CMAKE_C_FLAGS_DEBUG} -O0"   )
     ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-    SET(EXECUTABLE_EXTENSION            .exe                            )
-    SET(CMAKE_C_COMPILER                ${ARM_TOOLS_DIR}/gcc${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
-    SET(CMAKE_CXX_COMPILER              ${ARM_TOOLS_DIR}/g++${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
-
-    INCLUDE(CMakeForceCompiler)
-    SET(CMAKE_C_COMPILER_WORKS          1)
-    CMAKE_FORCE_C_COMPILER  (${CMAKE_C_COMPILER}   GNU )   # absolute path needs to be set accordingly
-    CMAKE_FORCE_CXX_COMPILER(${CMAKE_CXX_COMPILER} GNU )   # absolute path needs to be set accordingly
-
-    SET(CMAKE_ASM_COMPILER              ${ARM_TOOLS_DIR}/as${EXECUTABLE_EXTENSION}       )   # absolute path needs to be set accordingly
-    SET(AR                              ${ARM_TOOLS_DIR}/ar${EXECUTABLE_EXTENSION}       )   # absolute path needs to be set accordingly
-    SET(OBJCOPY                         ${ARM_TOOLS_DIR}/objcopy${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
-    SET(OBJDUMP                         ${ARM_TOOLS_DIR}/objdump${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
-    SET(SIZE                            ${ARM_TOOLS_DIR}/size${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
-    SET(GDB                             ${ARM_TOOLS_DIR}/gdb${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
+    SET(EXECUTABLE_EXTENSION            .exe                           )
+    SET(CMAKE_C_COMPILER                gcc${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
+    SET(CMAKE_CXX_COMPILER              g++${EXECUTABLE_EXTENSION}     )   # absolute path needs to be set accordingly
 
     SET(CMAKE_SYSTEM_NAME               Generic)
     SET(CMAKE_SYSTEM_VERSION            1)
 
-    PROJECT(avionics ASM C CXX RC)
+    PROJECT(avionics C CXX)
     SET(CMAKE_VERBOSE_MAKEFILE ON)
-
-
 
     SET(CMAKE_C_FLAGS "-g -std=gnu11 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "    )
     SET(CMAKE_CXX_FLAGS "-g -std=c++17 -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable -Wno-format -Wall -Werror -fstack-usage -fdata-sections -fdata-sections -mthreads "  )
@@ -98,12 +84,6 @@ ELSE()
     SET(EXECUTABLE_EXTENSION            .exe)
     SET(CMAKE_C_COMPILER                ${EABI_PREFIX}-gcc${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
     SET(CMAKE_CXX_COMPILER              ${EABI_PREFIX}-g++${EXECUTABLE_EXTENSION}      )   # absolute path needs to be set accordingly
-
-    INCLUDE(CMakeForceCompiler)
-    SET(CMAKE_C_COMPILER_WORKS          1)
-    CMAKE_FORCE_C_COMPILER  (${ARM_TOOLS_DIR}/${CMAKE_C_COMPILER}   GNU                )   # absolute path needs to be set accordingly
-    CMAKE_FORCE_CXX_COMPILER(${ARM_TOOLS_DIR}/${CMAKE_CXX_COMPILER} GNU                )   # absolute path needs to be set accordingly
-
     SET(AS                              ${EABI_PREFIX}-gcc-as${EXECUTABLE_EXTENSION}   )   # absolute path needs to be set accordingly
     SET(AR                              ${EABI_PREFIX}-gcc-ar${EXECUTABLE_EXTENSION}   )   # absolute path needs to be set accordingly
     SET(OBJCOPY                         ${EABI_PREFIX}-objcopy${EXECUTABLE_EXTENSION}  )   # absolute path needs to be set accordingly
